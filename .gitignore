@@ -1,0 +1,24 @@
+# Secrets
+config/secrets.yaml
+config/google_calendars.yaml
+
+# Home Assistant runtime / state
+config/.storage/
+config/home-assistant_v2.db*
+config/home-assistant.log*
+config/home-assistant.log.fault
+config/deps/
+config/tts/
+
+# HACS & downloaded frontend cards
+config/custom_components/hacs/
+config/www/community/
+
+# Python cache
+**/__pycache__/
+**/*.pyc
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
