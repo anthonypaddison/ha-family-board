@@ -22,3 +22,11 @@ config/www/community/
 .DS_Store
 .idea/
 .vscode/
+.editorconfig
+.eslintignore
+.eslintrc.json
+.php-cs-fixer.php
+.prettierrc
+.stylelintrc
+.travis.yml
+.tsqllintrc
