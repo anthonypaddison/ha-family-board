@@ -1,0 +1,8 @@
+template:
+  - sensor:
+      - name: family_badge_now
+        state: 0
+      - name: family_badge_chores
+        state: 0
+      - name: family_badge_shopping
+        state: 0
