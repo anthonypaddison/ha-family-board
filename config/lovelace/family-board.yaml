@@ -1,0 +1,43 @@
+title: Family Board
+views:
+    - title: Family Board
+      path: 0
+      icon: mdi:view-dashboard
+      cards:
+          - type: custom:family-board
+            title: Family Board
+            calendars:
+                - entity: calendar.family
+                  name: Family
+                  color: 'var(--family-color-family, #36B37E)'
+                - entity: calendar.anthony_2
+                  name: Anthony
+                  color: 'var(--family-color-anthony, #7E57C2)'
+                - entity: calendar.joy_2
+                  name: Joy
+                  color: 'var(--family-color-joy, #F4B400)'
+                - entity: calendar.lizzie_2
+                  name: Lizzie
+                  color: 'var(--family-color-lizzie, #EC407A)'
+                - entity: calendar.toby_2
+                  name: Toby
+                  color: 'var(--family-color-toby, #42A5F5)'
+                - entity: calendar.routine
+                  name: Routine
+                  color: 'var(--family-color-routine, #b2fd7f)'
+
+            home_controls:
+                - name: Bedroom
+                  entity: light.bedroom
+                - name: Toby
+                  entity: light.toby
+                - name: Lizzie
+                  entity: light.lizzie
+                - name: Hallway (Up)
+                  entity: light.hallway_up
+                - name: Hallway (Down)
+                  entity: light.hallway_down
+                - name: Heater (Up)
+                  entity: switch.heater_up
+                - name: Heater (Down)
+                  entity: switch.heater_down

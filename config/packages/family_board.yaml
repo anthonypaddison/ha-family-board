@@ -1,29 +1,4 @@
-type: custom:family-board-card
-title: Family Board
-menu:
-  - id: now
-    label: NOW
-    badge_entity: sensor.family_badge_now
-  - id: chores
-    label: CHORES
-    badge_entity: sensor.family_badge_chores
-  - id: shopping
-    label: SHOPPING
-    badge_entity: sensor.family_badge_shopping
-  - id: home
-    label: HOME
-home_controls:
-  - name: Bed
-    entity: light.bedroom
-  - name: Toby
-    entity: light.toby
-  - name: Lizzie
-    entity: light.lizzie
-  - name: Hall Up
-    entity: light.hall_upstairs
-  - name: Hall Down
-    entity: light.hall_downstairs
-  - name: Heater Up
-    entity: switch.heater_upstairs
-  - name: Heater Down
-    entity: switch.heater_downstairs
+input_text:
+    family_board_active_tab:
+        name: Family Board Active Tab
+        initial: now
