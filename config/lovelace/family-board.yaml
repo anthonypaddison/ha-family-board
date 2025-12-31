@@ -3,23 +3,25 @@ views:
     - title: Family Board
       path: 0
       icon: mdi:view-dashboard
+      panel: true
       cards:
           - type: custom:family-board
             title: Family Board
+            debug: true
             calendars:
                 - entity: calendar.family
                   name: Family
                   color: 'var(--family-color-family, #36B37E)'
-                - entity: calendar.anthony_2
+                - entity: calendar.anthony
                   name: Anthony
                   color: 'var(--family-color-anthony, #7E57C2)'
-                - entity: calendar.joy_2
+                - entity: calendar.joy
                   name: Joy
                   color: 'var(--family-color-joy, #F4B400)'
-                - entity: calendar.lizzie_2
+                - entity: calendar.lizzie
                   name: Lizzie
                   color: 'var(--family-color-lizzie, #EC407A)'
-                - entity: calendar.toby_2
+                - entity: calendar.toby
                   name: Toby
                   color: 'var(--family-color-toby, #42A5F5)'
                 - entity: calendar.routine
