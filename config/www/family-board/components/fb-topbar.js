@@ -20,9 +20,10 @@ export class FbTopbar extends LitElement {
     static styles = css`
         :host {
             display: block;
-            padding: 12px 12px 8px;
+            padding: 14px 14px 10px;
             border-bottom: 1px solid var(--fb-grid);
             background: var(--fb-surface);
+            box-shadow: 0 6px 16px color-mix(in srgb, #000 8%, transparent);
         }
 
         .toprow {
@@ -40,7 +41,7 @@ export class FbTopbar extends LitElement {
 
         .title {
             font-weight: 800;
-            font-size: 18px;
+            font-size: 20px;
             white-space: nowrap;
         }
 
@@ -60,14 +61,15 @@ export class FbTopbar extends LitElement {
             border: 1px solid var(--fb-grid);
             background: var(--fb-surface-2);
             color: var(--fb-text);
-            border-radius: 10px;
-            padding: 6px 10px;
+            border-radius: 12px;
+            padding: 7px 12px;
             cursor: pointer;
             font-size: 13px;
+            min-height: 36px;
         }
 
         .pill.active {
-            background: var(--palette-lilac, #cfbaf0);
+            background: var(--fb-accent);
             border-color: transparent;
             color: var(--fb-text);
         }
@@ -89,9 +91,9 @@ export class FbTopbar extends LitElement {
         }
 
         .iconBtn {
-            width: 34px;
-            height: 34px;
-            border-radius: 10px;
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
             border: 1px solid var(--fb-grid);
             background: var(--fb-surface-2);
             color: var(--fb-text);
@@ -103,22 +105,23 @@ export class FbTopbar extends LitElement {
         }
 
         .todayBtn {
-            border-radius: 10px;
+            border-radius: 12px;
             border: 1px solid var(--fb-grid);
             background: var(--fb-surface-2);
             color: var(--fb-text);
             cursor: pointer;
-            padding: 6px 10px;
+            padding: 7px 12px;
             font-size: 13px;
+            min-height: 36px;
         }
 
         .settingsBtn {
-            border-radius: 10px;
+            border-radius: 12px;
             border: 1px solid var(--fb-grid);
             background: var(--fb-surface-2);
             color: var(--fb-text);
             cursor: pointer;
-            height: 34px;
+            height: 36px;
             padding: 0 10px;
             display: inline-flex;
             align-items: center;
@@ -128,8 +131,8 @@ export class FbTopbar extends LitElement {
         .summaryRow {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 8px;
-            padding: 10px 0 0;
+            gap: 10px;
+            padding: 12px 0 0;
         }
 
         .summaryBadge {
@@ -137,18 +140,19 @@ export class FbTopbar extends LitElement {
             align-items: center;
             gap: 8px;
             border: 1px solid var(--fb-grid);
-            border-radius: 999px;
-            padding: 6px 10px;
-            background: var(--fb-surface-2);
+            border-radius: 16px;
+            padding: 10px 12px;
+            background: var(--fb-surface-3);
             font-size: 13px;
             width: 100%;
             justify-content: space-between;
             cursor: pointer;
+            min-height: 44px;
         }
 
         .summaryBadge.active {
-            border-color: var(--palette-lilac, #cfbaf0);
-            box-shadow: inset 0 0 0 1px var(--palette-lilac, #cfbaf0);
+            border-color: var(--fb-accent);
+            box-shadow: inset 0 0 0 1px var(--fb-accent);
         }
 
         .dot {
