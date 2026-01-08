@@ -5,7 +5,6 @@ import { getHaLit } from '../ha-lit.js';
 const { html } = getHaLit();
 
 import './schedule.view.js';
-import './mobile.view.js';
 import './month.view.js';
 import { debugLog } from '../family-board.util.js';
 
@@ -32,8 +31,5 @@ export function renderMainView(card) {
 
     if (mode === 'month')
         return html`<fb-month-view .card=${card} .renderKey=${renderKey}></fb-month-view>`;
-    if (card._useMobileView) {
-        return html`<fb-mobile-view .card=${card} .renderKey=${renderKey}></fb-mobile-view>`;
-    }
     return html`<fb-schedule-view .card=${card} .renderKey=${renderKey}></fb-schedule-view>`;
 }
