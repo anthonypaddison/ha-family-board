@@ -34,8 +34,7 @@ export class FbSidebar extends LitElement {
         .navbtn {
             width: 100%;
             border: 0;
-            border-bottom: 1px solid var(--fb-border);
-            background: var(--fb-surface);
+            background: transparent;
             padding: 12px 14px;
             border-radius: 0;
             cursor: pointer;
@@ -51,33 +50,20 @@ export class FbSidebar extends LitElement {
         }
 
         .navbtn:hover {
-            background: var(--fb-surface-2);
+            background: color-mix(in srgb, var(--fb-bg) 60%, transparent);
         }
 
         .navbtn.active {
             background: var(--fb-bg);
-            box-shadow: inset 0 0 0 1px var(--fb-border);
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, #000 12%, transparent);
             font-weight: 700;
-        }
-
-        .navbtn.active::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 8px;
-            bottom: 8px;
-            width: 4px;
-            border-radius: 999px;
-            background: var(--fb-accent);
         }
 
         .navicon {
             width: 28px;
             height: 28px;
-            border-radius: 10px;
             display: grid;
             place-items: center;
-            background: var(--fb-surface-3);
             color: var(--fb-text);
         }
 
@@ -89,8 +75,8 @@ export class FbSidebar extends LitElement {
         .navmeta {
             font-size: 12px;
             color: var(--fb-muted);
-            background: var(--fb-surface-2);
-            border: 1px solid var(--fb-grid);
+            background: color-mix(in srgb, var(--fb-bg) 50%, transparent);
+            border: 0;
             border-radius: 999px;
             padding: 2px 8px;
             min-width: 28px;
@@ -100,11 +86,11 @@ export class FbSidebar extends LitElement {
         .brand {
             font-weight: 800;
             font-size: 18px;
-            height: 56px;
+            height: 64px;
             padding: 0 14px;
             border-radius: 0;
             background: var(--fb-accent);
-            border: 1px solid var(--fb-border);
+            border: 0;
             width: 100%;
             box-sizing: border-box;
             display: flex;
@@ -150,7 +136,10 @@ export class FbSidebar extends LitElement {
         }
 
         .rail.collapsed .brand {
-            display: none;
+            visibility: hidden;
+        }
+        .rail.collapsed .footer {
+            flex-direction: column;
         }
     `;
 

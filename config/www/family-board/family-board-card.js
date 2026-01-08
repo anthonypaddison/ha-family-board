@@ -117,7 +117,7 @@ class FamilyBoardCard extends LitElement {
                 color: var(--fb-text);
             }
             .sidebar {
-                background: var(--fb-surface);
+                background: var(--fb-bg);
                 padding: 12px 0;
                 display: flex;
                 flex-direction: column;
