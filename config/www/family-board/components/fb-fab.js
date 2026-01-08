@@ -26,7 +26,7 @@ export class FbFab extends LitElement {
             border: 0;
             cursor: pointer;
             background: var(--fb-accent);
-            color: var(--fb-print-text);
+            color: #ffffff;
             font-size: 26px;
             line-height: 0;
             box-shadow: var(--fb-shadow);
