@@ -73,6 +73,13 @@ export class FbScheduleView extends LitElement {
             font-size: 12px;
             color: var(--fb-muted);
         }
+        .linkBtn {
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 700;
+            color: var(--fb-text);
+        }
         .row {
             display: grid;
             grid-template-columns: 96px repeat(var(--fb-days), minmax(220px, 1fr));
@@ -388,7 +395,7 @@ export class FbScheduleView extends LitElement {
                     ${totalEvents === 0
                         ? html`<div style="margin-bottom:10px;color:var(--fb-muted);font-size:13px">
                               No events found. <button
-                                  style="border:0;background:transparent;cursor:pointer;font-weight:700"
+                                  class="linkBtn"
                                   @click=${() => card._openHelp()}
                               >
                                   ⓘ

@@ -62,6 +62,13 @@ export class FbMobileView extends LitElement {
             color: var(--fb-muted);
             margin: 6px 0;
         }
+        .linkBtn {
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 700;
+            color: var(--fb-text);
+        }
     `;
 
     render() {
@@ -96,7 +103,7 @@ export class FbMobileView extends LitElement {
                     ? html`<div style="margin-bottom:10px;color:var(--fb-muted);font-size:13px">
                           No events found.
                           <button
-                              style="border:0;background:transparent;cursor:pointer;font-weight:700"
+                              class="linkBtn"
                               @click=${() => card._openHelp()}
                           >
                               ⓘ
