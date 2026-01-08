@@ -76,6 +76,14 @@ export class FbChoresView extends LitElement {
             font-size: 12px;
             cursor: pointer;
         }
+        .btn.icon {
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            display: grid;
+            place-items: center;
+            font-size: 16px;
+        }
         .empty {
             padding: 12px;
             color: var(--fb-muted);
@@ -129,6 +137,13 @@ export class FbChoresView extends LitElement {
                                     <span style="margin-left:auto" class="muted"
                                         >${items.length}</span
                                     >
+                                    <button
+                                        class="btn icon"
+                                        title="Add chore"
+                                        @click=${() => card._openTodoAddForEntity(t.entity)}
+                                    >
+                                        +
+                                    </button>
                                     ${canClear
                                         ? html`<button
                                               class="btn"

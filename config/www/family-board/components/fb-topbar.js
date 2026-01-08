@@ -328,7 +328,7 @@ export class FbTopbar extends LitElement {
                     : html``}
             </div>
 
-            ${screen === 'schedule' && summary.length
+            ${['schedule', 'chores'].includes(screen) && summary.length
                 ? (() => {
                       const row1 = summary.filter((p) => (p.header_row || 1) === 1).slice(0, 4);
                       const row2 = summary.filter((p) => (p.header_row || 1) === 2).slice(0, 4);

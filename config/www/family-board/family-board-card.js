@@ -754,6 +754,15 @@ class FamilyBoardCard extends LitElement {
         }
     };
 
+    _openTodoAddForEntity(entityId) {
+        if (!entityId) return;
+        this._dialogOpen = true;
+        this._dialogMode = 'todo';
+        this._dialogTitle = 'Add chore';
+        this._dialogItem = null;
+        this._dialogEntity = entityId;
+    }
+
     _onAddCalendar = async (ev) => {
         const { entityId, summary, start, end } = ev?.detail || {};
         if (!entityId || !summary || !start || !end) return;
