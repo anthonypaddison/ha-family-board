@@ -31,8 +31,8 @@ export class FbSidebar extends LitElement {
 
         .navbtn {
             width: 100%;
-            border: 0;
-            background: transparent;
+            border: 1px solid var(--fb-border);
+            background: var(--fb-surface-2);
             padding: 12px 14px;
             border-radius: 14px;
             cursor: pointer;
@@ -44,12 +44,19 @@ export class FbSidebar extends LitElement {
             text-align: left;
             position: relative;
             min-height: 44px;
+            transition: box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+        }
+
+        .navbtn:hover {
+            background: var(--fb-surface);
+            border-color: var(--fb-grid);
         }
 
         .navbtn.active {
-            background: var(--fb-bg);
-            box-shadow: inset 0 0 0 1px var(--fb-grid);
+            background: var(--fb-surface);
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
             font-weight: 700;
+            border-color: transparent;
         }
 
         .navbtn.active::before {
@@ -60,7 +67,7 @@ export class FbSidebar extends LitElement {
             bottom: 8px;
             width: 4px;
             border-radius: 999px;
-            background: var(--palette-lilac, #cfbaf0);
+            background: var(--fb-accent);
         }
 
         .navicon {
