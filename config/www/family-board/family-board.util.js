@@ -1,12 +1,11 @@
 /* Family Board - utilities
- * Location: /config/www/family-board/family-board.util.js
+ * SPDX-License-Identifier: MIT
  */
 
-// Fire HA-style DOM event
 export function fireEvent(node, type, detail = {}, options = {}) {
     const event = new Event(type, {
         bubbles: options.bubbles ?? true,
-        cancelable: Boolean(options.cancelable),
+        cancelable: options.cancelable ?? false,
         composed: options.composed ?? true,
     });
     event.detail = detail;
@@ -36,70 +35,79 @@ export function addDays(d, days) {
     return x;
 }
 
-export function minutesSinceDayStart(d) {
+export function isSameDay(a, b) {
+    return (
+        a.getFullYear() === b.getFullYear() &&
+        a.getMonth() === b.getMonth() &&
+        a.getDate() === b.getDate()
+    );
+}
+
+export function formatDayTitle(d) {
+    const today = new Date();
+    const dd = d.toLocaleDateString(undefined, { weekday: 'long', day: '2-digit', month: 'short' });
+    if (isSameDay(d, today)) return `${dd} (Today)`;
+    return dd;
+}
+
+export function minutesSinceMidnight(d) {
     return d.getHours() * 60 + d.getMinutes();
 }
 
-export function formatTimeLabel(h, m) {
-    return `${pad2(h)}:${pad2(m)}`;
-}
-
-// e.g. "Wed 31 Dec"
-export function formatDayTitle(d) {
-    try {
-        const fmt = new Intl.DateTimeFormat('en-GB', {
-            weekday: 'short',
-            day: '2-digit',
-            month: 'short',
-        });
-        return fmt.format(d);
-    } catch (e) {
-        // Fallback (very old browsers)
-        const wd = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()];
-        const mo = [
-            'Jan',
-            'Feb',
-            'Mar',
-            'Apr',
-            'May',
-            'Jun',
-            'Jul',
-            'Aug',
-            'Sep',
-            'Oct',
-            'Nov',
-            'Dec',
-        ][d.getMonth()];
-        return `${wd} ${pad2(d.getDate())} ${mo}`;
-    }
+export function clamp(n, min, max) {
+    return Math.max(min, Math.min(max, n));
 }
 
 /**
- * Turns events with { startMin, endMin } into lane-assigned events:
- * Adds { lane, lanesTotal } so the UI can position overlaps.
+ * Assign lanes for overlapping timed events in a single column.
+ * Each event must have startMin/endMin.
  */
 export function assignOverlapLanes(events) {
     const sorted = [...events].sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
-    const lanes = []; // lane end minute
-    const out = [];
 
-    for (const ev of sorted) {
-        let laneIndex = -1;
-        for (let i = 0; i < lanes.length; i++) {
-            if (ev.startMin >= lanes[i]) {
-                laneIndex = i;
-                break;
+    // Active events by endMin
+    const active = [];
+    const lanes = []; // lanes[i] = event in lane i
+
+    function releaseEnded(currentStart) {
+        for (let i = active.length - 1; i >= 0; i--) {
+            if (active[i].endMin <= currentStart) {
+                const lane = active[i].lane;
+                lanes[lane] = null;
+                active.splice(i, 1);
             }
         }
-        if (laneIndex === -1) {
-            lanes.push(ev.endMin);
-            laneIndex = lanes.length - 1;
-        } else {
-            lanes[laneIndex] = ev.endMin;
-        }
-        out.push({ ...ev, lane: laneIndex });
     }
 
-    const lanesTotal = Math.max(1, lanes.length);
-    return out.map((e) => ({ ...e, lanesTotal }));
+    for (const ev of sorted) {
+        releaseEnded(ev.startMin);
+
+        let laneIndex = lanes.findIndex((x) => x === null);
+        if (laneIndex === -1) {
+            laneIndex = lanes.length;
+            lanes.push(null);
+        }
+        ev.lane = laneIndex;
+        lanes[laneIndex] = ev;
+        active.push(ev);
+
+        // Lanes in use right now
+        ev.lanesTotal = Math.max(ev.lanesTotal || 1, lanes.filter(Boolean).length);
+
+        // Update lanesTotal for other active events too
+        for (const a of active) {
+            a.lanesTotal = Math.max(a.lanesTotal || 1, ev.lanesTotal);
+        }
+    }
+
+    return sorted;
+}
+
+/**
+ * Safe logger (won't spam unless debug)
+ */
+export function debugLog(debug, ...args) {
+    if (!debug) return;
+    // eslint-disable-next-line no-console
+    console.log('[family-board]', ...args);
 }
