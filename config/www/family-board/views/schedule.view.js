@@ -75,11 +75,6 @@ export class FbScheduleView extends LitElement {
             font-weight: 700;
             color: var(--fb-text);
         }
-        .empty {
-            margin-bottom: 10px;
-            color: var(--fb-muted);
-            font-size: 15px;
-        }
         .gridScroll {
             overflow-y: auto;
             min-height: 0;
@@ -88,7 +83,7 @@ export class FbScheduleView extends LitElement {
         }
         .row {
             display: grid;
-            grid-template-columns: 72px repeat(var(--fb-days), minmax(0, 1fr));
+            grid-template-columns: 64px repeat(var(--fb-days), minmax(0, 1fr));
             gap: 8px;
             align-items: stretch;
         }
@@ -381,16 +376,6 @@ export class FbScheduleView extends LitElement {
             <div class="wrap">
                 <div class="card">
                     <div class="board">
-                    ${totalEvents === 0
-                        ? html`<div class="empty">
-                              No events found. <button
-                                  class="linkBtn"
-                                  @click=${() => card._openHelp()}
-                              >
-                                  ⓘ
-                              </button>
-                          </div>`
-                        : html``}
                     <div class="row">
                         <div class="gutterHead"></div>
                         ${days.map((d) => {
