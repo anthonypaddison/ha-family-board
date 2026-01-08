@@ -5,6 +5,7 @@ import { getHaLit } from '../ha-lit.js';
 const { LitElement, html, css } = getHaLit();
 
 import { addDays, startOfDay, pad2, clamp, minutesSinceMidnight, debugLog } from '../family-board.util.js';
+import { getReadableTextColour } from '../util/colour.util.js';
 import { layoutDayEvents } from './schedule.layout.js';
 
 export class FbScheduleView extends LitElement {
@@ -155,11 +156,11 @@ export class FbScheduleView extends LitElement {
         .chip {
             border-radius: 999px;
             border: 1px solid var(--fb-border);
-            padding: 7px 12px;
+            padding: 6px 12px;
             font-size: 12px;
             cursor: pointer;
-            background: var(--fb-surface-3);
-            color: var(--fb-text);
+            background: var(--event-color);
+            color: var(--event-text);
             display: inline-flex;
             align-items: center;
             gap: 6px;
@@ -172,7 +173,7 @@ export class FbScheduleView extends LitElement {
             width: 10px;
             height: 10px;
             border-radius: 999px;
-            background: var(--event-color);
+            background: var(--event-text);
             flex: 0 0 auto;
         }
         .dayCol {
@@ -204,9 +205,9 @@ export class FbScheduleView extends LitElement {
             position: absolute;
             pointer-events: auto;
             border-radius: 14px;
-            border: 1px solid var(--fb-border);
-            background: color-mix(in srgb, var(--event-color) 18%, var(--fb-surface));
-            color: var(--fb-text);
+            border: 1px solid color-mix(in srgb, var(--event-color) 70%, var(--fb-border));
+            background: var(--event-color);
+            color: var(--event-text);
             padding: 8px 10px;
             text-align: left;
             overflow: hidden;
@@ -214,9 +215,10 @@ export class FbScheduleView extends LitElement {
         }
         .eventTime {
             font-size: 12px;
-            color: var(--fb-muted);
+            color: var(--event-text);
             margin-bottom: 4px;
             font-variant-numeric: tabular-nums;
+            opacity: 0.9;
         }
         .eventTitle {
             font-size: 13px;
@@ -421,7 +423,10 @@ export class FbScheduleView extends LitElement {
                                               (e) => html`
                                                   <button
                                                       class="chip"
-                                                      style="--event-color:${e._fbColour}"
+                                                      style="
+                                                          --event-color:${e._fbColour};
+                                                          --event-text:${getReadableTextColour(e._fbColour)};
+                                                      "
                                                       @click=${() =>
                                                           card._openEventDialog(e._fbEntityId, e)}
                                                       title=${e.summary}
@@ -435,7 +440,10 @@ export class FbScheduleView extends LitElement {
                                               >-</span
                                           >`}
                                     ${row.allDayHidden
-                                        ? html`<span class="chip" style="--event-color:transparent">
+                                        ? html`<span
+                                              class="chip"
+                                              style="--event-color:var(--fb-surface-2);--event-text:var(--fb-muted)"
+                                          >
                                               <span class="chipDot"></span>
                                               <span>+${row.allDayHidden} more</span>
                                           </span>`
@@ -483,6 +491,8 @@ export class FbScheduleView extends LitElement {
                                             const leftPct = ev.lane * widthPct;
                                             const timeText = `${pad2(ev.start.getHours())}:${pad2(
                                                 ev.start.getMinutes()
+                                            )}\u2013${pad2(ev.end.getHours())}:${pad2(
+                                                ev.end.getMinutes()
                                             )}`;
 
                                             return html`
@@ -490,6 +500,9 @@ export class FbScheduleView extends LitElement {
                                                     class="event"
                                                     style="
                                                         --event-color:${ev._fbColour};
+                                                        --event-text:${getReadableTextColour(
+                                                            ev._fbColour
+                                                        )};
                                                         top:${top}px;
                                                         height:${height}px;
                                                         left:calc(${leftPct}% + 4px);
