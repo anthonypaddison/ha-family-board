@@ -27,7 +27,8 @@ export class FbTopbar extends LitElement {
         }
 
         .toprow {
-            display: flex;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
             gap: 12px;
             align-items: center;
             flex-wrap: wrap;
@@ -37,6 +38,7 @@ export class FbTopbar extends LitElement {
             display: flex;
             align-items: baseline;
             gap: 10px;
+            justify-self: start;
         }
 
         .title {
@@ -46,7 +48,8 @@ export class FbTopbar extends LitElement {
         }
 
         .time {
-            font-size: 13px;
+            font-size: 16px;
+            font-weight: 700;
             color: var(--fb-muted);
             font-variant-numeric: tabular-nums;
         }
@@ -59,6 +62,7 @@ export class FbTopbar extends LitElement {
             border-radius: 999px;
             background: var(--fb-surface-2);
             border: 1px solid var(--fb-border);
+            justify-self: center;
         }
 
         .pill {
@@ -80,12 +84,12 @@ export class FbTopbar extends LitElement {
         }
 
         .dateNav {
-            margin-left: auto;
             display: inline-flex;
             gap: 8px;
             align-items: center;
             flex-wrap: wrap;
             justify-content: flex-end;
+            justify-self: end;
         }
 
         .dateLabel {
@@ -153,11 +157,18 @@ export class FbTopbar extends LitElement {
             justify-content: space-between;
             cursor: pointer;
             min-height: 44px;
+            color: var(--fb-text);
         }
 
         .summaryBadge.active {
-            border-color: var(--fb-accent);
-            box-shadow: inset 0 0 0 1px var(--fb-accent);
+            border-color: var(--person-colour);
+            box-shadow: 0 8px 18px color-mix(in srgb, var(--person-colour) 35%, transparent);
+            background: var(--fb-surface);
+        }
+
+        .summaryBadge:not(.active) {
+            background: var(--fb-surface-2);
+            opacity: 0.85;
         }
 
         .dot {
@@ -165,6 +176,9 @@ export class FbTopbar extends LitElement {
             height: 10px;
             border-radius: 999px;
             display: inline-block;
+        }
+        .summaryName {
+            font-weight: 600;
         }
     `;
 
@@ -268,10 +282,7 @@ export class FbTopbar extends LitElement {
         const screen = this.screen || 'schedule';
         const mainMode = this.mainMode || 'schedule';
         const summary = Array.isArray(this.summary) ? this.summary : [];
-        const dateLabel = this.dateLabel || '';
-        const dateValue = this.dateValue || '';
         const activeFilters = Array.isArray(this.activeFilters) ? this.activeFilters : [];
-        const isAdmin = Boolean(this.isAdmin);
 
         return html`
             <div class="toprow">
@@ -312,42 +323,6 @@ export class FbTopbar extends LitElement {
                               <button class="iconBtn" title="Next" @click=${() => this._nav(1)}>
                                   >
                               </button>
-                              ${dateLabel
-                                  ? html`<div class="dateLabel">${dateLabel}</div>`
-                                  : html``}
-                              <input
-                                  type="date"
-                                  class="todayBtn"
-                                  readonly
-                                  .value=${dateValue}
-                                  @change=${this._setDate}
-                                  @click=${this._openDatePicker}
-                                  @keydown=${this._blockDateInput}
-                              />
-                              ${isAdmin
-                                  ? html`<button
-                                        class="settingsBtn"
-                                        @click=${this._openSources}
-                                        title="Manage sources"
-                                    >
-                                        Settings
-                                    </button>`
-                                  : html``}
-                          </div>
-                      `
-                    : html``}
-                ${screen !== 'schedule'
-                    ? html`
-                          <div class="dateNav">
-                              ${isAdmin
-                                  ? html`<button
-                                        class="settingsBtn"
-                                        @click=${this._openSources}
-                                        title="Manage sources"
-                                    >
-                                        Settings
-                                    </button>`
-                                  : html``}
                           </div>
                       `
                     : html``}
@@ -368,11 +343,12 @@ export class FbTopbar extends LitElement {
                                               class="summaryBadge ${activeFilters.includes(p.id)
                                                   ? 'active'
                                                   : ''}"
+                                              style="--person-colour:${p.color}"
                                           title="${p.name} - ${p.eventsLeft ?? 0} events today - ${p.todosLeft ?? 0} chores due"
                                           @click=${() => this._togglePerson(p.id)}
                                       >
                                           <span class="dot" style="background:${p.color}"></span>
-                                          <span style="flex:1">${p.name}</span>
+                                          <span class="summaryName" style="flex:1">${p.name}</span>
                                           <span>${p.eventsLeft ?? 0}</span>
                                           <span>/</span>
                                           <span>${p.todosLeft ?? 0}</span>
