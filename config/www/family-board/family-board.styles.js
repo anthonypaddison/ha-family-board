@@ -18,7 +18,7 @@ export function fbStyles() {
             --palette-rose: #ffcfd2;
             --palette-vanilla: #fbf8cc;
 
-            --fb-bg: linear-gradient(180deg, #e8f7f6 0%, #ddf1ef 100%);
+            --fb-bg: color-mix(in srgb, #00ced1 18%, #ffffff);
             --fb-surface: #ffffff;
             --fb-surface-2: #f4fbfa;
             --fb-surface-3: #edf7f6;
