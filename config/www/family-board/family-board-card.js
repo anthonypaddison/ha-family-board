@@ -79,6 +79,8 @@ class FamilyBoardCard extends LitElement {
         _helpOpen: { state: true },
         _editorGuideOpen: { state: true },
         _sidebarCollapsed: { state: true },
+        _toastMessage: { state: true },
+        _toastDetail: { state: true },
     };
 
     static async getConfigElement() {
@@ -186,11 +188,15 @@ class FamilyBoardCard extends LitElement {
         this._shoppingCommon = [];
         this._shoppingFavourites = [];
         this._defaultEventMinutes = 30;
+        this._storageLoaded = false;
+        this._toastMessage = '';
+        this._toastDetail = '';
     }
 
     setConfig(config) {
         if (!config) throw new Error('Family Board: missing config');
         this._applyConfigImmediate(config, { useDefaults: true, refresh: true });
+        if (this._hass) this._loadStoredConfig();
     }
 
     getCardSize() {
@@ -223,6 +229,7 @@ class FamilyBoardCard extends LitElement {
     set hass(hass) {
         this._hass = hass;
         this._loadPrefs();
+        this._loadStoredConfig();
         this._queueRefresh();
     }
 
@@ -1137,6 +1144,59 @@ class FamilyBoardCard extends LitElement {
     _applySetupDraft(draft) {
         this._applyConfigImmediate({ ...this._config, ...draft }, { useDefaults: false });
         this._refreshAll();
+    }
+
+    async _loadStoredConfig() {
+        if (this._storageLoaded || !this._hass) return;
+        this._storageLoaded = true;
+        const stored = await this._getStoredConfig();
+        if (!stored) return;
+        const merged = this._mergeConfig(this._config || {}, stored);
+        this._applyConfigImmediate(merged, { useDefaults: false, refresh: true });
+    }
+
+    async _getStoredConfig() {
+        const ws = await this._callWsGet();
+        if (ws) {
+            this._persistMode = 'ws';
+            return ws;
+        }
+        const local = this._loadLocalConfig();
+        if (local) this._persistMode = 'local';
+        return local;
+    }
+
+    _mergeConfig(base, override) {
+        const merged = { ...base, ...override };
+        if (override.people) merged.people = override.people;
+        if (override.calendars) merged.calendars = override.calendars;
+        if (override.todos) merged.todos = override.todos;
+        if (override.shopping) merged.shopping = { ...(base.shopping || {}), ...override.shopping };
+        return merged;
+    }
+
+    async _callWsGet() {
+        try {
+            const result = await this._hass.callWS({ type: 'family_board/config/get' });
+            return result?.config || null;
+        } catch {
+            return null;
+        }
+    }
+
+    _localConfigKey() {
+        const userId = this._hass?.user?.id || 'unknown';
+        const device = getDeviceKind();
+        return `family-board:config:${userId}:${device}`;
+    }
+
+    _loadLocalConfig() {
+        try {
+            const raw = localStorage.getItem(this._localConfigKey());
+            return raw ? JSON.parse(raw) : null;
+        } catch {
+            return null;
+        }
     }
 
     _openEditor() {
