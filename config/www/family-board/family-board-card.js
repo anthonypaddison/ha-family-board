@@ -1094,6 +1094,21 @@ class FamilyBoardCard extends LitElement {
         this.requestUpdate();
     }
 
+    _setHomeEntityState(entityId, on) {
+        if (!entityId || !this._hass) return;
+        const domain = entityId.split('.')[0];
+        const service = on ? 'turn_on' : 'turn_off';
+        if (['switch', 'light', 'input_boolean'].includes(domain)) {
+            this._hass.callService(domain, service, { entity_id: entityId });
+            return;
+        }
+        if (this._supportsService('homeassistant', service)) {
+            this._hass.callService('homeassistant', service, { entity_id: entityId });
+            return;
+        }
+        this._hass.callService('homeassistant', 'toggle', { entity_id: entityId });
+    }
+
     _isSameDay(a, b) {
         return (
             a.getFullYear() === b.getFullYear() &&

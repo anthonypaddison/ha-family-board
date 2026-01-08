@@ -41,10 +41,47 @@ export class FbHomeView extends LitElement {
         }
         button {
             border: 0;
-            border-radius: 12px;
-            padding: 10px 12px;
             cursor: pointer;
-            background: var(--palette-lilac);
+        }
+        .toggle {
+            position: relative;
+            display: inline-block;
+            width: 46px;
+            height: 26px;
+        }
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: var(--fb-surface-2);
+            border: 1px solid var(--fb-border);
+            border-radius: 999px;
+            transition: 0.2s;
+        }
+        .slider::before {
+            position: absolute;
+            content: '';
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            top: 2px;
+            background-color: var(--fb-surface);
+            border: 1px solid var(--fb-border);
+            border-radius: 50%;
+            transition: 0.2s;
+        }
+        .toggle input:checked + .slider {
+            background-color: var(--fb-accent);
+            border-color: var(--fb-accent);
+        }
+        .toggle input:checked + .slider::before {
+            transform: translateX(20px);
+            border-color: var(--fb-accent);
         }
     `;
 
@@ -64,13 +101,22 @@ export class FbHomeView extends LitElement {
                         const st = hass?.states?.[eid];
                         const label = st?.attributes?.friendly_name || eid;
                         const state = st?.state ?? 'unknown';
+                        const isOn = state === 'on';
                         return html`
                             <div class="tile">
                                 <div>
                                     <div class="name">${label}</div>
                                     <div class="muted">${eid} - ${state}</div>
                                 </div>
-                                <button @click=${() => card._openMoreInfo(eid)}>Open</button>
+                                <label class="toggle">
+                                    <input
+                                        type="checkbox"
+                                        .checked=${isOn}
+                                        @change=${(e) =>
+                                            card._setHomeEntityState(eid, e.target.checked)}
+                                    />
+                                    <span class="slider"></span>
+                                </label>
                             </div>
                         `;
                     })}
