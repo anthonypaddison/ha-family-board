@@ -128,8 +128,8 @@ export class FbShoppingView extends LitElement {
             cursor: pointer;
             text-align: left;
             font-size: 13px;
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: 1fr auto;
             align-items: center;
             gap: 8px;
             color: var(--fb-text);
@@ -141,13 +141,15 @@ export class FbShoppingView extends LitElement {
         .commonActions {
             display: inline-flex;
             gap: 6px;
+            align-items: center;
         }
         .removeBtn {
             border: 0;
             background: transparent;
-            color: var(--fb-muted);
+            color: #f5c20a;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 14px;
+            line-height: 1;
         }
         @media (max-width: 900px) {
             .layout {
@@ -290,9 +292,7 @@ export class FbShoppingView extends LitElement {
                                               class="commonItem ${isFading ? 'fading' : ''}"
                                               @click=${() => card._addShoppingItem(item)}
                                           >
-                                              <span>${item}</span>
                                               <span class="commonActions">
-                                                  <span class="muted">Add</span>
                                                   <button
                                                       class="removeBtn"
                                                       @click=${(e) => {
@@ -319,6 +319,7 @@ export class FbShoppingView extends LitElement {
                                                   >
                                                       ${fav ? '★' : '☆'}
                                                   </button>
+                                                  <span>${item}</span>
                                               </span>
                                           </button>
                                       `;
