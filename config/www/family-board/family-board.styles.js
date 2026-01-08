@@ -114,9 +114,9 @@ export function fbStyles() {
         }
 
         .topbar {
-            background: var(--fb-surface);
-            border-bottom: 1px solid var(--fb-grid);
-            padding: 12px 16px;
+            background: var(--fb-bg);
+            border-bottom: 0;
+            padding: 10px 14px;
             display: flex;
             flex-direction: column;
             gap: 10px;
