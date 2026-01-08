@@ -15,18 +15,18 @@ export class FbHomeView extends LitElement {
         .wrap {
             height: 100%;
             overflow: auto;
-            padding: 12px;
+            padding: 10px;
         }
         .grid {
             display: grid;
-            gap: 10px;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 8px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         }
         .tile {
             border: 1px solid var(--fb-grid);
             background: var(--fb-surface);
             border-radius: 14px;
-            padding: 12px;
+            padding: 8px 10px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -34,10 +34,6 @@ export class FbHomeView extends LitElement {
         }
         .name {
             font-weight: 700;
-        }
-        .muted {
-            color: var(--fb-muted);
-            font-size: 13px;
         }
         button {
             border: 0;
@@ -106,7 +102,6 @@ export class FbHomeView extends LitElement {
                             <div class="tile">
                                 <div>
                                     <div class="name">${label}</div>
-                                    <div class="muted">${eid} - ${state}</div>
                                 </div>
                                 <label class="toggle">
                                     <input
