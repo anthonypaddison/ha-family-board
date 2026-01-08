@@ -243,6 +243,17 @@ export class FbTopbar extends LitElement {
         );
     }
 
+    _openDatePicker(e) {
+        const input = e.currentTarget;
+        if (input && typeof input.showPicker === 'function') {
+            input.showPicker();
+        }
+    }
+
+    _blockDateInput(e) {
+        e.preventDefault();
+    }
+
     render() {
         const title = this.title || 'Family Board';
         const screen = this.screen || 'schedule';
@@ -298,8 +309,11 @@ export class FbTopbar extends LitElement {
                               <input
                                   type="date"
                                   class="todayBtn"
+                                  readonly
                                   .value=${dateValue}
                                   @change=${this._setDate}
+                                  @click=${this._openDatePicker}
+                                  @keydown=${this._blockDateInput}
                               />
                               ${isAdmin
                                   ? html`<button
