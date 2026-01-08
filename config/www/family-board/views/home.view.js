@@ -20,7 +20,7 @@ export class FbHomeView extends LitElement {
         .grid {
             display: grid;
             gap: 8px;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         }
         .tile {
             border: 1px solid var(--fb-grid);
@@ -81,6 +81,16 @@ export class FbHomeView extends LitElement {
         }
     `;
 
+    _friendlyName(entityId, state) {
+        const name = state?.attributes?.friendly_name;
+        if (name) return name;
+        const raw = String(entityId || '').split('.')[1] || entityId || '';
+        return raw
+            .split('_')
+            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(' ');
+    }
+
     render() {
         const card = this.card;
         if (!card) return html``;
@@ -95,7 +105,7 @@ export class FbHomeView extends LitElement {
                 <div class="grid">
                     ${controls.map((eid) => {
                         const st = hass?.states?.[eid];
-                        const label = st?.attributes?.friendly_name || eid;
+                        const label = this._friendlyName(eid, st);
                         const state = st?.state ?? 'unknown';
                         const isOn = state === 'on';
                         return html`
