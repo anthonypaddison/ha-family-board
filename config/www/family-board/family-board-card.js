@@ -146,6 +146,24 @@ class FamilyBoardCard extends LitElement {
                 overflow: hidden;
                 background: var(--fb-bg);
             }
+            .toast {
+                position: absolute;
+                right: 16px;
+                bottom: 16px;
+                background: var(--fb-surface);
+                color: var(--fb-text);
+                border: 1px solid var(--fb-border);
+                border-radius: 10px;
+                padding: 8px 12px;
+                box-shadow: var(--fb-shadow);
+                font-size: 13px;
+                z-index: 5;
+            }
+            .toastDetail {
+                color: var(--fb-muted);
+                font-size: 12px;
+                margin-top: 2px;
+            }
             @media (max-width: 900px) {
                 .app {
                     grid-template-columns: 1fr;
@@ -385,6 +403,14 @@ class FamilyBoardCard extends LitElement {
                             @fb-editor-guide-close=${() => (this._editorGuideOpen = false)}
                             @fb-editor-guide-open=${this._onOpenEditor}
                         ></fb-editor-guide-dialog>
+                        ${this._toastMessage
+                            ? html`<div class="toast">
+                                  <div>${this._toastMessage}</div>
+                                  ${this._toastDetail
+                                      ? html`<div class="toastDetail">${this._toastDetail}</div>`
+                                      : html``}
+                              </div>`
+                            : html``}
                     </div>
                 </div>
             </div>
@@ -854,6 +880,12 @@ class FamilyBoardCard extends LitElement {
         if (!next) return;
         this._applyConfigImmediate({ ...this._config, ...next }, { useDefaults: false });
         await this._refreshAll();
+        const result = await this._persistConfig({ ...this._config, ...next });
+        if (result?.mode === 'local') {
+            this._showToast('Saved', 'Saved on this device');
+        } else {
+            this._showToast('Saved');
+        }
         this.requestUpdate();
     };
 
@@ -1197,6 +1229,45 @@ class FamilyBoardCard extends LitElement {
         } catch {
             return null;
         }
+    }
+
+    async _persistConfig(config) {
+        const ok = await this._callWsSet(config);
+        if (ok) {
+            this._persistMode = 'ws';
+            return { ok: true, mode: 'ws' };
+        }
+        this._persistMode = 'local';
+        this._saveLocalConfig(config);
+        return { ok: true, mode: 'local' };
+    }
+
+    async _callWsSet(config) {
+        try {
+            await this._hass.callWS({ type: 'family_board/config/set', config });
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    _saveLocalConfig(config) {
+        try {
+            localStorage.setItem(this._localConfigKey(), JSON.stringify(config || {}));
+        } catch {
+            // Ignore storage errors.
+        }
+    }
+
+    _showToast(message, detail = '') {
+        this._toastMessage = message;
+        this._toastDetail = detail;
+        clearTimeout(this._toastTimer);
+        this._toastTimer = setTimeout(() => {
+            this._toastMessage = '';
+            this._toastDetail = '';
+            this.requestUpdate();
+        }, 2000);
     }
 
     _openEditor() {
