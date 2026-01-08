@@ -15,6 +15,8 @@ export class FbSidebar extends LitElement {
     static styles = css`
         :host {
             display: block;
+            background: var(--fb-surface);
+            height: 100%;
         }
 
         .rail {
@@ -29,6 +31,8 @@ export class FbSidebar extends LitElement {
             flex-direction: column;
             gap: 0;
             width: 100%;
+            flex: 1;
+            overflow: auto;
         }
 
         .navbtn {
@@ -54,9 +58,13 @@ export class FbSidebar extends LitElement {
         }
 
         .navbtn.active {
-            background: var(--fb-bg);
-            box-shadow: inset 0 0 0 1px color-mix(in srgb, #000 12%, transparent);
+            background: #00ced1;
+            color: #073c3d;
             font-weight: 700;
+        }
+
+        .navbtn.active .navicon {
+            color: #073c3d;
         }
 
         .navicon {
@@ -89,7 +97,7 @@ export class FbSidebar extends LitElement {
             height: 64px;
             padding: 0 14px;
             border-radius: 0;
-            background: var(--fb-accent);
+            background: var(--fb-surface);
             border: 0;
             width: 100%;
             box-sizing: border-box;
@@ -120,7 +128,7 @@ export class FbSidebar extends LitElement {
         }
 
         .footerBtn:hover {
-            background: var(--fb-surface);
+            background: color-mix(in srgb, #00ced1 15%, transparent);
             box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
         }
 
