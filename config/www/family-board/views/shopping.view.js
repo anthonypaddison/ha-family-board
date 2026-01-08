@@ -8,6 +8,7 @@ export class FbShoppingView extends LitElement {
     static properties = {
         card: { type: Object },
         _commonExpanded: { state: true },
+        _fadeKeys: { state: true },
     };
 
     static styles = css`
@@ -23,7 +24,7 @@ export class FbShoppingView extends LitElement {
         .layout {
             display: grid;
             gap: 14px;
-            grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+            grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.5fr);
         }
         .card {
             border: 1px solid var(--fb-grid);
@@ -132,6 +133,10 @@ export class FbShoppingView extends LitElement {
             align-items: center;
             gap: 8px;
             color: var(--fb-text);
+            transition: opacity 0.3s ease;
+        }
+        .commonItem.fading {
+            opacity: 0;
         }
         .commonActions {
             display: inline-flex;
@@ -167,6 +172,7 @@ export class FbShoppingView extends LitElement {
             ).values()
         );
         const visibleCommon = this._commonExpanded ? commonList : commonList.slice(0, 10);
+        const fadeKeys = this._fadeKeys || new Set();
 
         return html`
             <div class="wrap">
@@ -272,11 +278,16 @@ export class FbShoppingView extends LitElement {
                             <span class="muted">${commonList.length}</span>
                         </div>
                         <div class="commonList">
-                                    ${visibleCommon.length
-                                        ? visibleCommon.map(
-                                              (item) => html`
+                            ${visibleCommon.length
+                                ? visibleCommon.map((item) => {
+                                      const key = String(item).toLowerCase();
+                                      const fav = favourites.some(
+                                          (f) => String(f).toLowerCase() === key
+                                      );
+                                      const isFading = fadeKeys.has(key);
+                                      return html`
                                           <button
-                                              class="commonItem"
+                                              class="commonItem ${isFading ? 'fading' : ''}"
                                               @click=${() => card._addShoppingItem(item)}
                                           >
                                               <span>${item}</span>
@@ -286,17 +297,33 @@ export class FbShoppingView extends LitElement {
                                                       class="removeBtn"
                                                       @click=${(e) => {
                                                           e.stopPropagation();
-                                                          card._removeShoppingCommon(item);
+                                                          if (fav) {
+                                                              card._toggleShoppingFavourite(item);
+                                                              this._fadeKeys = new Set([
+                                                                  ...(this._fadeKeys || []),
+                                                                  key,
+                                                              ]);
+                                                              setTimeout(() => {
+                                                                  card._removeShoppingCommon(item);
+                                                                  const next = new Set(
+                                                                      this._fadeKeys || []
+                                                                  );
+                                                                  next.delete(key);
+                                                                  this._fadeKeys = next;
+                                                              }, 2500);
+                                                              return;
+                                                          }
+                                                          card._toggleShoppingFavourite(item);
                                                       }}
-                                                      title="Remove"
+                                                      title=${fav ? 'Unfavourite' : 'Favourite'}
                                                   >
-                                                      Remove
+                                                      ${fav ? '★' : '☆'}
                                                   </button>
                                               </span>
                                           </button>
-                                      `
-                                          )
-                                        : html`<div class="muted">No common items yet.</div>`}
+                                      `;
+                                  })
+                                : html`<div class="muted">No common items yet.</div>`}
                         </div>
                     </div>
                 </div>
