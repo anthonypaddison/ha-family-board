@@ -18,29 +18,21 @@ export function fbStyles() {
             --palette-rose: #ffcfd2;
             --palette-vanilla: #fbf8cc;
 
-            --fb-bg: color-mix(in srgb, var(--primary-background-color) 94%, var(--palette-vanilla));
-            --fb-surface: color-mix(in srgb, var(--card-background-color) 96%, var(--palette-vanilla));
-            --fb-surface-2: color-mix(
-                in srgb,
-                var(--card-background-color) 90%,
-                var(--palette-vanilla)
-            );
-            --fb-surface-3: color-mix(
-                in srgb,
-                var(--card-background-color) 82%,
-                var(--palette-vanilla)
-            );
-            --fb-text: var(--primary-text-color);
-            --fb-muted: var(--secondary-text-color);
-            --fb-accent: color-mix(in srgb, var(--palette-rose) 70%, var(--palette-vanilla));
-            --fb-grid: color-mix(in srgb, var(--divider-color) 70%, transparent);
-            --fb-today: color-mix(in srgb, var(--card-background-color) 90%, var(--palette-vanilla));
-            --fb-weekend: color-mix(in srgb, var(--card-background-color) 86%, var(--palette-vanilla));
+            --fb-bg: linear-gradient(180deg, #f9f7f4 0%, #f3f1ec 100%);
+            --fb-surface: #ffffff;
+            --fb-surface-2: #f9f6f1;
+            --fb-surface-3: #f3efe9;
+            --fb-text: color-mix(in srgb, var(--primary-text-color) 20%, #1f2937);
+            --fb-muted: color-mix(in srgb, var(--secondary-text-color) 30%, #6b7280);
+            --fb-accent: var(--palette-lilac);
+            --fb-grid: #e6e1db;
+            --fb-today: #f6f0e9;
+            --fb-weekend: #f2ede6;
             --fb-pill-text: var(--primary-text-color);
             --fb-print-text: var(--primary-text-color);
             --fb-radius: 16px;
-            --fb-shadow: 0 14px 28px color-mix(in srgb, #000 18%, transparent);
-            --fb-border: color-mix(in srgb, var(--divider-color) 68%, transparent);
+            --fb-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
+            --fb-border: #e8e2dc;
 
             --fb-icon: var(--primary-text-color);
 
