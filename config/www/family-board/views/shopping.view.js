@@ -131,6 +131,7 @@ export class FbShoppingView extends LitElement {
             justify-content: space-between;
             align-items: center;
             gap: 8px;
+            color: var(--fb-text);
         }
         .commonActions {
             display: inline-flex;
