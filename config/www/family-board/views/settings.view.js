@@ -27,13 +27,13 @@ export class FbSettingsView extends LitElement {
             background: var(--fb-surface);
             border-radius: 12px;
             padding: 12px;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
         }
         .row {
             display: flex;
             justify-content: space-between;
             gap: 12px;
-            padding: 6px 0;
+            padding: 8px 0;
             border-bottom: 1px dashed var(--fb-grid);
         }
         .row:last-child {

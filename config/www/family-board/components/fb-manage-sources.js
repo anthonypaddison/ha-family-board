@@ -82,6 +82,8 @@ export class FbManageSources extends LitElement {
             min-height: 120px;
             font-family: monospace;
             font-size: 12px;
+            width: 100%;
+            box-sizing: border-box;
         }
         .btn {
             border: 1px solid var(--fb-grid);
