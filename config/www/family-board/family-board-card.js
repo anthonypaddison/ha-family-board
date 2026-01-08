@@ -151,6 +151,8 @@ class FamilyBoardCard extends LitElement {
         this._prefsLoaded = false;
         this._useMobileView = false;
         this._scheduleDays = 5;
+        this._shoppingCommon = [];
+        this._shoppingFavourites = [];
     }
 
     setConfig(config) {
@@ -225,6 +227,10 @@ class FamilyBoardCard extends LitElement {
         if (prefs.slotMinutes === 30 || prefs.slotMinutes === 60) {
             this._slotMinutes = prefs.slotMinutes;
         }
+        this._shoppingCommon = Array.isArray(prefs.shoppingCommon) ? prefs.shoppingCommon : [];
+        this._shoppingFavourites = Array.isArray(prefs.shoppingFavourites)
+            ? prefs.shoppingFavourites
+            : [];
         this._prefsLoaded = true;
     }
 
@@ -782,6 +788,7 @@ class FamilyBoardCard extends LitElement {
         const { text } = ev?.detail || {};
         if (!text) return;
         await this._shoppingService.addItem(this._hass, this._config?.shopping, text);
+        this._trackShoppingCommon(text);
         this._queueRefresh();
     };
 
@@ -796,6 +803,7 @@ class FamilyBoardCard extends LitElement {
         const { item, text } = ev?.detail || {};
         if (!item || !text) return;
         await this._shoppingService.renameItem(this._hass, this._config?.shopping, item, text);
+        this._trackShoppingCommon(text);
         this._queueRefresh();
     };
 
@@ -852,6 +860,7 @@ class FamilyBoardCard extends LitElement {
     async _addShoppingItem(text) {
         if (!text) return;
         await this._shoppingService.addItem(this._hass, this._config?.shopping, text);
+        this._trackShoppingCommon(text);
         this._queueRefresh();
     }
 
@@ -904,6 +913,8 @@ class FamilyBoardCard extends LitElement {
             useMobileView: Boolean(this._useMobileView),
             sidebarCollapsed: Boolean(this._sidebarCollapsed),
             slotMinutes: this._slotMinutes,
+            shoppingCommon: this._shoppingCommon,
+            shoppingFavourites: this._shoppingFavourites,
         });
     }
 
@@ -919,6 +930,30 @@ class FamilyBoardCard extends LitElement {
         this._slotMinutes = value;
         this._savePrefs();
         this._queueRefresh();
+    }
+
+    _toggleShoppingFavourite(name) {
+        const text = String(name || '').trim();
+        if (!text) return;
+        const key = text.toLowerCase();
+        const list = Array.isArray(this._shoppingFavourites) ? this._shoppingFavourites : [];
+        const exists = list.some((item) => String(item).toLowerCase() === key);
+        this._shoppingFavourites = exists
+            ? list.filter((item) => String(item).toLowerCase() !== key)
+            : [text, ...list];
+        if (!exists) this._trackShoppingCommon(text);
+        this._savePrefs();
+        this.requestUpdate();
+    }
+
+    _trackShoppingCommon(text) {
+        const name = String(text || '').trim();
+        if (!name) return;
+        const key = name.toLowerCase();
+        const list = Array.isArray(this._shoppingCommon) ? this._shoppingCommon : [];
+        if (list.some((item) => String(item).toLowerCase() === key)) return;
+        this._shoppingCommon = [name, ...list].slice(0, 50);
+        this._savePrefs();
     }
 
     _toggleSidebarCollapsed() {
