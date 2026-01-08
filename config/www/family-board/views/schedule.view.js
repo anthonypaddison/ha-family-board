@@ -83,7 +83,7 @@ export class FbScheduleView extends LitElement {
         }
         .row {
             display: grid;
-            grid-template-columns: 64px repeat(var(--fb-days), minmax(0, 1fr));
+            grid-template-columns: var(--fb-time-width, 80px) repeat(var(--fb-days), minmax(0, 1fr));
             gap: 8px;
             align-items: stretch;
         }
@@ -274,6 +274,7 @@ export class FbScheduleView extends LitElement {
         const slotPx = (pxPerHour / 60) * slotMinutes;
         this.style.setProperty('--fb-slot-px', `${slotPx}px`);
         this.style.setProperty('--fb-days', String(daysToShow));
+        this.style.setProperty('--fb-time-width', '80px');
 
         const base = startOfDay(card._selectedDay());
         const days = Array.from({ length: daysToShow }).map((_, i) => addDays(base, i));
