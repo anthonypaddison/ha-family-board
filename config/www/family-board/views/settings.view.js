@@ -126,6 +126,15 @@ export class FbSettingsView extends LitElement {
                     <button class="btn" @click=${() => card._openManageSources()}>
                         Manage sources
                     </button>
+                    ${card._hass?.user?.is_admin
+                        ? html`<button
+                              class="btn"
+                              style="margin-left:8px"
+                              @click=${() => card._openEditor()}
+                          >
+                              Open card editor
+                          </button>`
+                        : html``}
                     <button
                         class="btn"
                         style="margin-left:8px"
@@ -137,14 +146,6 @@ export class FbSettingsView extends LitElement {
 
                 <div class="section">
                     <div class="title">Preferences</div>
-                    <div class="row">
-                        <div>Days to show (fixed)</div>
-                        <div class="muted">${card._daysToShow}</div>
-                    </div>
-                    <div class="row">
-                        <div>Day range</div>
-                        <div class="muted">${card._dayStartHour}-${card._dayEndHour}</div>
-                    </div>
                     <div class="row">
                         <div>Refresh interval</div>
                         <input
@@ -180,15 +181,7 @@ export class FbSettingsView extends LitElement {
                             <span class="muted">${card._useMobileView ? 'On' : 'Off'}</span>
                         </label>
                     </div>
-                    <div class="muted">
-                        Edit these in the card editor to make changes persistent.
-                    </div>
-                    <ul>
-                        <li>Days to show</li>
-                        <li>Day start/end hours</li>
-                        <li>Refresh interval</li>
-                        <li>Debug toggle</li>
-                    </ul>
+                    <div class="muted">Use the card editor for schedule layout changes.</div>
                 </div>
             </div>
         `;
