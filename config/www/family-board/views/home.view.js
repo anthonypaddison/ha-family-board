@@ -20,16 +20,15 @@ export class FbHomeView extends LitElement {
         .grid {
             display: grid;
             gap: 8px;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, max-content));
         }
         .tile {
             border: 1px solid var(--fb-grid);
             background: var(--fb-surface);
             border-radius: 14px;
             padding: 8px 10px;
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            justify-content: space-between;
             gap: 10px;
         }
         .name {
