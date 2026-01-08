@@ -84,7 +84,7 @@ export class FbTopbar extends LitElement {
 
         .dateNav {
             display: inline-flex;
-            gap: 8px;
+            gap: 0;
             align-items: center;
             flex-wrap: wrap;
             justify-content: flex-end;
@@ -98,29 +98,31 @@ export class FbTopbar extends LitElement {
             white-space: nowrap;
         }
 
-        .iconBtn {
-            width: 36px;
-            height: 36px;
-            border-radius: 999px;
+        .navGroup {
+            display: inline-flex;
             border: 1px solid var(--fb-border);
+            border-radius: 10px;
+            overflow: hidden;
             background: var(--fb-surface);
+        }
+        .navBtn {
+            min-width: 40px;
+            height: 34px;
+            border: 0;
+            background: transparent;
             color: var(--fb-text);
             cursor: pointer;
-            font-size: 18px;
-            line-height: 0;
+            font-size: 14px;
+            padding: 0 12px;
             display: grid;
             place-items: center;
         }
-
-        .todayBtn {
-            border-radius: 999px;
-            border: 1px solid var(--fb-border);
-            background: var(--fb-surface);
-            color: var(--fb-text);
-            cursor: pointer;
-            padding: 7px 12px;
-            font-size: 13px;
-            min-height: 36px;
+        .navBtn + .navBtn {
+            border-left: 1px solid var(--fb-border);
+        }
+        .navBtn.center {
+            background: var(--fb-surface-2);
+            font-weight: 700;
         }
 
         .settingsBtn {
@@ -148,7 +150,7 @@ export class FbTopbar extends LitElement {
             align-items: center;
             gap: 8px;
             border: 1px solid var(--fb-grid);
-            border-radius: 16px;
+            border-radius: 14px;
             padding: 10px 12px;
             background: var(--fb-surface-3);
             font-size: 13px;
@@ -311,17 +313,25 @@ export class FbTopbar extends LitElement {
                 ${screen === 'schedule'
                     ? html`
                           <div class="dateNav" aria-label="Date navigation">
-                              <button
-                                  class="iconBtn"
-                                  title="Previous"
-                                  @click=${() => this._nav(-1)}
-                              >
-                                  <
-                              </button>
-                              <button class="todayBtn" @click=${this._today}>Today</button>
-                              <button class="iconBtn" title="Next" @click=${() => this._nav(1)}>
+                              <div class="navGroup" role="group" aria-label="Date navigation">
+                                  <button
+                                      class="navBtn"
+                                      title="Previous"
+                                      @click=${() => this._nav(-1)}
                                   >
-                              </button>
+                                      <
+                                  </button>
+                                  <button class="navBtn center" @click=${this._today}>
+                                      Today
+                                  </button>
+                                  <button
+                                      class="navBtn"
+                                      title="Next"
+                                      @click=${() => this._nav(1)}
+                                  >
+                                      >
+                                  </button>
+                              </div>
                           </div>
                       `
                     : html``}
