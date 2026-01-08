@@ -21,6 +21,8 @@ export class FbSettingsView extends LitElement {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
+            height: 100%;
+            min-height: 0;
         }
         .section {
             border: 1px solid var(--fb-grid);
@@ -28,6 +30,13 @@ export class FbSettingsView extends LitElement {
             border-radius: 12px;
             padding: 12px;
             margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        .panelBody {
+            overflow: auto;
+            min-height: 0;
         }
         .row {
             display: flex;
@@ -98,50 +107,54 @@ export class FbSettingsView extends LitElement {
                 <div class="layout">
                 <div class="section">
                     <div class="title">Sources</div>
-                    <div class="row">
-                        <div>Calendars</div>
-                        <div class="muted">${calendars.length}</div>
-                    </div>
-                    ${calendars.length
-                        ? html`<ul>
-                              ${calendars.map((c) => {
-                                  const person =
-                                      card._peopleById?.get(c.person_id || c.personId || c.person) ||
-                                      null;
-                                  return html`<li>
-                                      ${c.entity} -> ${person?.name || c.person_id || 'Unmapped'}
-                                  </li>`;
-                              })}
-                          </ul>`
-                        : html``}
-                    <div class="row">
-                        <div>Todo lists</div>
-                        <div class="muted">${todos.length}</div>
-                    </div>
-                    ${todos.length
-                        ? html`<ul>
-                              ${todos.map((t) => {
-                                  const person =
-                                      card._peopleById?.get(t.person_id || t.personId || t.person) ||
-                                      null;
-                                  return html`<li>
-                                      ${t.entity} -> ${person?.name || t.person_id || 'Unmapped'}
-                                  </li>`;
-                              })}
-                          </ul>`
-                        : html``}
-                    <div class="row">
-                        <div>People</div>
-                        <div class="muted">${people.length}</div>
-                    </div>
-                    ${people.length
-                        ? html`<ul>
-                              ${people.map((p) => html`<li>${p.name || p.id}</li>`)}
-                          </ul>`
-                        : html``}
-                    <div class="row">
-                        <div>Shopping entity</div>
-                        <div class="muted">${shopping}</div>
+                    <div class="panelBody">
+                        <div class="row">
+                            <div>Calendars</div>
+                            <div class="muted">${calendars.length}</div>
+                        </div>
+                        ${calendars.length
+                            ? html`<ul>
+                                  ${calendars.map((c) => {
+                                      const person =
+                                          card._peopleById?.get(
+                                              c.person_id || c.personId || c.person
+                                          ) || null;
+                                      return html`<li>
+                                          ${c.entity} -> ${person?.name || c.person_id || 'Unmapped'}
+                                      </li>`;
+                                  })}
+                              </ul>`
+                            : html``}
+                        <div class="row">
+                            <div>Todo lists</div>
+                            <div class="muted">${todos.length}</div>
+                        </div>
+                        ${todos.length
+                            ? html`<ul>
+                                  ${todos.map((t) => {
+                                      const person =
+                                          card._peopleById?.get(
+                                              t.person_id || t.personId || t.person
+                                          ) || null;
+                                      return html`<li>
+                                          ${t.entity} -> ${person?.name || t.person_id || 'Unmapped'}
+                                      </li>`;
+                                  })}
+                              </ul>`
+                            : html``}
+                        <div class="row">
+                            <div>People</div>
+                            <div class="muted">${people.length}</div>
+                        </div>
+                        ${people.length
+                            ? html`<ul>
+                                  ${people.map((p) => html`<li>${p.name || p.id}</li>`)}
+                              </ul>`
+                            : html``}
+                        <div class="row">
+                            <div>Shopping entity</div>
+                            <div class="muted">${shopping}</div>
+                        </div>
                     </div>
                     <div class="actions">
                         <button class="btn" @click=${() => card._openManageSources()}>
@@ -158,65 +171,69 @@ export class FbSettingsView extends LitElement {
 
                 <div class="section">
                     <div class="title">Preferences</div>
-                    <div class="row">
-                        <div>Refresh interval</div>
-                        <input
-                            class="input"
-                            type="number"
-                            .value=${Math.round(card._refreshIntervalMs / 60000)}
-                            @change=${(e) =>
-                                card._updateConfigPartial({
-                                    refresh_interval_ms: Number(e.target.value) * 60000,
-                                })}
-                        />
-                    </div>
-                    <div class="row">
-                        <div>Debug</div>
-                        <label>
+                    <div class="panelBody">
+                        <div class="row">
+                            <div>Refresh interval</div>
                             <input
-                                type="checkbox"
-                                .checked=${card._debug}
+                                class="input"
+                                type="number"
+                                .value=${Math.round(card._refreshIntervalMs / 60000)}
                                 @change=${(e) =>
-                                    card._updateConfigPartial({ debug: e.target.checked })}
+                                    card._updateConfigPartial({
+                                        refresh_interval_ms: Number(e.target.value) * 60000,
+                                    })}
                             />
-                            <span class="muted">${card._debug ? 'On' : 'Off'}</span>
-                        </label>
-                    </div>
-                    <div class="muted">Debug adds console logs and persists in the card config.</div>
-                    <div class="row">
-                        <div>Time slots (this device)</div>
-                        <select
-                            class="input"
-                            .value=${String(card._slotMinutes || 30)}
-                            @change=${(e) => card._setSlotMinutesPref(e.target.value)}
-                        >
-                            <option value="30">30 minutes</option>
-                            <option value="60">60 minutes</option>
-                        </select>
-                    </div>
-                    <div class="row">
-                        <div>Default event duration (minutes)</div>
-                        <input
-                            class="input"
-                            type="number"
-                            min="5"
-                            .value=${card._defaultEventMinutes || 30}
-                            @change=${(e) => card._setDefaultEventMinutesPref(e.target.value)}
-                        />
-                    </div>
-                    <div class="row">
-                        <div>Mobile layout (this device)</div>
-                        <label>
+                        </div>
+                        <div class="row">
+                            <div>Debug</div>
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    .checked=${card._debug}
+                                    @change=${(e) =>
+                                        card._updateConfigPartial({ debug: e.target.checked })}
+                                />
+                                <span class="muted">${card._debug ? 'On' : 'Off'}</span>
+                            </label>
+                        </div>
+                        <div class="muted">
+                            Debug adds console logs and persists in the card config.
+                        </div>
+                        <div class="row">
+                            <div>Time slots (this device)</div>
+                            <select
+                                class="input"
+                                .value=${String(card._slotMinutes || 30)}
+                                @change=${(e) => card._setSlotMinutesPref(e.target.value)}
+                            >
+                                <option value="30">30 minutes</option>
+                                <option value="60">60 minutes</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div>Default event duration (minutes)</div>
                             <input
-                                type="checkbox"
-                                .checked=${card._useMobileView}
-                                @change=${(e) => card._setMobileView(e.target.checked)}
+                                class="input"
+                                type="number"
+                                min="5"
+                                .value=${card._defaultEventMinutes || 30}
+                                @change=${(e) => card._setDefaultEventMinutesPref(e.target.value)}
                             />
-                            <span class="muted">${card._useMobileView ? 'On' : 'Off'}</span>
-                        </label>
+                        </div>
+                        <div class="row">
+                            <div>Mobile layout (this device)</div>
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    .checked=${card._useMobileView}
+                                    @change=${(e) => card._setMobileView(e.target.checked)}
+                                />
+                                <span class="muted">${card._useMobileView ? 'On' : 'Off'}</span>
+                            </label>
+                        </div>
+                        <div class="muted">Mobile layout is stored per user and device.</div>
+                        <div class="muted">Use the card editor for schedule layout changes.</div>
                     </div>
-                    <div class="muted">Mobile layout is stored per user and device.</div>
-                    <div class="muted">Use the card editor for schedule layout changes.</div>
                 </div>
                 </div>
             </div>
