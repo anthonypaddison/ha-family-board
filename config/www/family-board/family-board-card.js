@@ -190,24 +190,7 @@ class FamilyBoardCard extends LitElement {
 
     setConfig(config) {
         if (!config) throw new Error('Family Board: missing config');
-        this._config = config;
-        this._debug = Boolean(config.debug);
-
-        debugLog(this._debug, 'setConfig', config);
-
-        this._dayStartHour = config.day_start_hour ?? 6;
-        this._dayEndHour = config.day_end_hour ?? 22;
-        this._slotMinutes = config.slot_minutes ?? 30;
-        this._pxPerHour = config.px_per_hour ?? 120;
-        this._daysToShow = 5;
-        this._scheduleDays = 5;
-        this._refreshIntervalMs = config.refresh_interval_ms ?? 300_000;
-
-        this._ensureVisibilitySets();
-        this._buildPeopleMap();
-        this._ensureServices();
-        this._resetRefreshTimer();
-        this._queueRefresh();
+        this._applyConfigImmediate(config, { useDefaults: true, refresh: true });
     }
 
     getCardSize() {
@@ -859,17 +842,18 @@ class FamilyBoardCard extends LitElement {
         this._sourcesOpen = true;
     }
 
-    _onSourcesSave = (ev) => {
+    _onSourcesSave = async (ev) => {
         const next = ev?.detail?.config;
         if (!next) return;
-        this.setConfig({ ...this._config, ...next });
-        this._queueRefresh();
+        this._applyConfigImmediate({ ...this._config, ...next }, { useDefaults: false });
+        await this._refreshAll();
+        this.requestUpdate();
     };
 
     _updateConfigPartial(patch) {
         if (!patch) return;
-        this.setConfig({ ...this._config, ...patch });
-        this._queueRefresh();
+        this._applyConfigImmediate({ ...this._config, ...patch }, { useDefaults: false });
+        this._refreshAll();
     }
 
     _onOpenEditor = () => {
@@ -1151,8 +1135,8 @@ class FamilyBoardCard extends LitElement {
     }
 
     _applySetupDraft(draft) {
-        this.setConfig({ ...this._config, ...draft });
-        this._queueRefresh();
+        this._applyConfigImmediate({ ...this._config, ...draft }, { useDefaults: false });
+        this._refreshAll();
     }
 
     _openEditor() {
@@ -1163,6 +1147,34 @@ class FamilyBoardCard extends LitElement {
 
     _openHelp() {
         this._helpOpen = true;
+        this.requestUpdate();
+    }
+
+    _applyConfigImmediate(config, { useDefaults = false, refresh = false } = {}) {
+        this._config = config;
+        this._debug = Boolean(config.debug);
+
+        debugLog(this._debug, 'applyConfig', config);
+
+        const dayStart = useDefaults ? 6 : this._dayStartHour ?? 6;
+        const dayEnd = useDefaults ? 22 : this._dayEndHour ?? 22;
+        const slotMinutes = useDefaults ? 30 : this._slotMinutes ?? 30;
+        const pxPerHour = useDefaults ? 120 : this._pxPerHour ?? 120;
+        const refreshMs = useDefaults ? 300_000 : this._refreshIntervalMs ?? 300_000;
+
+        this._dayStartHour = config.day_start_hour ?? dayStart;
+        this._dayEndHour = config.day_end_hour ?? dayEnd;
+        this._slotMinutes = config.slot_minutes ?? slotMinutes;
+        this._pxPerHour = config.px_per_hour ?? pxPerHour;
+        this._daysToShow = 5;
+        this._scheduleDays = 5;
+        this._refreshIntervalMs = config.refresh_interval_ms ?? refreshMs;
+
+        this._ensureVisibilitySets();
+        this._buildPeopleMap();
+        this._ensureServices();
+        this._resetRefreshTimer();
+        if (refresh) this._queueRefresh();
         this.requestUpdate();
     }
 
