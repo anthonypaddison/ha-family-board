@@ -222,6 +222,9 @@ class FamilyBoardCard extends LitElement {
         this._useMobileView =
             prefs.useMobileView !== undefined ? prefs.useMobileView : getDeviceKind() === 'mobile';
         this._sidebarCollapsed = Boolean(prefs.sidebarCollapsed);
+        if (prefs.slotMinutes === 30 || prefs.slotMinutes === 60) {
+            this._slotMinutes = prefs.slotMinutes;
+        }
         this._prefsLoaded = true;
     }
 
@@ -711,7 +714,7 @@ class FamilyBoardCard extends LitElement {
             return;
         }
 
-        const step = this._mainMode === 'schedule' ? this._scheduleDays || 5 : 1;
+        const step = this._mainMode === 'schedule' ? 1 : 1;
         this._dayOffset = (this._dayOffset || 0) + delta * step;
         this._queueRefresh();
     };
@@ -891,11 +894,20 @@ class FamilyBoardCard extends LitElement {
             personFilters: Array.from(this._personFilterSet || []),
             useMobileView: Boolean(this._useMobileView),
             sidebarCollapsed: Boolean(this._sidebarCollapsed),
+            slotMinutes: this._slotMinutes,
         });
     }
 
     _setMobileView(enabled) {
         this._useMobileView = Boolean(enabled);
+        this._savePrefs();
+        this._queueRefresh();
+    }
+
+    _setSlotMinutesPref(minutes) {
+        const value = Number(minutes);
+        if (![30, 60].includes(value)) return;
+        this._slotMinutes = value;
         this._savePrefs();
         this._queueRefresh();
     }

@@ -165,10 +165,21 @@ export class FbSettingsView extends LitElement {
                                 type="checkbox"
                                 .checked=${card._debug}
                                 @change=${(e) =>
-                                    card._updateConfigPartial({ debug: e.target.checked })}
+                                card._updateConfigPartial({ debug: e.target.checked })}
                             />
                             <span class="muted">${card._debug ? 'On' : 'Off'}</span>
                         </label>
+                    </div>
+                    <div class="row">
+                        <div>Time slots (this device)</div>
+                        <select
+                            class="input"
+                            .value=${String(card._slotMinutes || 30)}
+                            @change=${(e) => card._setSlotMinutesPref(e.target.value)}
+                        >
+                            <option value="30">30 minutes</option>
+                            <option value="60">60 minutes</option>
+                        </select>
                     </div>
                     <div class="row">
                         <div>Mobile layout (this device)</div>

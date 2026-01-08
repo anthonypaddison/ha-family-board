@@ -168,7 +168,7 @@ export class FbTopbar extends LitElement {
 
         .summaryBadge:not(.active) {
             background: var(--fb-surface-2);
-            opacity: 0.85;
+            opacity: 0.75;
         }
 
         .dot {

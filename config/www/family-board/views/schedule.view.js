@@ -14,6 +14,28 @@ export class FbScheduleView extends LitElement {
         renderKey: { type: String },
     };
 
+    updated(changedProps) {
+        if (changedProps.has('renderKey')) {
+            this._didInitialScroll = false;
+        }
+        this._scrollToNow();
+    }
+
+    _scrollToNow() {
+        if (this._didInitialScroll) return;
+        if (!this._autoScrollEnabled) return;
+        const scroller = this.renderRoot.querySelector('.gridScroll');
+        if (!scroller) return;
+        const now = new Date();
+        const nowMin = minutesSinceMidnight(now);
+        const slotMinutes = this._slotMinutes ?? 30;
+        const slotPx = this._slotPx ?? 0;
+        const startMin = this._startMin ?? 0;
+        const nowTop = ((nowMin - startMin) / slotMinutes) * slotPx;
+        scroller.scrollTop = Math.max(0, nowTop - slotPx * 2);
+        this._didInitialScroll = true;
+    }
+
     static styles = css`
         :host {
             display: block;
@@ -22,9 +44,11 @@ export class FbScheduleView extends LitElement {
         }
         .wrap {
             height: 100%;
-            overflow: auto;
+            overflow: hidden;
             padding: 16px;
             background: var(--fb-bg);
+            display: flex;
+            flex-direction: column;
         }
         .card {
             background: var(--fb-surface);
@@ -32,46 +56,17 @@ export class FbScheduleView extends LitElement {
             border: 1px solid var(--fb-border);
             box-shadow: var(--fb-shadow);
             padding: 14px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            height: 100%;
         }
         .board {
-            min-width: 1100px;
-        }
-        .filters {
+            min-width: 0;
+            width: 100%;
             display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            padding: 6px 6px 14px;
-        }
-        .filterChip {
-            border-radius: 999px;
-            border: 1px solid var(--fb-border);
-            background: var(--fb-surface);
-            color: var(--fb-text);
-            padding: 6px 12px;
-            display: inline-flex;
-            align-items: center;
+            flex-direction: column;
             gap: 8px;
-            cursor: pointer;
-            font-size: 13px;
-            min-height: 36px;
-        }
-        .filterChip.active {
-            border-color: var(--person-colour);
-            box-shadow: 0 6px 16px color-mix(in srgb, var(--person-colour) 25%, transparent);
-        }
-        .filterDot {
-            width: 10px;
-            height: 10px;
-            border-radius: 999px;
-            background: var(--person-colour);
-        }
-        .filterCount {
-            background: var(--fb-surface-2);
-            border: 1px solid var(--fb-border);
-            border-radius: 999px;
-            padding: 2px 6px;
-            font-size: 12px;
-            color: var(--fb-muted);
         }
         .linkBtn {
             border: 0;
@@ -80,28 +75,41 @@ export class FbScheduleView extends LitElement {
             font-weight: 700;
             color: var(--fb-text);
         }
+        .empty {
+            margin-bottom: 10px;
+            color: var(--fb-muted);
+            font-size: 15px;
+        }
+        .gridScroll {
+            overflow-y: auto;
+            min-height: 0;
+            padding-bottom: 6px;
+            flex: 1;
+        }
         .row {
             display: grid;
-            grid-template-columns: 96px repeat(var(--fb-days), minmax(220px, 1fr));
-            gap: 12px;
+            grid-template-columns: 72px repeat(var(--fb-days), minmax(0, 1fr));
+            gap: 8px;
             align-items: stretch;
         }
         .gutterHead,
         .gutterAllDay,
         .gutterTimes {
-            border-radius: var(--fb-radius);
+            border-radius: 10px;
             background: var(--fb-surface);
             border: 1px solid var(--fb-border);
         }
         .gutterHead {
-            height: 64px;
+            height: 56px;
+            background: transparent;
+            border: 0;
         }
         .gutterAllDay {
             min-height: 52px;
             display: flex;
             align-items: center;
             justify-content: flex-end;
-            padding: 10px;
+            padding: 8px;
             font-size: 12px;
             color: var(--fb-muted);
         }
@@ -131,11 +139,11 @@ export class FbScheduleView extends LitElement {
             opacity: 0.7;
         }
         .dayHead {
-            height: 64px;
-            border-radius: var(--fb-radius);
+            height: 56px;
+            border-radius: 10px;
             border: 1px solid var(--fb-border);
-            background: var(--fb-surface-2);
-            padding: 10px;
+            background: var(--fb-surface);
+            padding: 8px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -146,14 +154,14 @@ export class FbScheduleView extends LitElement {
             font-size: 14px;
         }
         .dayDate {
-            font-size: 12px;
+            font-size: 13px;
             color: var(--fb-muted);
         }
         .allDay {
-            border-radius: var(--fb-radius);
+            border-radius: 10px;
             border: 1px solid var(--fb-border);
-            background: var(--fb-surface-2);
-            padding: 8px;
+            background: var(--fb-surface);
+            padding: 6px;
             min-height: 52px;
             display: flex;
             gap: 8px;
@@ -161,8 +169,8 @@ export class FbScheduleView extends LitElement {
             align-content: flex-start;
         }
         .chip {
-            border-radius: 999px;
-            border: 1px solid var(--fb-border);
+            border-radius: 10px;
+            border: 1px solid color-mix(in srgb, var(--event-color) 60%, var(--fb-border));
             padding: 6px 12px;
             font-size: 12px;
             cursor: pointer;
@@ -185,9 +193,9 @@ export class FbScheduleView extends LitElement {
         }
         .dayCol {
             position: relative;
-            border-radius: var(--fb-radius);
+            border-radius: 10px;
             border: 1px solid var(--fb-border);
-            background: var(--fb-surface-2);
+            background: color-mix(in srgb, var(--fb-surface) 92%, var(--palette-lilac));
             overflow: hidden;
         }
         .slotBg {
@@ -211,7 +219,7 @@ export class FbScheduleView extends LitElement {
         .event {
             position: absolute;
             pointer-events: auto;
-            border-radius: 14px;
+            border-radius: 10px;
             border: 1px solid color-mix(in srgb, var(--event-color) 70%, var(--fb-border));
             background: var(--event-color);
             color: var(--event-text);
@@ -288,6 +296,10 @@ export class FbScheduleView extends LitElement {
         const nowMin = minutesSinceMidnight(now);
         const nowTopSlots = (nowMin - startMin) / slotMinutes;
         const nowTop = clamp(nowTopSlots * slotPx, 0, slots * slotPx);
+        this._slotMinutes = slotMinutes;
+        this._slotPx = slotPx;
+        this._startMin = startMin;
+        this._autoScrollEnabled = showNow;
 
         const calendarList = Array.isArray(cfg.calendars) ? cfg.calendars : [];
         const visibleSet =
@@ -365,35 +377,12 @@ export class FbScheduleView extends LitElement {
             })),
         });
 
-        const summary = card._summaryCounts ? card._summaryCounts() : [];
-        const activeFilters = card._personFilterSet || new Set();
-
         return html`
             <div class="wrap">
                 <div class="card">
-                    ${summary.length
-                        ? html`<div class="filters">
-                              ${summary.map((p) => {
-                                  const isActive = activeFilters.has(p.id);
-                                  return html`
-                                      <button
-                                          class="filterChip ${isActive ? 'active' : ''}"
-                                          style="--person-colour:${p.color}"
-                                          @click=${() =>
-                                              card._onPersonToggle({ detail: { id: p.id } })}
-                                          aria-pressed=${isActive ? 'true' : 'false'}
-                                      >
-                                          <span class="filterDot"></span>
-                                          <span>${p.name}</span>
-                                          <span class="filterCount">${p.eventsLeft}</span>
-                                      </button>
-                                  `;
-                              })}
-                          </div>`
-                        : html``}
                     <div class="board">
                     ${totalEvents === 0
-                        ? html`<div style="margin-bottom:10px;color:var(--fb-muted);font-size:13px">
+                        ? html`<div class="empty">
                               No events found. <button
                                   class="linkBtn"
                                   @click=${() => card._openHelp()}
@@ -460,83 +449,91 @@ export class FbScheduleView extends LitElement {
                         })}
                     </div>
 
-                    <div class="row">
-                        <div class="gutterTimes">
-                            ${timeRows.map(
-                                (r) => html`
-                                    <div class="timeRow ${r.isHour ? 'hour' : ''}">
-                                        <span class="timeLabel ${r.isHour ? '' : 'half'}"
-                                            >${r.label}</span
-                                        >
+                    <div class="gridScroll">
+                        <div class="row">
+                            <div class="gutterTimes">
+                                ${timeRows.map(
+                                    (r) => html`
+                                        <div class="timeRow ${r.isHour ? 'hour' : ''}">
+                                            <span class="timeLabel ${r.isHour ? '' : 'half'}"
+                                                >${r.label}</span
+                                            >
+                                        </div>
+                                    `
+                                )}
+                            </div>
+
+                            ${dayData.map((row) => {
+                                return html`
+                                    <div class="dayCol">
+                                        <div class="slotBg">
+                                            ${Array.from({ length: slots + 1 }).map(
+                                                () => html`<div class="slotRow"></div>`
+                                            )}
+                                        </div>
+
+                                        <div class="eventsLayer">
+                                            ${showNow && card._isSameDay(row.day, now)
+                                                ? html`<div class="nowLine" style="top:${nowTop}px"></div>`
+                                                : html``}
+                                            ${row.timed.map((ev) => {
+                                                const startSlots =
+                                                    (ev.startMin - startMin) / slotMinutes;
+                                                const endSlots =
+                                                    (ev.endMin - startMin) / slotMinutes;
+                                                const top = startSlots * slotPx;
+                                                const height = Math.max(
+                                                    36,
+                                                    (endSlots - startSlots) * slotPx
+                                                );
+
+                                                const widthPct = 100 / ev.lanesTotal;
+                                                const leftPct = ev.lane * widthPct;
+                                                const timeText = `${pad2(ev.start.getHours())}:${pad2(
+                                                    ev.start.getMinutes()
+                                                )}\u2013${pad2(ev.end.getHours())}:${pad2(
+                                                    ev.end.getMinutes()
+                                                )}`;
+
+                                                return html`
+                                                    <button
+                                                        class="event"
+                                                        style="
+                                                            --event-color:${ev._fbColour};
+                                                            --event-text:${getReadableTextColour(
+                                                                ev._fbColour
+                                                            )};
+                                                            top:${top}px;
+                                                            height:${height}px;
+                                                            left:calc(${leftPct}% + 4px);
+                                                            width:calc(${widthPct}% - 8px);
+                                                        "
+                                                        @click=${() =>
+                                                            card._openEventDialog(
+                                                                ev._fbEntityId,
+                                                                ev
+                                                            )}
+                                                        title=${ev.summary}
+                                                    >
+                                                        <div class="eventTime">${timeText}</div>
+                                                        <div class="eventTitle">${ev.summary}</div>
+                                                    </button>
+                                                `;
+                                            })}
+                                            ${row.overflows.map(
+                                                (o) =>
+                                                    html`<div
+                                                        class="overflow"
+                                                        style="top:${(o.startMin - startMin) * pxPerMin}px"
+                                                    >
+                                                        +${o.count}
+                                                    </div>`
+                                            )}
+                                        </div>
                                     </div>
-                                `
-                            )}
+                                `;
+                            })}
                         </div>
-
-                        ${dayData.map((row) => {
-                            return html`
-                                <div class="dayCol">
-                                    <div class="slotBg">
-                                        ${Array.from({ length: slots + 1 }).map(
-                                            () => html`<div class="slotRow"></div>`
-                                        )}
-                                    </div>
-
-                                    <div class="eventsLayer">
-                                        ${showNow && card._isSameDay(row.day, now)
-                                            ? html`<div class="nowLine" style="top:${nowTop}px"></div>`
-                                            : html``}
-                                        ${row.timed.map((ev) => {
-                                            const startSlots =
-                                                (ev.startMin - startMin) / slotMinutes;
-                                            const endSlots =
-                                                (ev.endMin - startMin) / slotMinutes;
-                                            const top = startSlots * slotPx;
-                                            const height = Math.max(36, (endSlots - startSlots) * slotPx);
-
-                                            const widthPct = 100 / ev.lanesTotal;
-                                            const leftPct = ev.lane * widthPct;
-                                            const timeText = `${pad2(ev.start.getHours())}:${pad2(
-                                                ev.start.getMinutes()
-                                            )}\u2013${pad2(ev.end.getHours())}:${pad2(
-                                                ev.end.getMinutes()
-                                            )}`;
-
-                                            return html`
-                                                <button
-                                                    class="event"
-                                                    style="
-                                                        --event-color:${ev._fbColour};
-                                                        --event-text:${getReadableTextColour(
-                                                            ev._fbColour
-                                                        )};
-                                                        top:${top}px;
-                                                        height:${height}px;
-                                                        left:calc(${leftPct}% + 4px);
-                                                        width:calc(${widthPct}% - 8px);
-                                                    "
-                                                    @click=${() =>
-                                                        card._openEventDialog(ev._fbEntityId, ev)}
-                                                    title=${ev.summary}
-                                                >
-                                                    <div class="eventTime">${timeText}</div>
-                                                    <div class="eventTitle">${ev.summary}</div>
-                                                </button>
-                                            `;
-                                        })}
-                                        ${row.overflows.map(
-                                            (o) =>
-                                                html`<div
-                                                    class="overflow"
-                                                    style="top:${(o.startMin - startMin) * pxPerMin}px"
-                                                >
-                                                    +${o.count}
-                                                </div>`
-                                        )}
-                                    </div>
-                                </div>
-                            `;
-                        })}
                     </div>
                     </div>
                 </div>
