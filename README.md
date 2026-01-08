@@ -7,7 +7,7 @@ Custom Lovelace dashboard and card for a family board in Home Assistant.
 - Chores from Todoist todo lists (`todo.*` entities).
 - Shopping list backed by `todo.shopping_list_2`.
 - A first-run setup wizard (admin-only) and a full card editor.
-- Mobile-friendly layout and per-device preferences.
+- Mobile-friendly layout and per-device preferences (filters, time slots, sidebar collapse).
 
 ## Requirements
 - Home Assistant with:
@@ -43,6 +43,12 @@ Use the Lovelace card editor to:
 - Map each to a person (name + colour).
 - Set day start/end and refresh interval.
 - Enable debug logging.
+
+Settings saved per user/device:
+- Sidebar collapsed state.
+- People filters.
+- Time slot granularity.
+- Mobile layout toggle.
 
 ## Example card YAML (placeholders)
 ```yaml
