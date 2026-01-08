@@ -9,6 +9,7 @@ export class FbSidebar extends LitElement {
         active: { type: String },
         counts: { type: Object }, // { schedule, chores, shopping }
         isAdmin: { type: Boolean },
+        collapsed: { type: Boolean },
     };
 
     static styles = css`
@@ -20,21 +21,23 @@ export class FbSidebar extends LitElement {
             display: flex;
             flex-direction: column;
             gap: 16px;
+            height: 100%;
         }
 
         .nav {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 0;
             width: 100%;
         }
 
         .navbtn {
             width: 100%;
-            border: 1px solid var(--fb-border);
-            background: var(--fb-surface-2);
+            border: 0;
+            border-bottom: 1px solid var(--fb-border);
+            background: var(--fb-surface);
             padding: 12px 14px;
-            border-radius: 14px;
+            border-radius: 0;
             cursor: pointer;
             display: grid;
             grid-template-columns: 28px 1fr auto;
@@ -48,15 +51,13 @@ export class FbSidebar extends LitElement {
         }
 
         .navbtn:hover {
-            background: var(--fb-surface);
-            border-color: var(--fb-grid);
+            background: var(--fb-surface-2);
         }
 
         .navbtn.active {
-            background: var(--fb-surface);
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+            background: var(--fb-bg);
+            box-shadow: inset 0 0 0 1px var(--fb-border);
             font-weight: 700;
-            border-color: transparent;
         }
 
         .navbtn.active::before {
@@ -100,11 +101,51 @@ export class FbSidebar extends LitElement {
             font-weight: 800;
             font-size: 18px;
             padding: 12px 14px;
-            border-radius: 16px;
+            border-radius: 0;
             background: var(--fb-accent);
             border: 1px solid var(--fb-border);
             width: 100%;
             box-sizing: border-box;
+        }
+
+        .footer {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            border-top: 1px solid var(--fb-border);
+        }
+
+        .footerBtn {
+            width: 100%;
+            border: 0;
+            background: var(--fb-surface);
+            padding: 12px 0;
+            cursor: pointer;
+            color: var(--fb-text);
+            display: grid;
+            place-items: center;
+            border-bottom: 1px solid var(--fb-border);
+        }
+
+        .footerBtn:last-child {
+            border-bottom: 0;
+        }
+
+        .rail.collapsed .navbtn {
+            grid-template-columns: 1fr;
+            padding: 12px 0;
+            justify-items: center;
+        }
+
+        .rail.collapsed .navlabel,
+        .rail.collapsed .navmeta {
+            display: none;
+        }
+
+        .rail.collapsed .brand {
+            text-align: center;
+            padding: 12px 0;
         }
     `;
 
@@ -118,11 +159,18 @@ export class FbSidebar extends LitElement {
         );
     }
 
+    _toggleCollapse() {
+        this.dispatchEvent(
+            new CustomEvent('fb-sidebar-toggle', { bubbles: true, composed: true })
+        );
+    }
+
     render() {
         const active = this.active || 'schedule';
         const counts = this.counts || {};
         const meta = (k) => (counts?.[k] ? counts[k] : null);
         const isAdmin = Boolean(this.isAdmin);
+        const collapsed = Boolean(this.collapsed);
 
         const item = (key, label, icon) => html`
             <button
@@ -138,14 +186,34 @@ export class FbSidebar extends LitElement {
         `;
 
         return html`
-            <div class="rail">
-                <div class="brand">Family Board</div>
+            <div class="rail ${collapsed ? 'collapsed' : ''}">
+                <div class="brand">${collapsed ? 'FB' : 'Family Board'}</div>
                 <div class="nav">
                     ${item('schedule', 'Schedule', 'mdi:calendar-multiselect')}
                     ${item('chores', 'Chores', 'mdi:check-circle-outline')}
                     ${item('shopping', 'Shopping', 'mdi:cart-outline')}
                     ${item('home', 'Home', 'mdi:home-automation')}
                     ${isAdmin ? item('settings', 'Settings', 'mdi:cog-outline') : html``}
+                </div>
+                <div class="footer">
+                    ${isAdmin
+                        ? html`<button
+                              class="footerBtn"
+                              title="Settings"
+                              @click=${() => this._click('settings')}
+                          >
+                              <ha-icon icon="mdi:cog-outline"></ha-icon>
+                          </button>`
+                        : html``}
+                    <button
+                        class="footerBtn"
+                        title=${collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                        @click=${this._toggleCollapse}
+                    >
+                        <ha-icon
+                            icon=${collapsed ? 'mdi:chevron-right' : 'mdi:chevron-left'}
+                        ></ha-icon>
+                    </button>
                 </div>
             </div>
         `;

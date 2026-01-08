@@ -53,6 +53,7 @@ class FamilyBoardCard extends LitElement {
         _eventDialogEntity: { state: true },
         _eventDialogEvent: { state: true },
         _helpOpen: { state: true },
+        _sidebarCollapsed: { state: true },
     };
 
     static async getConfigElement() {
@@ -93,7 +94,7 @@ class FamilyBoardCard extends LitElement {
             .sidebar {
                 background: var(--fb-surface);
                 border-right: 1px solid var(--fb-grid);
-                padding: 14px;
+                padding: 12px 0;
                 display: flex;
                 flex-direction: column;
                 gap: 10px;
@@ -220,6 +221,7 @@ class FamilyBoardCard extends LitElement {
         this._personFilterSet = new Set(filters);
         this._useMobileView =
             prefs.useMobileView !== undefined ? prefs.useMobileView : getDeviceKind() === 'mobile';
+        this._sidebarCollapsed = Boolean(prefs.sidebarCollapsed);
         this._prefsLoaded = true;
     }
 
@@ -231,14 +233,18 @@ class FamilyBoardCard extends LitElement {
         const isAdmin = Boolean(this._hass?.user?.is_admin);
         const needsSetup = !Array.isArray(this._config?.people) || this._config.people.length === 0;
 
+        const sidebarWidth = this._sidebarCollapsed ? '76px' : '260px';
+
         return html`
-            <div class="app">
+            <div class="app" style="grid-template-columns:${sidebarWidth} 1fr;">
                 <div class="sidebar">
                     <fb-sidebar
                         .active=${screen}
                         .counts=${this._sidebarCounts()}
                         .isAdmin=${isAdmin}
+                        .collapsed=${this._sidebarCollapsed}
                         @fb-nav=${this._onNav}
+                        @fb-sidebar-toggle=${this._toggleSidebarCollapsed}
                     ></fb-sidebar>
                 </div>
 
@@ -884,6 +890,7 @@ class FamilyBoardCard extends LitElement {
         updatePrefs(userId, {
             personFilters: Array.from(this._personFilterSet || []),
             useMobileView: Boolean(this._useMobileView),
+            sidebarCollapsed: Boolean(this._sidebarCollapsed),
         });
     }
 
@@ -891,6 +898,12 @@ class FamilyBoardCard extends LitElement {
         this._useMobileView = Boolean(enabled);
         this._savePrefs();
         this._queueRefresh();
+    }
+
+    _toggleSidebarCollapsed() {
+        this._sidebarCollapsed = !this._sidebarCollapsed;
+        this._savePrefs();
+        this.requestUpdate();
     }
 
     _todayRange() {
