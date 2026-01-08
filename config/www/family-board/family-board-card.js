@@ -784,24 +784,10 @@ class FamilyBoardCard extends LitElement {
         if (screen === 'home' || screen === 'settings') return;
         this._dialogOpen = true;
         if (screen === 'chores') {
-            const filters = Array.from(this._personFilterSet || []);
-            if (filters.length !== 1) {
-                window.alert('Select one person to add a chore.');
-                this._dialogOpen = false;
-                return;
-            }
-            const personId = filters[0];
-            const todos = Array.isArray(this._config?.todos) ? this._config.todos : [];
-            const match = todos.find(
-                (t) =>
-                    this._normalisePersonId(t.person_id || t.personId || t.person || t.entity) ===
-                    personId
-            );
-            const targetEntity = match?.entity || '';
             this._dialogMode = 'todo';
             this._dialogTitle = 'Add chore';
             this._dialogItem = null;
-            this._dialogEntity = targetEntity;
+            this._dialogEntity = '';
         } else if (screen === 'shopping') {
             this._dialogMode = 'shopping';
             this._dialogTitle = 'Add shopping item';
