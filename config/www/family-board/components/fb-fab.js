@@ -29,7 +29,7 @@ export class FbFab extends LitElement {
             color: #ffffff;
             font-size: 26px;
             line-height: 0;
-            box-shadow: var(--fb-shadow);
+            box-shadow: 0 18px 36px rgba(15, 23, 42, 0.22);
         }
 
         button:active {

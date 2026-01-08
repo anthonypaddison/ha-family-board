@@ -103,6 +103,7 @@ class FamilyBoardCard extends LitElement {
                 grid-template-rows: auto 1fr;
                 min-width: 0;
                 min-height: 0;
+                background: var(--fb-bg);
             }
             .content {
                 position: relative;

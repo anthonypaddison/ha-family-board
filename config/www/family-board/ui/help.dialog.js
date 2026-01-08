@@ -27,7 +27,7 @@ export class FbHelpDialog extends LitElement {
             width: 100%;
             max-width: 720px;
             background: var(--fb-surface);
-            border-radius: 16px;
+            border-radius: 12px;
             border: 1px solid var(--fb-border);
             padding: 14px;
             max-height: 90vh;
@@ -46,20 +46,21 @@ export class FbHelpDialog extends LitElement {
         .title {
             font-weight: 700;
             margin-bottom: 6px;
+            font-size: 16px;
         }
         ul {
             margin: 6px 0 0;
             padding-left: 18px;
             color: var(--fb-muted);
-            font-size: 13px;
+            font-size: 14px;
         }
         .btn {
             border: 1px solid var(--fb-grid);
-            border-radius: 10px;
+            border-radius: 8px;
             background: var(--fb-surface-2);
             padding: 6px 10px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 13px;
             color: var(--fb-text);
         }
     `;

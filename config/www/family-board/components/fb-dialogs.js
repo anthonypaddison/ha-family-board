@@ -43,7 +43,7 @@ export class FbDialogs extends LitElement {
             width: 100%;
             max-width: 520px;
             background: var(--fb-surface);
-            border-radius: 16px;
+            border-radius: 12px;
             border: 1px solid var(--fb-border);
             padding: 14px;
         }
@@ -53,15 +53,15 @@ export class FbDialogs extends LitElement {
             margin-top: 10px;
         }
         label {
-            font-size: 13px;
+            font-size: 14px;
             color: var(--fb-muted);
         }
         input,
         select {
             padding: 10px 12px;
-            border-radius: 12px;
+            border-radius: 10px;
             border: 1px solid var(--fb-grid);
-            font-size: 14px;
+            font-size: 15px;
             background: var(--fb-surface);
             color: var(--fb-text);
         }
@@ -73,7 +73,7 @@ export class FbDialogs extends LitElement {
         }
         button {
             border: 0;
-            border-radius: 12px;
+            border-radius: 10px;
             padding: 10px 12px;
             cursor: pointer;
             background: var(--palette-lilac, #cfbaf0);

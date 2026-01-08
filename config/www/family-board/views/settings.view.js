@@ -20,7 +20,7 @@ export class FbSettingsView extends LitElement {
         .section {
             border: 1px solid var(--fb-grid);
             background: var(--fb-surface);
-            border-radius: 14px;
+            border-radius: 12px;
             padding: 12px;
             margin-bottom: 12px;
         }
@@ -40,27 +40,27 @@ export class FbSettingsView extends LitElement {
         }
         .muted {
             color: var(--fb-muted);
-            font-size: 12px;
+            font-size: 13px;
         }
         .btn {
             border: 1px solid var(--fb-grid);
-            border-radius: 10px;
+            border-radius: 8px;
             background: var(--palette-lilac, #cfbaf0);
             padding: 8px 10px;
             cursor: pointer;
         }
         .input {
             border: 1px solid var(--fb-grid);
-            border-radius: 10px;
+            border-radius: 8px;
             padding: 6px 8px;
-            font-size: 13px;
+            font-size: 14px;
             background: var(--fb-surface);
         }
         ul {
             margin: 6px 0 0;
             padding-left: 18px;
             color: var(--fb-muted);
-            font-size: 12px;
+            font-size: 13px;
         }
     `;
 

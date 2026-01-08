@@ -32,7 +32,7 @@ export class FbIconPicker extends LitElement {
             top: calc(100% + 8px);
             background: var(--fb-surface);
             border: 1px solid var(--fb-border);
-            border-radius: 12px;
+            border-radius: 10px;
             padding: 10px;
             box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
             width: 280px;
@@ -45,7 +45,7 @@ export class FbIconPicker extends LitElement {
         }
         .cat {
             font-weight: 700;
-            font-size: 12px;
+            font-size: 13px;
             margin: 6px 0;
             color: var(--fb-muted);
         }
@@ -57,14 +57,14 @@ export class FbIconPicker extends LitElement {
         button {
             border: 1px solid var(--fb-grid);
             background: var(--fb-surface-2);
-            border-radius: 8px;
+            border-radius: 6px;
             padding: 6px 0;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 17px;
             color: var(--fb-text);
         }
         .clearBtn {
-            font-size: 12px;
+            font-size: 13px;
             padding: 4px 8px;
         }
     `;

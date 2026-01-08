@@ -19,7 +19,7 @@ export class FamilyBoardEditor extends LitElement {
         }
         .section {
             border: 1px solid var(--fb-grid, #e5e7eb);
-            border-radius: 12px;
+            border-radius: 10px;
             padding: 10px;
             margin-bottom: 12px;
         }
@@ -40,30 +40,30 @@ export class FamilyBoardEditor extends LitElement {
             grid-template-columns: 1fr auto;
         }
         label {
-            font-size: 12px;
+            font-size: 13px;
             color: var(--fb-muted);
         }
         input,
         select {
             padding: 8px 10px;
-            border-radius: 10px;
+            border-radius: 8px;
             border: 1px solid var(--fb-grid);
-            font-size: 13px;
+            font-size: 14px;
             background: var(--fb-surface);
             color: var(--fb-text);
         }
         .btn {
             border: 1px solid var(--fb-grid);
-            border-radius: 10px;
+            border-radius: 8px;
             background: var(--fb-surface-2);
             padding: 6px 10px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 13px;
             color: var(--fb-text);
         }
         .note {
             color: var(--fb-muted);
-            font-size: 12px;
+            font-size: 13px;
             margin-top: 6px;
         }
     `;

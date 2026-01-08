@@ -29,7 +29,7 @@ export class FbManageSources extends LitElement {
             width: 100%;
             max-width: 760px;
             background: var(--fb-surface);
-            border-radius: 16px;
+            border-radius: 12px;
             border: 1px solid var(--fb-border);
             padding: 14px;
             max-height: 90vh;
@@ -45,7 +45,7 @@ export class FbManageSources extends LitElement {
         .section {
             margin-top: 14px;
             border: 1px solid var(--fb-grid, #e5e7eb);
-            border-radius: 12px;
+            border-radius: 10px;
             padding: 10px;
         }
         .row {
@@ -65,16 +65,16 @@ export class FbManageSources extends LitElement {
             grid-template-columns: 1fr auto;
         }
         label {
-            font-size: 12px;
+            font-size: 13px;
             color: var(--fb-muted);
         }
         input,
         select,
         textarea {
             padding: 8px 10px;
-            border-radius: 10px;
+            border-radius: 8px;
             border: 1px solid var(--fb-grid);
-            font-size: 13px;
+            font-size: 14px;
             background: var(--fb-surface);
             color: var(--fb-text);
         }
@@ -85,11 +85,11 @@ export class FbManageSources extends LitElement {
         }
         .btn {
             border: 1px solid var(--fb-grid);
-            border-radius: 10px;
+            border-radius: 8px;
             background: var(--fb-surface-2);
             padding: 6px 10px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 13px;
             color: var(--fb-text);
         }
         .btn.primary {
@@ -98,7 +98,7 @@ export class FbManageSources extends LitElement {
         }
         .note {
             color: var(--fb-muted);
-            font-size: 12px;
+            font-size: 13px;
             margin-top: 8px;
         }
     `;

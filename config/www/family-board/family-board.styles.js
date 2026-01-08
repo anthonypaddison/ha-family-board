@@ -18,19 +18,19 @@ export function fbStyles() {
             --palette-rose: #ffcfd2;
             --palette-vanilla: #fbf8cc;
 
-            --fb-bg: linear-gradient(180deg, #f9f7f4 0%, #f3f1ec 100%);
+            --fb-bg: linear-gradient(180deg, #e8f7f6 0%, #ddf1ef 100%);
             --fb-surface: #ffffff;
-            --fb-surface-2: #f9f6f1;
-            --fb-surface-3: #f3efe9;
+            --fb-surface-2: #f4fbfa;
+            --fb-surface-3: #edf7f6;
             --fb-text: color-mix(in srgb, var(--primary-text-color) 20%, #1f2937);
             --fb-muted: color-mix(in srgb, var(--secondary-text-color) 30%, #6b7280);
             --fb-accent: var(--palette-lilac);
             --fb-grid: #e6e1db;
-            --fb-today: #f6f0e9;
-            --fb-weekend: #f2ede6;
+            --fb-today: #eef7f6;
+            --fb-weekend: #e8f3f2;
             --fb-pill-text: var(--primary-text-color);
             --fb-print-text: var(--primary-text-color);
-            --fb-radius: 16px;
+            --fb-radius: 12px;
             --fb-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
             --fb-border: #e8e2dc;
 
