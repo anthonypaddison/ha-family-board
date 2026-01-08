@@ -23,7 +23,7 @@ export class FbTopbar extends LitElement {
             padding: 14px 14px 10px;
             border-bottom: 1px solid var(--fb-grid);
             background: var(--fb-surface);
-            box-shadow: 0 6px 16px color-mix(in srgb, #000 8%, transparent);
+            box-shadow: var(--fb-shadow);
         }
 
         .toprow {
@@ -55,23 +55,28 @@ export class FbTopbar extends LitElement {
             display: inline-flex;
             gap: 6px;
             align-items: center;
+            padding: 4px;
+            border-radius: 999px;
+            background: var(--fb-surface-2);
+            border: 1px solid var(--fb-border);
         }
 
         .pill {
-            border: 1px solid var(--fb-grid);
-            background: var(--fb-surface-2);
+            border: 0;
+            background: transparent;
             color: var(--fb-text);
-            border-radius: 12px;
-            padding: 7px 12px;
+            border-radius: 999px;
+            padding: 7px 14px;
             cursor: pointer;
             font-size: 13px;
             min-height: 36px;
         }
 
         .pill.active {
-            background: var(--fb-accent);
+            background: var(--fb-surface);
             border-color: transparent;
             color: var(--fb-text);
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
         }
 
         .dateNav {
@@ -93,9 +98,9 @@ export class FbTopbar extends LitElement {
         .iconBtn {
             width: 36px;
             height: 36px;
-            border-radius: 12px;
-            border: 1px solid var(--fb-grid);
-            background: var(--fb-surface-2);
+            border-radius: 999px;
+            border: 1px solid var(--fb-border);
+            background: var(--fb-surface);
             color: var(--fb-text);
             cursor: pointer;
             font-size: 18px;
@@ -105,9 +110,9 @@ export class FbTopbar extends LitElement {
         }
 
         .todayBtn {
-            border-radius: 12px;
-            border: 1px solid var(--fb-grid);
-            background: var(--fb-surface-2);
+            border-radius: 999px;
+            border: 1px solid var(--fb-border);
+            background: var(--fb-surface);
             color: var(--fb-text);
             cursor: pointer;
             padding: 7px 12px;
@@ -116,9 +121,9 @@ export class FbTopbar extends LitElement {
         }
 
         .settingsBtn {
-            border-radius: 12px;
-            border: 1px solid var(--fb-grid);
-            background: var(--fb-surface-2);
+            border-radius: 999px;
+            border: 1px solid var(--fb-border);
+            background: var(--fb-surface);
             color: var(--fb-text);
             cursor: pointer;
             height: 36px;
