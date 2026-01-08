@@ -46,6 +46,7 @@ export class FbMonthView extends LitElement {
             border-radius: 12px;
             padding: 8px 10px;
             cursor: pointer;
+            color: var(--fb-text);
         }
         .grid {
             display: grid;
@@ -90,7 +91,7 @@ export class FbMonthView extends LitElement {
             color: var(--fb-text);
         }
         .today {
-            background: var(--fb-today);
+            background: #efeaff;
         }
         .muted {
             color: var(--fb-muted);
