@@ -1,0 +1,198 @@
+/* Family Board - settings view
+ * SPDX-License-Identifier: MIT
+ */
+import { getHaLit } from '../ha-lit.js';
+const { LitElement, html, css } = getHaLit();
+
+export class FbSettingsView extends LitElement {
+    static properties = { card: { type: Object } };
+
+    static styles = css`
+        :host {
+            display: block;
+            height: 100%;
+        }
+        .wrap {
+            height: 100%;
+            overflow: auto;
+            padding: 14px;
+        }
+        .section {
+            border: 1px solid var(--fb-grid);
+            background: var(--fb-surface);
+            border-radius: 14px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 6px 0;
+            border-bottom: 1px dashed var(--fb-grid);
+        }
+        .row:last-child {
+            border-bottom: 0;
+        }
+        .title {
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .muted {
+            color: var(--fb-muted);
+            font-size: 12px;
+        }
+        .btn {
+            border: 1px solid var(--fb-grid);
+            border-radius: 10px;
+            background: var(--palette-lilac, #cfbaf0);
+            padding: 8px 10px;
+            cursor: pointer;
+        }
+        .input {
+            border: 1px solid var(--fb-grid);
+            border-radius: 10px;
+            padding: 6px 8px;
+            font-size: 13px;
+            background: var(--fb-surface);
+        }
+        ul {
+            margin: 6px 0 0;
+            padding-left: 18px;
+            color: var(--fb-muted);
+            font-size: 12px;
+        }
+    `;
+
+    render() {
+        const card = this.card;
+        if (!card) return html``;
+
+        const cfg = card._config || {};
+        const calendars = Array.isArray(cfg.calendars) ? cfg.calendars : [];
+        const todos = Array.isArray(cfg.todos) ? cfg.todos : [];
+        const people = Array.isArray(cfg.people) ? cfg.people : [];
+        const shopping = cfg.shopping?.entity || 'todo.shopping_list_2';
+
+        return html`
+            <div class="wrap">
+                <div class="section">
+                    <div class="title">Sources</div>
+                    <div class="row">
+                        <div>Calendars</div>
+                        <div class="muted">${calendars.length}</div>
+                    </div>
+                    ${calendars.length
+                        ? html`<ul>
+                              ${calendars.map((c) => {
+                                  const person =
+                                      card._peopleById?.get(c.person_id || c.personId || c.person) ||
+                                      null;
+                                  return html`<li>
+                                      ${c.entity} -> ${person?.name || c.person_id || 'Unmapped'}
+                                  </li>`;
+                              })}
+                          </ul>`
+                        : html``}
+                    <div class="row">
+                        <div>Todo lists</div>
+                        <div class="muted">${todos.length}</div>
+                    </div>
+                    ${todos.length
+                        ? html`<ul>
+                              ${todos.map((t) => {
+                                  const person =
+                                      card._peopleById?.get(t.person_id || t.personId || t.person) ||
+                                      null;
+                                  return html`<li>
+                                      ${t.entity} -> ${person?.name || t.person_id || 'Unmapped'}
+                                  </li>`;
+                              })}
+                          </ul>`
+                        : html``}
+                    <div class="row">
+                        <div>People</div>
+                        <div class="muted">${people.length}</div>
+                    </div>
+                    ${people.length
+                        ? html`<ul>
+                              ${people.map((p) => html`<li>${p.name || p.id}</li>`)}
+                          </ul>`
+                        : html``}
+                    <div class="row">
+                        <div>Shopping entity</div>
+                        <div class="muted">${shopping}</div>
+                    </div>
+                    <button class="btn" @click=${() => card._openManageSources()}>
+                        Manage sources
+                    </button>
+                    <button
+                        class="btn"
+                        style="margin-left:8px"
+                        @click=${() => card._openHelp()}
+                    >
+                        ⓘ
+                    </button>
+                </div>
+
+                <div class="section">
+                    <div class="title">Preferences</div>
+                    <div class="row">
+                        <div>Days to show (fixed)</div>
+                        <div class="muted">${card._daysToShow}</div>
+                    </div>
+                    <div class="row">
+                        <div>Day range</div>
+                        <div class="muted">${card._dayStartHour}-${card._dayEndHour}</div>
+                    </div>
+                    <div class="row">
+                        <div>Refresh interval</div>
+                        <input
+                            class="input"
+                            type="number"
+                            .value=${Math.round(card._refreshIntervalMs / 60000)}
+                            @change=${(e) =>
+                                card._updateConfigPartial({
+                                    refresh_interval_ms: Number(e.target.value) * 60000,
+                                })}
+                        />
+                    </div>
+                    <div class="row">
+                        <div>Debug</div>
+                        <label>
+                            <input
+                                type="checkbox"
+                                .checked=${card._debug}
+                                @change=${(e) =>
+                                    card._updateConfigPartial({ debug: e.target.checked })}
+                            />
+                            <span class="muted">${card._debug ? 'On' : 'Off'}</span>
+                        </label>
+                    </div>
+                    <div class="row">
+                        <div>Mobile layout (this device)</div>
+                        <label>
+                            <input
+                                type="checkbox"
+                                .checked=${card._useMobileView}
+                                @change=${(e) => card._setMobileView(e.target.checked)}
+                            />
+                            <span class="muted">${card._useMobileView ? 'On' : 'Off'}</span>
+                        </label>
+                    </div>
+                    <div class="muted">
+                        Edit these in the card editor to make changes persistent.
+                    </div>
+                    <ul>
+                        <li>Days to show</li>
+                        <li>Day start/end hours</li>
+                        <li>Refresh interval</li>
+                        <li>Debug toggle</li>
+                    </ul>
+                </div>
+            </div>
+        `;
+    }
+}
+
+customElements.define('fb-settings-view', FbSettingsView);
