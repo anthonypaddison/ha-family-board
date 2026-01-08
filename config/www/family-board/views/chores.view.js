@@ -75,6 +75,7 @@ export class FbChoresView extends LitElement {
             padding: 4px 8px;
             font-size: 12px;
             cursor: pointer;
+            color: var(--fb-text);
         }
         .btn.icon {
             width: 28px;
@@ -83,6 +84,7 @@ export class FbChoresView extends LitElement {
             display: grid;
             place-items: center;
             font-size: 16px;
+            background: var(--fb-surface-2);
         }
         .empty {
             padding: 12px;
