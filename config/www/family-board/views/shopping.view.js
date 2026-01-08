@@ -95,6 +95,7 @@ export class FbShoppingView extends LitElement {
             padding: 4px 8px;
             font-size: 12px;
             cursor: pointer;
+            color: var(--fb-text);
         }
         .iconBtn {
             border: 1px solid var(--fb-grid);
@@ -130,6 +131,17 @@ export class FbShoppingView extends LitElement {
             justify-content: space-between;
             align-items: center;
             gap: 8px;
+        }
+        .commonActions {
+            display: inline-flex;
+            gap: 6px;
+        }
+        .removeBtn {
+            border: 0;
+            background: transparent;
+            color: var(--fb-muted);
+            cursor: pointer;
+            font-size: 12px;
         }
         @media (max-width: 900px) {
             .layout {
@@ -259,19 +271,31 @@ export class FbShoppingView extends LitElement {
                             <span class="muted">${commonList.length}</span>
                         </div>
                         <div class="commonList">
-                            ${visibleCommon.length
-                                ? visibleCommon.map(
-                                      (item) => html`
+                                    ${visibleCommon.length
+                                        ? visibleCommon.map(
+                                              (item) => html`
                                           <button
                                               class="commonItem"
                                               @click=${() => card._addShoppingItem(item)}
                                           >
                                               <span>${item}</span>
-                                              <span class="muted">Add</span>
+                                              <span class="commonActions">
+                                                  <span class="muted">Add</span>
+                                                  <button
+                                                      class="removeBtn"
+                                                      @click=${(e) => {
+                                                          e.stopPropagation();
+                                                          card._removeShoppingCommon(item);
+                                                      }}
+                                                      title="Remove"
+                                                  >
+                                                      Remove
+                                                  </button>
+                                              </span>
                                           </button>
                                       `
-                                  )
-                                : html`<div class="muted">No common items yet.</div>`}
+                                          )
+                                        : html`<div class="muted">No common items yet.</div>`}
                         </div>
                     </div>
                 </div>

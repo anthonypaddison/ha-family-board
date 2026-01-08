@@ -35,6 +35,29 @@ import './views/settings.view.js';
 import './views/setup.view.js';
 import { renderMainView } from './views/main.view.js';
 
+const DEFAULT_COMMON_ITEMS = [
+    'Milk',
+    'Bread',
+    'Butter',
+    'Eggs',
+    'Cheese',
+    'Apples',
+    'Bananas',
+    'Chicken',
+    'Rice',
+    'Pasta',
+    'Tomatoes',
+    'Onions',
+    'Potatoes',
+    'Cereal',
+    'Yogurt',
+    'Chocolate',
+    'Crisps',
+    'Tea',
+    'Coffee',
+    'Toilet roll',
+];
+
 class FamilyBoardCard extends LitElement {
     static properties = {
         hass: { attribute: false },
@@ -229,7 +252,11 @@ class FamilyBoardCard extends LitElement {
         if (prefs.slotMinutes === 30 || prefs.slotMinutes === 60) {
             this._slotMinutes = prefs.slotMinutes;
         }
-        this._shoppingCommon = Array.isArray(prefs.shoppingCommon) ? prefs.shoppingCommon : [];
+        if (Array.isArray(prefs.shoppingCommon) && prefs.shoppingCommon.length) {
+            this._shoppingCommon = prefs.shoppingCommon;
+        } else {
+            this._shoppingCommon = DEFAULT_COMMON_ITEMS.slice();
+        }
         this._shoppingFavourites = Array.isArray(prefs.shoppingFavourites)
             ? prefs.shoppingFavourites
             : [];
@@ -980,6 +1007,16 @@ class FamilyBoardCard extends LitElement {
         if (list.some((item) => String(item).toLowerCase() === key)) return;
         this._shoppingCommon = [name, ...list].slice(0, 50);
         this._savePrefs();
+    }
+
+    _removeShoppingCommon(name) {
+        const text = String(name || '').trim();
+        if (!text) return;
+        const key = text.toLowerCase();
+        const list = Array.isArray(this._shoppingCommon) ? this._shoppingCommon : [];
+        this._shoppingCommon = list.filter((item) => String(item).toLowerCase() !== key);
+        this._savePrefs();
+        this.requestUpdate();
     }
 
     _toggleSidebarCollapsed() {
