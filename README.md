@@ -18,15 +18,17 @@ Custom Lovelace dashboard and card for a family board in Home Assistant.
 ## Install
 1) Copy the custom card files into Home Assistant:
    - `config/www/family-board/`
-2) Add the resource (configuration.yaml):
+2) Copy the custom integration:
+   - `config/custom_components/family_board/`
+3) Add the resource (configuration.yaml):
 ```yaml
 lovelace:
   resources:
     - url: /local/family-board/family-board.js?v=YYYYMMDD-HHMMSS
       type: module
 ```
-3) Reload Lovelace or restart Home Assistant.
-4) Add the dashboard and card in YAML mode (see example below).
+4) Restart Home Assistant (required for the custom integration).
+5) Add the dashboard and card in YAML mode (see example below).
 
 ## First-run wizard (admin-only)
 If no people mappings are configured, admins see a setup wizard that:
@@ -49,6 +51,10 @@ Settings saved per user/device:
 - People filters.
 - Time slot granularity.
 - Mobile layout toggle.
+
+Persistent settings storage:
+- The `family_board` integration stores card config in `.storage`.
+- Stored config overrides YAML after restart, so changes do not revert.
 
 ## Example card YAML (placeholders)
 ```yaml
