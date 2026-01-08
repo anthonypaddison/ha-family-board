@@ -77,6 +77,7 @@ export class FbScheduleView extends LitElement {
         }
         .gridScroll {
             overflow-y: auto;
+            overflow-x: hidden;
             min-height: 0;
             padding-bottom: 6px;
             flex: 1;
