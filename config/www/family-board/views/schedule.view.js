@@ -22,10 +22,55 @@ export class FbScheduleView extends LitElement {
         .wrap {
             height: 100%;
             overflow: auto;
+            padding: 16px;
+            background: var(--fb-bg);
+        }
+        .card {
+            background: var(--fb-surface);
+            border-radius: var(--fb-radius);
+            border: 1px solid var(--fb-border);
+            box-shadow: var(--fb-shadow);
             padding: 14px;
         }
         .board {
             min-width: 1100px;
+        }
+        .filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding: 6px 6px 14px;
+        }
+        .filterChip {
+            border-radius: 999px;
+            border: 1px solid var(--fb-border);
+            background: var(--fb-surface);
+            color: var(--fb-text);
+            padding: 6px 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            min-height: 36px;
+        }
+        .filterChip.active {
+            border-color: var(--person-colour);
+            box-shadow: 0 6px 16px color-mix(in srgb, var(--person-colour) 25%, transparent);
+        }
+        .filterDot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: var(--person-colour);
+        }
+        .filterCount {
+            background: var(--fb-surface-2);
+            border: 1px solid var(--fb-border);
+            border-radius: 999px;
+            padding: 2px 6px;
+            font-size: 12px;
+            color: var(--fb-muted);
         }
         .row {
             display: grid;
@@ -141,7 +186,7 @@ export class FbScheduleView extends LitElement {
             position: relative;
             background: linear-gradient(
                     to bottom,
-                    color-mix(in srgb, var(--fb-grid) 45%, transparent) 1px,
+                    color-mix(in srgb, var(--fb-grid) 30%, transparent) 1px,
                     transparent 1px
                 )
                 top / 100% var(--fb-slot-px);
@@ -165,7 +210,7 @@ export class FbScheduleView extends LitElement {
             padding: 8px 10px;
             text-align: left;
             overflow: hidden;
-            box-shadow: 0 6px 14px color-mix(in srgb, #000 12%, transparent);
+            box-shadow: 0 6px 14px color-mix(in srgb, #000 10%, transparent);
         }
         .eventTime {
             font-size: 12px;
@@ -311,9 +356,33 @@ export class FbScheduleView extends LitElement {
             })),
         });
 
+        const summary = card._summaryCounts ? card._summaryCounts() : [];
+        const activeFilters = card._personFilterSet || new Set();
+
         return html`
             <div class="wrap">
-                <div class="board">
+                <div class="card">
+                    ${summary.length
+                        ? html`<div class="filters">
+                              ${summary.map((p) => {
+                                  const isActive = activeFilters.has(p.id);
+                                  return html`
+                                      <button
+                                          class="filterChip ${isActive ? 'active' : ''}"
+                                          style="--person-colour:${p.color}"
+                                          @click=${() =>
+                                              card._onPersonToggle({ detail: { id: p.id } })}
+                                          aria-pressed=${isActive ? 'true' : 'false'}
+                                      >
+                                          <span class="filterDot"></span>
+                                          <span>${p.name}</span>
+                                          <span class="filterCount">${p.eventsLeft}</span>
+                                      </button>
+                                  `;
+                              })}
+                          </div>`
+                        : html``}
+                    <div class="board">
                     ${totalEvents === 0
                         ? html`<div style="margin-bottom:10px;color:var(--fb-muted);font-size:13px">
                               No events found. <button
@@ -448,6 +517,7 @@ export class FbScheduleView extends LitElement {
                                 </div>
                             `;
                         })}
+                    </div>
                     </div>
                 </div>
             </div>
