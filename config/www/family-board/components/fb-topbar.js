@@ -21,7 +21,7 @@ export class FbTopbar extends LitElement {
         :host {
             display: block;
             padding: 14px 14px 10px;
-            background: transparent;
+            background: var(--fb-surface);
             box-shadow: var(--fb-shadow);
             border-radius: 10px;
         }
