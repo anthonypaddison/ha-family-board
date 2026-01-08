@@ -108,6 +108,10 @@ class FamilyBoardCard extends LitElement {
                 height: 100%;
                 width: 100%;
             }
+            :host,
+            :host * {
+                box-sizing: border-box;
+            }
             .app {
                 height: 100%;
                 width: 100%;
@@ -115,6 +119,7 @@ class FamilyBoardCard extends LitElement {
                 grid-template-columns: 260px 1fr;
                 background: var(--fb-bg);
                 color: var(--fb-text);
+                overflow: hidden;
             }
             .sidebar {
                 background: var(--fb-surface);
@@ -130,6 +135,7 @@ class FamilyBoardCard extends LitElement {
                 min-width: 0;
                 min-height: 0;
                 background: var(--fb-bg);
+                overflow: hidden;
             }
             .content {
                 position: relative;
