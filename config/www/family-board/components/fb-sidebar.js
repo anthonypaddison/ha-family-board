@@ -100,36 +100,42 @@ export class FbSidebar extends LitElement {
         .brand {
             font-weight: 800;
             font-size: 18px;
-            padding: 12px 14px;
+            height: 56px;
+            padding: 0 14px;
             border-radius: 0;
             background: var(--fb-accent);
             border: 1px solid var(--fb-border);
             width: 100%;
             box-sizing: border-box;
+            display: flex;
+            align-items: center;
         }
 
         .footer {
             margin-top: auto;
             display: flex;
-            flex-direction: column;
-            gap: 0;
-            border-top: 1px solid var(--fb-border);
+            gap: 8px;
+            justify-content: center;
+            padding: 10px 12px 12px;
         }
 
         .footerBtn {
-            width: 100%;
             border: 0;
-            background: var(--fb-surface);
-            padding: 12px 0;
+            background: transparent;
+            padding: 0;
             cursor: pointer;
             color: var(--fb-text);
             display: grid;
             place-items: center;
-            border-bottom: 1px solid var(--fb-border);
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            transition: box-shadow 0.15s ease, background 0.15s ease;
         }
 
-        .footerBtn:last-child {
-            border-bottom: 0;
+        .footerBtn:hover {
+            background: var(--fb-surface);
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
         }
 
         .rail.collapsed .navbtn {
@@ -144,8 +150,7 @@ export class FbSidebar extends LitElement {
         }
 
         .rail.collapsed .brand {
-            text-align: center;
-            padding: 12px 0;
+            display: none;
         }
     `;
 
@@ -193,7 +198,6 @@ export class FbSidebar extends LitElement {
                     ${item('chores', 'Chores', 'mdi:check-circle-outline')}
                     ${item('shopping', 'Shopping', 'mdi:cart-outline')}
                     ${item('home', 'Home', 'mdi:home-automation')}
-                    ${isAdmin ? item('settings', 'Settings', 'mdi:cog-outline') : html``}
                 </div>
                 <div class="footer">
                     ${isAdmin
