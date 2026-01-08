@@ -21,8 +21,9 @@ export class FbTopbar extends LitElement {
         :host {
             display: block;
             padding: 14px 14px 10px;
-            background: var(--fb-surface);
+            background: transparent;
             box-shadow: var(--fb-shadow);
+            border-radius: 10px;
         }
 
         .toprow {
@@ -47,8 +48,8 @@ export class FbTopbar extends LitElement {
         }
 
         .time {
-            font-size: 16px;
-            font-weight: 700;
+            font-size: 18px;
+            font-weight: 800;
             color: var(--fb-muted);
             font-variant-numeric: tabular-nums;
         }
@@ -101,7 +102,7 @@ export class FbTopbar extends LitElement {
         .navGroup {
             display: inline-flex;
             border: 1px solid var(--fb-border);
-            border-radius: 10px;
+            border-radius: 8px;
             overflow: hidden;
             background: var(--fb-surface);
         }
@@ -121,7 +122,7 @@ export class FbTopbar extends LitElement {
             border-left: 1px solid var(--fb-border);
         }
         .navBtn.center {
-            background: var(--fb-surface-2);
+            background: var(--fb-surface);
             font-weight: 700;
         }
 
@@ -150,7 +151,7 @@ export class FbTopbar extends LitElement {
             align-items: center;
             gap: 8px;
             border: 1px solid var(--fb-grid);
-            border-radius: 14px;
+            border-radius: 12px;
             padding: 10px 12px;
             background: var(--fb-surface-3);
             font-size: 13px;
@@ -169,7 +170,7 @@ export class FbTopbar extends LitElement {
 
         .summaryBadge:not(.active) {
             background: var(--fb-surface-2);
-            opacity: 0.75;
+            opacity: 0.65;
         }
 
         .dot {
