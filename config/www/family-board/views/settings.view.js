@@ -195,6 +195,16 @@ export class FbSettingsView extends LitElement {
                         </select>
                     </div>
                     <div class="row">
+                        <div>Default event duration (minutes)</div>
+                        <input
+                            class="input"
+                            type="number"
+                            min="5"
+                            .value=${card._defaultEventMinutes || 30}
+                            @change=${(e) => card._setDefaultEventMinutesPref(e.target.value)}
+                        />
+                    </div>
+                    <div class="row">
                         <div>Mobile layout (this device)</div>
                         <label>
                             <input

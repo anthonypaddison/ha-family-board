@@ -64,6 +64,7 @@ export class FbDialogs extends LitElement {
             font-size: 15px;
             background: var(--fb-surface);
             color: var(--fb-text);
+            font-family: inherit;
         }
         .actions {
             display: flex;
@@ -112,6 +113,23 @@ export class FbDialogs extends LitElement {
         return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(
             d.getHours()
         )}:${pad2(d.getMinutes())}`;
+    }
+
+    _defaultEndValue(startValue) {
+        const minutes = Number(this.card?._defaultEventMinutes || 30);
+        const start = startValue ? new Date(startValue) : new Date();
+        if (Number.isNaN(start.getTime())) return this._todayLocalDateTimeInputValue();
+        start.setMinutes(start.getMinutes() + minutes);
+        return `${start.getFullYear()}-${pad2(start.getMonth() + 1)}-${pad2(
+            start.getDate()
+        )}T${pad2(start.getHours())}:${pad2(start.getMinutes())}`;
+    }
+
+    _syncEndTime(e) {
+        const startValue = e?.target?.value;
+        const endInput = this.renderRoot.querySelector('#end');
+        if (!endInput) return;
+        endInput.value = this._defaultEndValue(startValue);
     }
 
     _extractEmoji(text) {
@@ -190,6 +208,7 @@ export class FbDialogs extends LitElement {
                                       id="start"
                                       type="datetime-local"
                                       .value=${this._todayLocalDateTimeInputValue()}
+                                      @change=${this._syncEndTime}
                                   />
                               </div>
 
@@ -198,7 +217,9 @@ export class FbDialogs extends LitElement {
                                   <input
                                       id="end"
                                       type="datetime-local"
-                                      .value=${this._todayLocalDateTimeInputValue()}
+                                      .value=${this._defaultEndValue(
+                                          this._todayLocalDateTimeInputValue()
+                                      )}
                                   />
                               </div>
 
@@ -228,7 +249,8 @@ export class FbDialogs extends LitElement {
                               ${calendars.length && !canCreate
                                   ? html`<div class="row">
                                         <span style="color:var(--fb-muted);font-size:12px"
-                                            >Not supported by this calendar.</span
+                                            >This calendar entity does not support creating
+                                            events in Home Assistant.</span
                                         >
                                     </div>`
                                   : html``}

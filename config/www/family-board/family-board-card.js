@@ -178,6 +178,7 @@ class FamilyBoardCard extends LitElement {
         this._scheduleDays = 5;
         this._shoppingCommon = [];
         this._shoppingFavourites = [];
+        this._defaultEventMinutes = 30;
     }
 
     setConfig(config) {
@@ -251,6 +252,9 @@ class FamilyBoardCard extends LitElement {
         this._sidebarCollapsed = Boolean(prefs.sidebarCollapsed);
         if (prefs.slotMinutes === 30 || prefs.slotMinutes === 60) {
             this._slotMinutes = prefs.slotMinutes;
+        }
+        if (Number.isFinite(prefs.defaultEventMinutes)) {
+            this._defaultEventMinutes = Math.max(5, Number(prefs.defaultEventMinutes));
         }
         if (Array.isArray(prefs.shoppingCommon) && prefs.shoppingCommon.length) {
             this._shoppingCommon = prefs.shoppingCommon;
@@ -966,6 +970,7 @@ class FamilyBoardCard extends LitElement {
             useMobileView: Boolean(this._useMobileView),
             sidebarCollapsed: Boolean(this._sidebarCollapsed),
             slotMinutes: this._slotMinutes,
+            defaultEventMinutes: this._defaultEventMinutes,
             shoppingCommon: this._shoppingCommon,
             shoppingFavourites: this._shoppingFavourites,
         });
@@ -983,6 +988,13 @@ class FamilyBoardCard extends LitElement {
         this._slotMinutes = value;
         this._savePrefs();
         this._queueRefresh();
+    }
+
+    _setDefaultEventMinutesPref(minutes) {
+        const value = Number(minutes);
+        if (!Number.isFinite(value)) return;
+        this._defaultEventMinutes = Math.max(5, value);
+        this._savePrefs();
     }
 
     _toggleShoppingFavourite(name) {
