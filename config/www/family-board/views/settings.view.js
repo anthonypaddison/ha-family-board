@@ -17,6 +17,11 @@ export class FbSettingsView extends LitElement {
             overflow: auto;
             padding: 14px;
         }
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
         .section {
             border: 1px solid var(--fb-grid);
             background: var(--fb-surface);
@@ -38,11 +43,11 @@ export class FbSettingsView extends LitElement {
             font-weight: 700;
             margin-bottom: 6px;
             color: var(--fb-text);
-            font-size: 16px;
+            font-size: 18px;
         }
         .muted {
             color: var(--fb-muted);
-            font-size: 13px;
+            font-size: 15px;
         }
         .btn {
             border: 1px solid var(--fb-grid);
@@ -56,14 +61,25 @@ export class FbSettingsView extends LitElement {
             border: 1px solid var(--fb-grid);
             border-radius: 8px;
             padding: 6px 8px;
-            font-size: 14px;
+            font-size: 15px;
             background: var(--fb-surface);
+            color: var(--fb-text);
         }
         ul {
             margin: 6px 0 0;
             padding-left: 18px;
             color: var(--fb-muted);
-            font-size: 13px;
+            font-size: 15px;
+        }
+        .actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        @media (max-width: 900px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
         }
     `;
 
@@ -79,6 +95,7 @@ export class FbSettingsView extends LitElement {
 
         return html`
             <div class="wrap">
+                <div class="layout">
                 <div class="section">
                     <div class="title">Sources</div>
                     <div class="row">
@@ -126,25 +143,17 @@ export class FbSettingsView extends LitElement {
                         <div>Shopping entity</div>
                         <div class="muted">${shopping}</div>
                     </div>
-                    <button class="btn" @click=${() => card._openManageSources()}>
-                        Manage sources
-                    </button>
-                    ${card._hass?.user?.is_admin
-                        ? html`<button
-                              class="btn"
-                              style="margin-left:8px"
-                              @click=${() => card._openEditor()}
-                          >
-                              Open card editor
-                          </button>`
-                        : html``}
-                    <button
-                        class="btn"
-                        style="margin-left:8px"
-                        @click=${() => card._openHelp()}
-                    >
-                        ⓘ
-                    </button>
+                    <div class="actions">
+                        <button class="btn" @click=${() => card._openManageSources()}>
+                            Manage sources
+                        </button>
+                        ${card._hass?.user?.is_admin
+                            ? html`<button class="btn" @click=${() => card._openEditor()}>
+                                  Open card editor
+                              </button>`
+                            : html``}
+                        <button class="btn" @click=${() => card._openHelp()}>ⓘ</button>
+                    </div>
                 </div>
 
                 <div class="section">
@@ -198,6 +207,7 @@ export class FbSettingsView extends LitElement {
                     </div>
                     <div class="muted">Mobile layout is stored per user and device.</div>
                     <div class="muted">Use the card editor for schedule layout changes.</div>
+                </div>
                 </div>
             </div>
         `;

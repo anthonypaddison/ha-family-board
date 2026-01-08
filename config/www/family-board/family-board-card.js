@@ -1149,6 +1149,7 @@ class FamilyBoardCard extends LitElement {
     }
 
     _openEditor() {
+        this._onOpenEditor();
         this._editorGuideOpen = true;
         this.requestUpdate();
     }
