@@ -113,7 +113,7 @@ class FamilyBoardCard extends LitElement {
                 box-sizing: border-box;
             }
             .app {
-                height: 100%;
+                height: 100vh;
                 width: 100%;
                 display: grid;
                 grid-template-columns: 260px 1fr;
