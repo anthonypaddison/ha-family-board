@@ -37,6 +37,8 @@ export class FbSettingsView extends LitElement {
         .title {
             font-weight: 700;
             margin-bottom: 6px;
+            color: var(--fb-text);
+            font-size: 16px;
         }
         .muted {
             color: var(--fb-muted);
@@ -48,6 +50,7 @@ export class FbSettingsView extends LitElement {
             background: var(--palette-lilac, #cfbaf0);
             padding: 8px 10px;
             cursor: pointer;
+            color: var(--fb-text);
         }
         .input {
             border: 1px solid var(--fb-grid);
@@ -165,11 +168,12 @@ export class FbSettingsView extends LitElement {
                                 type="checkbox"
                                 .checked=${card._debug}
                                 @change=${(e) =>
-                                card._updateConfigPartial({ debug: e.target.checked })}
+                                    card._updateConfigPartial({ debug: e.target.checked })}
                             />
                             <span class="muted">${card._debug ? 'On' : 'Off'}</span>
                         </label>
                     </div>
+                    <div class="muted">Debug adds console logs and persists in the card config.</div>
                     <div class="row">
                         <div>Time slots (this device)</div>
                         <select
@@ -192,6 +196,7 @@ export class FbSettingsView extends LitElement {
                             <span class="muted">${card._useMobileView ? 'On' : 'Off'}</span>
                         </label>
                     </div>
+                    <div class="muted">Mobile layout is stored per user and device.</div>
                     <div class="muted">Use the card editor for schedule layout changes.</div>
                 </div>
             </div>

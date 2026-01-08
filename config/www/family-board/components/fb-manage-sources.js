@@ -210,6 +210,9 @@ export class FbManageSources extends LitElement {
 
                     <div class="section">
                         <div style="font-weight:700">People</div>
+                        <div class="note">
+                            Add a person id, display name, colour, and which header row they appear in.
+                        </div>
                         ${people.map(
                             (p, idx) => html`
                                 <div class="row people">
@@ -263,6 +266,9 @@ export class FbManageSources extends LitElement {
 
                     <div class="section">
                         <div style="font-weight:700">Calendars</div>
+                        <div class="note">
+                            Use calendar.entity ids, map to person_id, and set role (family or routine).
+                        </div>
                         ${calendars.map(
                             (c, idx) => html`
                                 <div class="row calendars">
@@ -312,6 +318,7 @@ export class FbManageSources extends LitElement {
 
                     <div class="section">
                         <div style="font-weight:700">Todo lists</div>
+                        <div class="note">Use todo.entity ids and map each list to a person_id.</div>
                         ${todos.map(
                             (t, idx) => html`
                                 <div class="row">
@@ -358,6 +365,7 @@ export class FbManageSources extends LitElement {
 
                     <div class="section">
                         <div style="font-weight:700">Shopping</div>
+                        <div class="note">Set the shopping list todo entity (todo.shopping_list_2).</div>
                         <div class="row small">
                             <input
                                 placeholder="todo.shopping_list_2"

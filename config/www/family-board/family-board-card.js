@@ -27,6 +27,7 @@ import './components/fb-dialogs.js';
 import './components/fb-manage-sources.js';
 import './components/fb-event-dialog.js';
 import './ui/help.dialog.js';
+import './ui/editor-guide.dialog.js';
 import './views/home.view.js';
 import './views/chores.view.js';
 import './views/shopping.view.js';
@@ -53,6 +54,7 @@ class FamilyBoardCard extends LitElement {
         _eventDialogEntity: { state: true },
         _eventDialogEvent: { state: true },
         _helpOpen: { state: true },
+        _editorGuideOpen: { state: true },
         _sidebarCollapsed: { state: true },
     };
 
@@ -147,6 +149,7 @@ class FamilyBoardCard extends LitElement {
         this._eventDialogEntity = '';
         this._eventDialogEvent = null;
         this._helpOpen = false;
+        this._editorGuideOpen = false;
         this._refreshIntervalMs = 300_000;
         this._prefsLoaded = false;
         this._useMobileView = false;
@@ -322,7 +325,7 @@ class FamilyBoardCard extends LitElement {
                             .config=${this._config}
                             @fb-sources-save=${this._onSourcesSave}
                             @fb-sources-close=${() => (this._sourcesOpen = false)}
-                            @fb-open-editor=${this._onOpenEditor}
+                            @fb-open-editor=${this._openEditor}
                         ></fb-manage-sources>
 
                         <fb-event-dialog
@@ -350,6 +353,11 @@ class FamilyBoardCard extends LitElement {
                             .open=${this._helpOpen}
                             @fb-help-close=${() => (this._helpOpen = false)}
                         ></fb-help-dialog>
+                        <fb-editor-guide-dialog
+                            .open=${this._editorGuideOpen}
+                            @fb-editor-guide-close=${() => (this._editorGuideOpen = false)}
+                            @fb-editor-guide-open=${this._onOpenEditor}
+                        ></fb-editor-guide-dialog>
                     </div>
                 </div>
             </div>
@@ -1086,7 +1094,8 @@ class FamilyBoardCard extends LitElement {
     }
 
     _openEditor() {
-        this._onOpenEditor();
+        this._editorGuideOpen = true;
+        this.requestUpdate();
     }
 
     _openHelp() {
