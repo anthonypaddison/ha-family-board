@@ -65,6 +65,7 @@ export class FbMonthView extends LitElement {
             cursor: default;
             background: var(--fb-surface-2);
             font-weight: 700;
+            color: #6b5aa6;
         }
         .cell:nth-child(7n) {
             border-right: 0;
