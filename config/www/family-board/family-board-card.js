@@ -222,7 +222,7 @@ class FamilyBoardCard extends LitElement {
         if (!userId) return;
         const prefs = loadPrefs(userId);
         const filters = Array.isArray(prefs.personFilters) ? prefs.personFilters : [];
-        this._personFilterSet = new Set(filters);
+        this._personFilterSet = new Set(filters.map((id) => this._normalisePersonId(id)));
         this._useMobileView =
             prefs.useMobileView !== undefined ? prefs.useMobileView : getDeviceKind() === 'mobile';
         this._sidebarCollapsed = Boolean(prefs.sidebarCollapsed);
@@ -556,7 +556,9 @@ class FamilyBoardCard extends LitElement {
 
     _isPersonAllowed(personId) {
         if (!this._personFilterSet || this._personFilterSet.size === 0) return true;
-        return this._personFilterSet.has(personId);
+        const key = this._normalisePersonId(personId);
+        if (!key) return true;
+        return this._personFilterSet.has(key);
     }
 
     _neutralColor() {
@@ -904,13 +906,18 @@ class FamilyBoardCard extends LitElement {
     }
 
     _onPersonToggle = (ev) => {
-        const personId = ev?.detail?.id;
+        const personId = this._normalisePersonId(ev?.detail?.id);
         if (!personId) return;
         if (this._personFilterSet.has(personId)) this._personFilterSet.delete(personId);
         else this._personFilterSet.add(personId);
         this._savePrefs();
         this._queueRefresh();
     };
+
+    _normalisePersonId(personId) {
+        if (personId === null || personId === undefined) return '';
+        return String(personId).trim().toLowerCase();
+    }
 
     _savePrefs() {
         const userId = this._hass?.user?.id;
