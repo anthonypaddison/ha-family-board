@@ -212,6 +212,9 @@ export class FbScheduleView extends LitElement {
             background: #efeaff;
             border-color: color-mix(in srgb, #efeaff 60%, var(--fb-border));
         }
+        .dayCol.todayCol .slotBg {
+            background-color: #efeaff;
+        }
         .slotBg {
             position: relative;
             background: linear-gradient(
