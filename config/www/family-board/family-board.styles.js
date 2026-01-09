@@ -41,16 +41,21 @@ export function fbStyles() {
 
             display: block;
             width: 100%;
-            height: 100vh;
+            height: 100%;
+            max-height: 100vh;
+            min-height: 0;
+            overflow: hidden;
         }
 
         .app {
-            height: 100vh;
+            height: 100%;
             width: 100%;
             display: grid;
             grid-template-columns: 260px 1fr;
             background: var(--fb-bg);
             color: var(--fb-text);
+            min-height: 0;
+            overflow: hidden;
         }
 
         .sidebar {
@@ -60,6 +65,7 @@ export function fbStyles() {
             display: flex;
             flex-direction: column;
             gap: 10px;
+            min-height: 0;
         }
 
         .brand {
