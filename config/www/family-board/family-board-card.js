@@ -680,13 +680,6 @@ class FamilyBoardCard extends LitElement {
     _summaryCounts() {
         const calendars = Array.isArray(this._config?.calendars) ? this._config.calendars : [];
         const todos = Array.isArray(this._config?.todos) ? this._config.todos : [];
-        const day = startOfDay(new Date());
-
-        const todoMap = new Map();
-        for (const t of todos) {
-            const items = this._todoItems?.[t.entity] || [];
-            todoMap.set(t.entity, this._dueTodayOrNoDueCount(items));
-        }
 
         const people = this._peopleById?.size
             ? Array.from(this._peopleById.values())
@@ -700,27 +693,52 @@ class FamilyBoardCard extends LitElement {
                 name: person.name || person.id,
                 color: getPersonColour(person),
                 header_row: person.header_row || 1,
-                eventsLeft: 0,
-                todosLeft: 0,
+                eventsLeft: this._countEventsTodayForPerson(person.id),
+                todosLeft: this._countTodosTodayForPerson(person.id),
+            });
+            debugLog(this._debug, 'Header counts', {
+                personId: person.id,
+                eventsToday: summaryById.get(person.id).eventsLeft,
+                todosToday: summaryById.get(person.id).todosLeft,
             });
         }
 
-        for (const c of calendars) {
-            const person = this._personForEntity(c.entity);
-            if (!person) continue;
-            const summary = summaryById.get(person.id);
-            if (!summary) continue;
-            summary.eventsLeft += this._eventsForEntityOnDay(c.entity, day).length;
-        }
-
-        for (const t of todos) {
-            const personId = t.person_id || t.personId || t.person || t.entity;
-            const summary = summaryById.get(personId);
-            if (!summary) continue;
-            summary.todosLeft += todoMap.get(t.entity) ?? 0;
-        }
-
         return Array.from(summaryById.values());
+    }
+
+    _getTodayRange() {
+        const today = startOfDay(new Date());
+        return { start: today, end: endOfDay(today) };
+    }
+
+    _countEventsTodayForPerson(personId) {
+        const calendars = Array.isArray(this._config?.calendars) ? this._config.calendars : [];
+        const target = this._normalisePersonId(personId);
+        if (!target) return 0;
+        const today = startOfDay(new Date());
+
+        return calendars.reduce((sum, c) => {
+            const person = this._personForEntity(c.entity);
+            const mappedId = this._normalisePersonId(
+                person?.id || c.person_id || c.personId || c.person || c.entity
+            );
+            if (!mappedId || mappedId !== target) return sum;
+            return sum + this._eventsForEntityOnDay(c.entity, today).length;
+        }, 0);
+    }
+
+    _countTodosTodayForPerson(personId) {
+        const todos = Array.isArray(this._config?.todos) ? this._config.todos : [];
+        const target = this._normalisePersonId(personId);
+        if (!target) return 0;
+        return todos.reduce((sum, t) => {
+            const mappedId = this._normalisePersonId(
+                t.person_id || t.personId || t.person || t.entity
+            );
+            if (!mappedId || mappedId !== target) return sum;
+            const items = this._todoItems?.[t.entity] || [];
+            return sum + this._dueTodayOrNoDueCount(items);
+        }, 0);
     }
 
     _dateLabel() {
