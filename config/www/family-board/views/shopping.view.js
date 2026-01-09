@@ -204,11 +204,12 @@ export class FbShoppingView extends LitElement {
             ? card._shoppingFavourites
             : [];
         const common = Array.isArray(card._shoppingCommon) ? card._shoppingCommon : [];
-        const commonList = Array.from(
-            new Map(
-                [...favourites, ...common].map((item) => [String(item).toLowerCase(), String(item)])
-            ).values()
-        );
+        const favList = favourites.map((item) => String(item));
+        const favKeys = new Set(favList.map((item) => item.toLowerCase()));
+        const defaultList = common
+            .map((item) => String(item))
+            .filter((item) => !favKeys.has(item.toLowerCase()));
+        const commonList = [...favList, ...defaultList];
         const visibleCommon = this._commonExpanded ? commonList : commonList.slice(0, 10);
 
         return html`
