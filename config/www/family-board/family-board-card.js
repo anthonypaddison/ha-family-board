@@ -207,13 +207,15 @@ class FamilyBoardCard extends LitElement {
         this._shoppingFavourites = [];
         this._defaultEventMinutes = 30;
         this._storageLoaded = false;
+        this._storedConfig = null;
         this._toastMessage = '';
         this._toastDetail = '';
     }
 
     setConfig(config) {
         if (!config) throw new Error('Family Board: missing config');
-        this._applyConfigImmediate(config, { useDefaults: true, refresh: true });
+        const merged = this._storedConfig ? this._mergeConfig(config, this._storedConfig) : config;
+        this._applyConfigImmediate(merged, { useDefaults: true, refresh: true });
         if (this._hass) this._loadStoredConfig();
     }
 
@@ -1183,6 +1185,7 @@ class FamilyBoardCard extends LitElement {
         this._storageLoaded = true;
         const stored = await this._getStoredConfig();
         if (!stored) return;
+        this._storedConfig = stored;
         const merged = this._mergeConfig(this._config || {}, stored);
         this._applyConfigImmediate(merged, { useDefaults: false, refresh: true });
     }
@@ -1235,10 +1238,12 @@ class FamilyBoardCard extends LitElement {
         const ok = await this._callWsSet(config);
         if (ok) {
             this._persistMode = 'ws';
+            this._storedConfig = config;
             return { ok: true, mode: 'ws' };
         }
         this._persistMode = 'local';
         this._saveLocalConfig(config);
+        this._storedConfig = config;
         return { ok: true, mode: 'local' };
     }
 
@@ -1297,8 +1302,9 @@ class FamilyBoardCard extends LitElement {
         this._dayEndHour = config.day_end_hour ?? dayEnd;
         this._slotMinutes = config.slot_minutes ?? slotMinutes;
         this._pxPerHour = config.px_per_hour ?? pxPerHour;
-        this._daysToShow = 5;
-        this._scheduleDays = 5;
+        const daysToShow = config.days_to_show ?? 5;
+        this._daysToShow = daysToShow;
+        this._scheduleDays = daysToShow;
         this._refreshIntervalMs = config.refresh_interval_ms ?? refreshMs;
 
         this._ensureVisibilitySets();
