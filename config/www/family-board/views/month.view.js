@@ -104,6 +104,9 @@ export class FbMonthView extends LitElement {
 
         const cfg = card._config || {};
         const calendars = Array.isArray(cfg.calendars) ? cfg.calendars : [];
+        const filteredCalendars = calendars.filter((c) =>
+            card._isPersonAllowed(c.person_id || c.personId || c.person || c.entity)
+        );
 
         // IMPORTANT: month view must use the month-offset date, not the day view date
         const baseDay = startOfDay(card._selectedMonthDay());
@@ -125,13 +128,13 @@ export class FbMonthView extends LitElement {
         const dayStats = cells.map((d) => {
             if (!d) return { d: null, isToday: false, pips: [], remaining: 0, dayTotal: 0 };
 
-            const dayTotal = calendars.reduce(
+            const dayTotal = filteredCalendars.reduce(
                 (sum, c) => sum + card._eventsForEntityOnDay(c.entity, d).length,
                 0
             );
 
             const perPerson = new Map();
-            for (const c of calendars) {
+            for (const c of filteredCalendars) {
                 const events = card._eventsForEntityOnDay(c.entity, d);
                 if (!events.length) continue;
                 const person = card._personForEntity(c.entity);
@@ -154,7 +157,24 @@ export class FbMonthView extends LitElement {
         const daysWithEvents = dayStats.filter((x) => x.dayTotal > 0).length;
         const totalEvents = dayStats.reduce((sum, x) => sum + x.dayTotal, 0);
 
-        debugLog(card._debug, 'MonthView event counts', { daysWithEvents, totalEvents });
+        if (card._debug) {
+            const totalEventsAll = cells.reduce((sum, d) => {
+                if (!d) return sum;
+                return (
+                    sum +
+                    calendars.reduce(
+                        (inner, c) => inner + card._eventsForEntityOnDay(c.entity, d).length,
+                        0
+                    )
+                );
+            }, 0);
+            debugLog(card._debug, 'MonthView filter', {
+                totalEventsAll,
+                totalEventsFiltered: totalEvents,
+                calendarsAll: calendars.length,
+                calendarsFiltered: filteredCalendars.length,
+            });
+        }
 
         return html`
             <div class="wrap">
