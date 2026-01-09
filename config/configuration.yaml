@@ -18,3 +18,5 @@ lovelace:
             show_in_sidebar: true
             require_admin: false
             filename: lovelace/family-board.yaml
+
+family_board:
