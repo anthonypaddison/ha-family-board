@@ -101,6 +101,7 @@ export class FbDialogs extends LitElement {
         this._emoji = '';
         this._textValue = '';
         this.requestUpdate();
+        this.dispatchEvent(new CustomEvent('fb-dialog-close', { bubbles: true, composed: true }));
     }
 
     _emit(type, detail) {

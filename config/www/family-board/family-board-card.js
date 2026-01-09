@@ -207,16 +207,28 @@ class FamilyBoardCard extends LitElement {
         this._shoppingFavourites = [];
         this._defaultEventMinutes = 30;
         this._storageLoaded = false;
+        this._storageLoadPromise = null;
         this._storedConfig = null;
+        this._yamlConfig = null;
+        this._persistMode = 'none';
         this._toastMessage = '';
         this._toastDetail = '';
     }
 
     setConfig(config) {
         if (!config) throw new Error('Family Board: missing config');
-        const merged = this._storedConfig ? this._mergeConfig(config, this._storedConfig) : config;
-        this._applyConfigImmediate(merged, { useDefaults: true, refresh: true });
-        if (this._hass) this._loadStoredConfig();
+        this._yamlConfig = config;
+        this._debug = Boolean(config.debug);
+        debugLog(this._debug, 'setConfig received', config);
+        if (!this._hass) {
+            this._resolveConfig({ refresh: true });
+            return;
+        }
+        if (this._storageLoaded) {
+            this._resolveConfig({ refresh: true });
+            return;
+        }
+        this._loadStoredConfig();
     }
 
     getCardSize() {
@@ -360,6 +372,7 @@ class FamilyBoardCard extends LitElement {
                             .calendars=${this._config?.calendars || []}
                             .todos=${this._config?.todos || []}
                             .shopping=${this._config?.shopping || {}}
+                            @fb-dialog-close=${this._onDialogClose}
                             @fb-add-calendar=${this._onAddCalendar}
                             @fb-add-todo=${this._onAddTodo}
                             @fb-add-shopping=${this._onAddShopping}
@@ -371,7 +384,7 @@ class FamilyBoardCard extends LitElement {
                             .open=${this._sourcesOpen}
                             .config=${this._config}
                             @fb-sources-save=${this._onSourcesSave}
-                            @fb-sources-close=${() => (this._sourcesOpen = false)}
+                            @fb-sources-close=${this._onSourcesClose}
                             @fb-open-editor=${this._openEditor}
                         ></fb-manage-sources>
 
@@ -398,11 +411,11 @@ class FamilyBoardCard extends LitElement {
 
                         <fb-help-dialog
                             .open=${this._helpOpen}
-                            @fb-help-close=${() => (this._helpOpen = false)}
+                            @fb-help-close=${this._onHelpClose}
                         ></fb-help-dialog>
                         <fb-editor-guide-dialog
                             .open=${this._editorGuideOpen}
-                            @fb-editor-guide-close=${() => (this._editorGuideOpen = false)}
+                            @fb-editor-guide-close=${this._onEditorGuideClose}
                             @fb-editor-guide-open=${this._onOpenEditor}
                         ></fb-editor-guide-dialog>
                         ${this._toastMessage
@@ -806,6 +819,8 @@ class FamilyBoardCard extends LitElement {
     _onFab = () => {
         const screen = this._screen || 'schedule';
         if (screen === 'home' || screen === 'settings') return;
+        debugLog(this._debug, 'fab click', { screen, mode: this._mainMode || 'schedule' });
+        this._closeAllDialogs();
         this._dialogOpen = true;
         if (screen === 'chores') {
             this._dialogMode = 'todo';
@@ -823,15 +838,18 @@ class FamilyBoardCard extends LitElement {
             this._dialogItem = null;
             this._dialogEntity = '';
         }
+        debugLog(this._debug, 'dialog open', { type: 'main', mode: this._dialogMode });
     };
 
     _openTodoAddForEntity(entityId) {
         if (!entityId) return;
+        this._closeAllDialogs();
         this._dialogOpen = true;
         this._dialogMode = 'todo';
         this._dialogTitle = 'Add chore';
         this._dialogItem = null;
         this._dialogEntity = entityId;
+        debugLog(this._debug, 'dialog open', { type: 'main', mode: this._dialogMode });
     }
 
     _onAddCalendar = async (ev) => {
@@ -874,7 +892,9 @@ class FamilyBoardCard extends LitElement {
 
     _openManageSources() {
         if (!this._hass?.user?.is_admin) return;
+        this._closeAllDialogs();
         this._sourcesOpen = true;
+        debugLog(this._debug, 'dialog open', { type: 'sources' });
     }
 
     _onSourcesSave = async (ev) => {
@@ -897,6 +917,52 @@ class FamilyBoardCard extends LitElement {
         this._refreshAll();
     }
 
+    _closeAllDialogs() {
+        const wasOpen =
+            this._dialogOpen ||
+            this._eventDialogOpen ||
+            this._sourcesOpen ||
+            this._helpOpen ||
+            this._editorGuideOpen;
+        if (this._dialogOpen) this._clearDialogState();
+        if (this._eventDialogOpen) this._onEventDialogClose();
+        this._sourcesOpen = false;
+        this._helpOpen = false;
+        this._editorGuideOpen = false;
+        if (wasOpen) {
+            debugLog(this._debug, 'dialog close', { type: 'all' });
+        }
+    }
+
+    _clearDialogState() {
+        this._dialogOpen = false;
+        this._dialogMode = '';
+        this._dialogTitle = '';
+        this._dialogItem = null;
+        this._dialogEntity = '';
+    }
+
+    _onDialogClose = () => {
+        if (!this._dialogOpen) return;
+        this._clearDialogState();
+        debugLog(this._debug, 'dialog close', { type: 'main' });
+    };
+
+    _onSourcesClose = () => {
+        this._sourcesOpen = false;
+        debugLog(this._debug, 'dialog close', { type: 'sources' });
+    };
+
+    _onHelpClose = () => {
+        this._helpOpen = false;
+        debugLog(this._debug, 'dialog close', { type: 'help' });
+    };
+
+    _onEditorGuideClose = () => {
+        this._editorGuideOpen = false;
+        debugLog(this._debug, 'dialog close', { type: 'editor-guide' });
+    };
+
     _onOpenEditor = () => {
         if (!this._hass?.user?.is_admin) return;
         fireEvent(this, 'll-edit-card', { card: this });
@@ -910,11 +976,13 @@ class FamilyBoardCard extends LitElement {
 
     async _editTodoItem(entityId, item) {
         if (!entityId || !item) return;
+        this._closeAllDialogs();
         this._dialogOpen = true;
         this._dialogMode = 'todo-edit';
         this._dialogTitle = 'Edit chore';
         this._dialogItem = item;
         this._dialogEntity = entityId;
+        debugLog(this._debug, 'dialog open', { type: 'main', mode: this._dialogMode });
     }
 
     async _deleteTodoItem(entityId, item) {
@@ -944,11 +1012,13 @@ class FamilyBoardCard extends LitElement {
 
     async _editShoppingItem(item) {
         if (!item) return;
+        this._closeAllDialogs();
         this._dialogOpen = true;
         this._dialogMode = 'shopping-edit';
         this._dialogTitle = 'Edit item';
         this._dialogItem = item;
         this._dialogEntity = this._config?.shopping?.entity || '';
+        debugLog(this._debug, 'dialog open', { type: 'main', mode: this._dialogMode });
     }
 
     async _deleteShoppingItem(item) {
@@ -1064,15 +1134,18 @@ class FamilyBoardCard extends LitElement {
 
     _openEventDialog(entityId, event) {
         if (!entityId || !event) return;
+        this._closeAllDialogs();
         this._eventDialogEntity = entityId;
         this._eventDialogEvent = event;
         this._eventDialogOpen = true;
+        debugLog(this._debug, 'dialog open', { type: 'event' });
     }
 
     _onEventDialogClose = () => {
         this._eventDialogOpen = false;
         this._eventDialogEntity = '';
         this._eventDialogEvent = null;
+        debugLog(this._debug, 'dialog close', { type: 'event' });
     };
 
     _onEventUpdate = async (ev) => {
@@ -1180,14 +1253,38 @@ class FamilyBoardCard extends LitElement {
         this._refreshAll();
     }
 
+    _resolveConfig({ refresh = true } = {}) {
+        if (!this._yamlConfig) return;
+        const stored = this._storedConfig;
+        const resolved = stored ? this._mergeConfig(this._yamlConfig, stored) : this._yamlConfig;
+        debugLog(this._debug, 'resolveConfig precedence', {
+            hasStored: Boolean(stored),
+            persist: this._persistMode || 'none',
+        });
+        this._applyConfigImmediate(resolved, { useDefaults: true, refresh });
+    }
+
     async _loadStoredConfig() {
-        if (this._storageLoaded || !this._hass) return;
-        this._storageLoaded = true;
-        const stored = await this._getStoredConfig();
-        if (!stored) return;
-        this._storedConfig = stored;
-        const merged = this._mergeConfig(this._config || {}, stored);
-        this._applyConfigImmediate(merged, { useDefaults: false, refresh: true });
+        if (this._storageLoaded || !this._hass) return this._storageLoadPromise;
+        if (this._storageLoadPromise) return this._storageLoadPromise;
+        this._storageLoadPromise = (async () => {
+            const stored = await this._getStoredConfig();
+            this._storageLoaded = true;
+            if (stored) {
+                this._storedConfig = stored;
+                debugLog(this._debug, 'storedConfig loaded', {
+                    mode: this._persistMode || 'none',
+                });
+            } else {
+                this._storedConfig = null;
+                debugLog(this._debug, 'storedConfig missing', {
+                    mode: this._persistMode || 'none',
+                });
+            }
+            this._resolveConfig({ refresh: true });
+            return stored;
+        })();
+        return this._storageLoadPromise;
     }
 
     async _getStoredConfig() {
@@ -1197,8 +1294,12 @@ class FamilyBoardCard extends LitElement {
             return ws;
         }
         const local = this._loadLocalConfig();
-        if (local) this._persistMode = 'local';
-        return local;
+        if (local) {
+            this._persistMode = 'local';
+            return local;
+        }
+        this._persistMode = 'none';
+        return null;
     }
 
     _mergeConfig(base, override) {
@@ -1239,11 +1340,15 @@ class FamilyBoardCard extends LitElement {
         if (ok) {
             this._persistMode = 'ws';
             this._storedConfig = config;
+            this._storageLoaded = true;
+            debugLog(this._debug, 'persistConfig', { mode: 'ws' });
             return { ok: true, mode: 'ws' };
         }
         this._persistMode = 'local';
         this._saveLocalConfig(config);
         this._storedConfig = config;
+        this._storageLoaded = true;
+        debugLog(this._debug, 'persistConfig', { mode: 'local' });
         return { ok: true, mode: 'local' };
     }
 
@@ -1276,13 +1381,17 @@ class FamilyBoardCard extends LitElement {
     }
 
     _openEditor() {
+        this._closeAllDialogs();
         this._onOpenEditor();
         this._editorGuideOpen = true;
+        debugLog(this._debug, 'dialog open', { type: 'editor-guide' });
         this.requestUpdate();
     }
 
     _openHelp() {
+        this._closeAllDialogs();
         this._helpOpen = true;
+        debugLog(this._debug, 'dialog open', { type: 'help' });
         this.requestUpdate();
     }
 
