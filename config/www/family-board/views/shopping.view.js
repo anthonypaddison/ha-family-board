@@ -10,6 +10,11 @@ export class FbShoppingView extends LitElement {
         _commonExpanded: { state: true },
     };
 
+    _addCommonItem(item) {
+        if (!item) return;
+        this.card?._addShoppingItem(item);
+    }
+
     static styles = css`
         :host {
             display: block;
@@ -316,11 +321,11 @@ export class FbShoppingView extends LitElement {
                                       const fav = favourites.some(
                                           (f) => String(f).toLowerCase() === key
                                       );
-                                      return html`
+                                          return html`
                                           <div class="commonRow">
                                               <button
                                                   class="commonItem"
-                                                  @click=${() => card._addShoppingItem(item)}
+                                                  @click=${() => this._addCommonItem(item)}
                                               >
                                                   <span class="commonText">${item}</span>
                                                   <span class="commonPlus" aria-hidden="true">+</span>
