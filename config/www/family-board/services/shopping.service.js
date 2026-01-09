@@ -9,6 +9,21 @@ export class ShoppingService {
         this.debug = debug;
     }
 
+    normalizeItemRef(item) {
+        if (typeof item === 'string') return item;
+        if (typeof item === 'number' || typeof item === 'boolean') return String(item);
+        if (item && typeof item === 'object') {
+            const ref = item.id || item.uid || item.item || item.summary || item.name;
+            if (ref) return String(ref);
+        }
+        return String(item ?? '');
+    }
+
+    _itemKeys(item) {
+        if (!item || typeof item !== 'object') return [];
+        return Object.keys(item);
+    }
+
     async fetchItems(hass, shoppingConfig) {
         if (!hass) throw new Error('Missing hass');
 
@@ -62,7 +77,7 @@ export class ShoppingService {
         await hass.callService('todo', 'add_item', { entity_id: entityId, item: text });
     }
 
-    async updateItem(hass, shoppingConfig, item) {
+    async updateItem(hass, shoppingConfig, item, updates = {}) {
         if (!hass) throw new Error('Missing hass');
 
         const entityId =
@@ -71,7 +86,14 @@ export class ShoppingService {
 
         if (!entityId) throw new Error('Missing shopping entityId');
 
-        await hass.callService('todo', 'update_item', { entity_id: entityId, item });
+        const ref = this.normalizeItemRef(item);
+        const { item: _ignored, ...rest } = updates || {};
+        debugLog(this.debug, 'Shopping update_item', {
+            entityId,
+            ref,
+            keys: this._itemKeys(item),
+        });
+        await hass.callService('todo', 'update_item', { entity_id: entityId, item: ref, ...rest });
     }
 
     async removeItem(hass, shoppingConfig, item) {
@@ -84,7 +106,13 @@ export class ShoppingService {
         if (!entityId) throw new Error('Missing shopping entityId');
         if (!item) throw new Error('Missing item');
 
-        await hass.callService('todo', 'remove_item', { entity_id: entityId, item });
+        const ref = this.normalizeItemRef(item);
+        debugLog(this.debug, 'Shopping remove_item', {
+            entityId,
+            ref,
+            keys: this._itemKeys(item),
+        });
+        await hass.callService('todo', 'remove_item', { entity_id: entityId, item: ref });
     }
 
     async setStatus(hass, shoppingConfig, item, completed) {
@@ -97,8 +125,9 @@ export class ShoppingService {
         if (!entityId) throw new Error('Missing shopping entityId');
         if (!item) throw new Error('Missing item');
 
-        const next = { ...item, status: completed ? 'completed' : 'needs_action' };
-        await hass.callService('todo', 'update_item', { entity_id: entityId, item: next });
+        await this.updateItem(hass, shoppingConfig, item, {
+            status: completed ? 'completed' : 'needs_action',
+        });
     }
 
     async renameItem(hass, shoppingConfig, item, text) {
@@ -112,7 +141,6 @@ export class ShoppingService {
         if (!item) throw new Error('Missing item');
         if (!text) throw new Error('Missing text');
 
-        const next = { ...item, summary: text, name: text, item: text };
-        await hass.callService('todo', 'update_item', { entity_id: entityId, item: next });
+        await this.updateItem(hass, shoppingConfig, item, { summary: text, name: text });
     }
 }

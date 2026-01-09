@@ -180,7 +180,7 @@ export class FbShoppingView extends LitElement {
             <div class="wrap">
                 <div class="layout">
                     <div class="card">
-                        <div class="h">${name} - <span class="muted">${items.length}</span></div>
+                        <div class="h">${name} <span class="muted">${items.length}</span></div>
                         <div class="inputRow">
                             <input
                                 id="shopInput"

@@ -930,9 +930,13 @@ class FamilyBoardCard extends LitElement {
     _onAddShopping = async (ev) => {
         const { text } = ev?.detail || {};
         if (!text) return;
-        await this._shoppingService.addItem(this._hass, this._config?.shopping, text);
+        this._optimisticShoppingAdd(text);
         this._trackShoppingCommon(text);
-        this._queueRefresh();
+        try {
+            await this._shoppingService.addItem(this._hass, this._config?.shopping, text);
+        } finally {
+            await this._refreshShopping();
+        }
     };
 
     _onEditTodo = async (ev) => {
@@ -949,9 +953,19 @@ class FamilyBoardCard extends LitElement {
     _onEditShopping = async (ev) => {
         const { item, text } = ev?.detail || {};
         if (!item || !text) return;
-        await this._shoppingService.renameItem(this._hass, this._config?.shopping, item, text);
+        this._optimisticShoppingUpdate(item, text);
         this._trackShoppingCommon(text);
-        this._queueRefresh();
+        const supportsUpdate = this._supportsService('todo', 'update_item');
+        try {
+            if (supportsUpdate) {
+                await this._shoppingService.renameItem(this._hass, this._config?.shopping, item, text);
+            } else {
+                await this._shoppingService.removeItem(this._hass, this._config?.shopping, item);
+                await this._shoppingService.addItem(this._hass, this._config?.shopping, text);
+            }
+        } finally {
+            await this._refreshShopping();
+        }
     };
 
     _openManageSources() {
@@ -1074,15 +1088,31 @@ class FamilyBoardCard extends LitElement {
 
     async _addShoppingItem(text) {
         if (!text) return;
-        await this._shoppingService.addItem(this._hass, this._config?.shopping, text);
+        this._optimisticShoppingAdd(text);
         this._trackShoppingCommon(text);
-        this._queueRefresh();
+        try {
+            await this._shoppingService.addItem(this._hass, this._config?.shopping, text);
+        } finally {
+            await this._refreshShopping();
+        }
     }
 
     async _toggleShoppingItem(item, completed) {
         if (!item) return;
-        await this._shoppingService.setStatus(this._hass, this._config?.shopping, item, completed);
-        this._queueRefresh();
+        if (typeof item === 'object') {
+            item.status = completed ? 'completed' : 'needs_action';
+            this.requestUpdate();
+        }
+        try {
+            await this._shoppingService.setStatus(
+                this._hass,
+                this._config?.shopping,
+                item,
+                completed
+            );
+        } finally {
+            await this._refreshShopping();
+        }
     }
 
     async _editShoppingItem(item) {
@@ -1098,8 +1128,12 @@ class FamilyBoardCard extends LitElement {
 
     async _deleteShoppingItem(item) {
         if (!item) return;
-        await this._shoppingService.removeItem(this._hass, this._config?.shopping, item);
-        this._queueRefresh();
+        this._optimisticShoppingRemove(item);
+        try {
+            await this._shoppingService.removeItem(this._hass, this._config?.shopping, item);
+        } finally {
+            await this._refreshShopping();
+        }
     }
 
     _setScheduleStart(date) {
@@ -1193,6 +1227,46 @@ class FamilyBoardCard extends LitElement {
         const list = Array.isArray(this._shoppingCommon) ? this._shoppingCommon : [];
         this._shoppingCommon = list.filter((item) => String(item).toLowerCase() !== key);
         this._savePrefs();
+        this.requestUpdate();
+    }
+
+    _buildShoppingItem(text) {
+        return {
+            summary: text,
+            name: text,
+            item: text,
+            status: 'needs_action',
+        };
+    }
+
+    _optimisticShoppingAdd(text) {
+        const list = Array.isArray(this._shoppingItems) ? [...this._shoppingItems] : [];
+        const next = this._buildShoppingItem(text);
+        list.push(next);
+        this._shoppingItems = list;
+        this.requestUpdate();
+        return next;
+    }
+
+    _optimisticShoppingUpdate(item, text) {
+        const list = Array.isArray(this._shoppingItems) ? [...this._shoppingItems] : [];
+        const nextList = list.map((entry) => {
+            if (entry !== item) return entry;
+            return {
+                ...entry,
+                summary: text,
+                name: text,
+                item: text,
+            };
+        });
+        this._shoppingItems = nextList;
+        this.requestUpdate();
+    }
+
+    _optimisticShoppingRemove(item) {
+        const list = Array.isArray(this._shoppingItems) ? this._shoppingItems : [];
+        const nextList = list.filter((entry) => entry !== item);
+        this._shoppingItems = nextList;
         this.requestUpdate();
     }
 
