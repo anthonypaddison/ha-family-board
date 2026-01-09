@@ -150,6 +150,11 @@ export class FbScheduleView extends LitElement {
             justify-content: center;
             gap: 4px;
         }
+        .dayHead.highlight {
+            background: #f1ecff;
+            color: #6b5aa6;
+            border-color: color-mix(in srgb, #f1ecff 60%, var(--fb-border));
+        }
         .dayName {
             font-weight: 800;
             font-size: 14px;
@@ -168,6 +173,10 @@ export class FbScheduleView extends LitElement {
             gap: 8px;
             flex-wrap: wrap;
             align-content: flex-start;
+        }
+        .allDay.todayCol {
+            background: #efeaff;
+            border-color: color-mix(in srgb, #efeaff 60%, var(--fb-border));
         }
         .chip {
             border-radius: 10px;
@@ -198,6 +207,10 @@ export class FbScheduleView extends LitElement {
             border: 1px solid var(--fb-border);
             background: color-mix(in srgb, var(--fb-surface) 92%, var(--palette-lilac));
             overflow: hidden;
+        }
+        .dayCol.todayCol {
+            background: #efeaff;
+            border-color: color-mix(in srgb, #efeaff 60%, var(--fb-border));
         }
         .slotBg {
             position: relative;
@@ -391,8 +404,9 @@ export class FbScheduleView extends LitElement {
                                 day: '2-digit',
                                 month: 'short',
                             });
+                            const isToday = card._isSameDay(d, now);
                             return html`
-                                <div class="dayHead">
+                                <div class="dayHead ${isToday ? 'highlight' : ''}">
                                     <div class="dayName">${dayName}</div>
                                     <div class="dayDate">${dayDate}</div>
                                 </div>
@@ -404,8 +418,9 @@ export class FbScheduleView extends LitElement {
                         <div class="gutterAllDay">All day</div>
                         ${dayData.map((row) => {
                             const allDay = row.allDay;
+                            const isToday = card._isSameDay(row.day, now);
                             return html`
-                                <div class="allDay">
+                                <div class="allDay ${isToday ? 'todayCol' : ''}">
                                     ${allDay.length
                                         ? allDay.map(
                                               (e) => html`
@@ -456,8 +471,9 @@ export class FbScheduleView extends LitElement {
                             </div>
 
                             ${dayData.map((row) => {
+                                const isToday = card._isSameDay(row.day, now);
                                 return html`
-                                    <div class="dayCol">
+                                    <div class="dayCol ${isToday ? 'todayCol' : ''}">
                                         <div class="slotBg">
                                             ${Array.from({ length: slots + 1 }).map(
                                                 () => html`<div class="slotRow"></div>`
