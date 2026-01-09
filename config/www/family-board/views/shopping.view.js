@@ -58,6 +58,7 @@ export class FbShoppingView extends LitElement {
             padding: 8px 10px;
             font-size: 14px;
             background: var(--fb-surface);
+            color: var(--fb-text);
         }
         .inputRow button {
             border: 1px solid var(--fb-grid);
