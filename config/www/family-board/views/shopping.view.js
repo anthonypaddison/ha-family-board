@@ -15,11 +15,14 @@ export class FbShoppingView extends LitElement {
         :host {
             display: block;
             height: 100%;
+            min-height: 0;
         }
         .wrap {
             height: 100%;
             overflow: auto;
             padding: 14px;
+            min-height: 0;
+            box-sizing: border-box;
         }
         .layout {
             display: grid;

@@ -21,6 +21,8 @@ export class FbMonthView extends LitElement {
             height: 100%;
             overflow: auto;
             padding: 12px;
+            min-height: 0;
+            box-sizing: border-box;
         }
         .cal {
             border: 1px solid var(--fb-grid);
