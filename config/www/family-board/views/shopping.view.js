@@ -8,7 +8,6 @@ export class FbShoppingView extends LitElement {
     static properties = {
         card: { type: Object },
         _commonExpanded: { state: true },
-        _fadeKeys: { state: true },
     };
 
     static styles = css`
@@ -124,6 +123,11 @@ export class FbShoppingView extends LitElement {
             flex-direction: column;
             gap: 8px;
         }
+        .commonRow {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
         .commonItem {
             border: 1px solid var(--fb-grid);
             background: var(--fb-surface-2);
@@ -132,28 +136,51 @@ export class FbShoppingView extends LitElement {
             cursor: pointer;
             text-align: left;
             font-size: 13px;
-            display: grid;
-            grid-template-columns: 1fr auto;
+            display: inline-flex;
             align-items: center;
             gap: 8px;
             color: var(--fb-text);
-            transition: opacity 0.3s ease;
+            flex: 1;
+            min-width: 0;
         }
-        .commonItem.fading {
-            opacity: 0;
+        .commonText {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .commonPlus {
+            border: 1px solid var(--fb-grid);
+            border-radius: 8px;
+            padding: 2px 6px;
+            font-size: 12px;
+            line-height: 1.1;
+            background: var(--fb-surface);
+            color: var(--fb-text);
+            flex: 0 0 auto;
         }
         .commonActions {
             display: inline-flex;
-            gap: 6px;
+            gap: 4px;
             align-items: center;
         }
-        .removeBtn {
-            border: 0;
-            background: transparent;
-            color: #f5c20a;
+        .starBtn {
+            border: 1px solid var(--fb-grid);
+            background: var(--fb-surface);
+            border-radius: 10px;
+            padding: 4px;
+            width: 28px;
+            height: 28px;
+            display: grid;
+            place-items: center;
             cursor: pointer;
-            font-size: 14px;
-            line-height: 1;
+            color: var(--fb-muted);
+            flex: 0 0 auto;
+        }
+        .starBtn.active {
+            color: #f5c20a;
+            border-color: #f5c20a;
         }
         @media (max-width: 900px) {
             .layout {
@@ -178,7 +205,6 @@ export class FbShoppingView extends LitElement {
             ).values()
         );
         const visibleCommon = this._commonExpanded ? commonList : commonList.slice(0, 10);
-        const fadeKeys = this._fadeKeys || new Set();
 
         return html`
             <div class="wrap">
@@ -290,42 +316,27 @@ export class FbShoppingView extends LitElement {
                                       const fav = favourites.some(
                                           (f) => String(f).toLowerCase() === key
                                       );
-                                      const isFading = fadeKeys.has(key);
                                       return html`
-                                          <button
-                                              class="commonItem ${isFading ? 'fading' : ''}"
-                                              @click=${() => card._addShoppingItem(item)}
-                                          >
-                                              <span class="commonActions">
-                                                  <button
-                                                      class="removeBtn"
-                                                      @click=${(e) => {
-                                                          e.stopPropagation();
-                                                          if (fav) {
-                                                              card._toggleShoppingFavourite(item);
-                                                              this._fadeKeys = new Set([
-                                                                  ...(this._fadeKeys || []),
-                                                                  key,
-                                                              ]);
-                                                              setTimeout(() => {
-                                                                  card._removeShoppingCommon(item);
-                                                                  const next = new Set(
-                                                                      this._fadeKeys || []
-                                                                  );
-                                                                  next.delete(key);
-                                                                  this._fadeKeys = next;
-                                                              }, 2500);
-                                                              return;
-                                                          }
-                                                          card._toggleShoppingFavourite(item);
-                                                      }}
-                                                      title=${fav ? 'Unfavourite' : 'Favourite'}
-                                                  >
-                                                      ${fav ? '★' : '☆'}
-                                                  </button>
-                                                  <span>${item}</span>
-                                              </span>
-                                          </button>
+                                          <div class="commonRow">
+                                              <button
+                                                  class="commonItem"
+                                                  @click=${() => card._addShoppingItem(item)}
+                                              >
+                                                  <span class="commonText">${item}</span>
+                                                  <span class="commonPlus" aria-hidden="true">+</span>
+                                              </button>
+                                              <button
+                                                  class="starBtn ${fav ? 'active' : ''}"
+                                                  title=${fav ? 'Unfavourite' : 'Favourite'}
+                                                  @click=${() => card._toggleShoppingFavourite(item)}
+                                              >
+                                                  <ha-icon
+                                                      icon=${fav
+                                                          ? 'mdi:star'
+                                                          : 'mdi:star-outline'}
+                                                  ></ha-icon>
+                                              </button>
+                                          </div>
                                       `;
                                   })
                                 : html`<div class="muted">No common items yet.</div>`}
