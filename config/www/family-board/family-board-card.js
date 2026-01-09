@@ -558,6 +558,16 @@ class FamilyBoardCard extends LitElement {
         }
     }
 
+    async _refreshTodoEntity(entityId) {
+        if (!entityId) return;
+        try {
+            const items = await this._todoService.fetchItems(this._hass, entityId);
+            this._todoItems = { ...(this._todoItems || {}), [entityId]: items };
+        } catch (err) {
+            debugLog(this._debug, 'Todo fetch error', err);
+        }
+    }
+
     async _refreshShopping() {
         const shopping = this._config?.shopping;
         if (!shopping) return;
@@ -860,11 +870,61 @@ class FamilyBoardCard extends LitElement {
         this._queueRefresh();
     };
 
+    _buildTodoItem(text) {
+        return {
+            summary: text,
+            name: text,
+            item: text,
+            status: 'needs_action',
+        };
+    }
+
+    _optimisticTodoAdd(entityId, text) {
+        const list = Array.isArray(this._todoItems?.[entityId])
+            ? [...this._todoItems[entityId]]
+            : [];
+        const next = this._buildTodoItem(text);
+        list.push(next);
+        this._todoItems = { ...(this._todoItems || {}), [entityId]: list };
+        this.requestUpdate();
+        return next;
+    }
+
+    _optimisticTodoUpdate(entityId, item, text) {
+        const list = Array.isArray(this._todoItems?.[entityId])
+            ? [...this._todoItems[entityId]]
+            : [];
+        const nextList = list.map((entry) => {
+            if (entry !== item) return entry;
+            return {
+                ...entry,
+                summary: text,
+                name: text,
+                item: text,
+            };
+        });
+        this._todoItems = { ...(this._todoItems || {}), [entityId]: nextList };
+        this.requestUpdate();
+    }
+
+    _optimisticTodoRemove(entityId, item) {
+        const list = Array.isArray(this._todoItems?.[entityId])
+            ? this._todoItems[entityId]
+            : [];
+        const nextList = list.filter((entry) => entry !== item);
+        this._todoItems = { ...(this._todoItems || {}), [entityId]: nextList };
+        this.requestUpdate();
+    }
+
     _onAddTodo = async (ev) => {
         const { entityId, text } = ev?.detail || {};
         if (!entityId || !text) return;
-        await this._todoService.addItem(this._hass, entityId, text);
-        this._queueRefresh();
+        this._optimisticTodoAdd(entityId, text);
+        try {
+            await this._todoService.addItem(this._hass, entityId, text);
+        } finally {
+            await this._refreshTodoEntity(entityId);
+        }
     };
 
     _onAddShopping = async (ev) => {
@@ -878,8 +938,12 @@ class FamilyBoardCard extends LitElement {
     _onEditTodo = async (ev) => {
         const { entityId, item, text } = ev?.detail || {};
         if (!entityId || !item || !text) return;
-        await this._todoService.renameItem(this._hass, entityId, item, text);
-        this._queueRefresh();
+        this._optimisticTodoUpdate(entityId, item, text);
+        try {
+            await this._todoService.renameItem(this._hass, entityId, item, text);
+        } finally {
+            await this._refreshTodoEntity(entityId);
+        }
     };
 
     _onEditShopping = async (ev) => {
@@ -970,8 +1034,15 @@ class FamilyBoardCard extends LitElement {
 
     async _toggleTodoItem(entityId, item, completed) {
         if (!entityId || !item) return;
-        await this._todoService.setStatus(this._hass, entityId, item, completed);
-        this._queueRefresh();
+        if (typeof item === 'object') {
+            item.status = completed ? 'completed' : 'needs_action';
+            this.requestUpdate();
+        }
+        try {
+            await this._todoService.setStatus(this._hass, entityId, item, completed);
+        } finally {
+            await this._refreshTodoEntity(entityId);
+        }
     }
 
     async _editTodoItem(entityId, item) {
@@ -987,8 +1058,12 @@ class FamilyBoardCard extends LitElement {
 
     async _deleteTodoItem(entityId, item) {
         if (!entityId || !item) return;
-        await this._todoService.removeItem(this._hass, entityId, item);
-        this._queueRefresh();
+        this._optimisticTodoRemove(entityId, item);
+        try {
+            await this._todoService.removeItem(this._hass, entityId, item);
+        } finally {
+            await this._refreshTodoEntity(entityId);
+        }
     }
 
     async _clearCompletedTodos(entityId) {
