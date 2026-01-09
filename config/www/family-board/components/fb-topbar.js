@@ -141,8 +141,8 @@ export class FbTopbar extends LitElement {
 
         .summaryRow {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 8px;
             padding: 12px 0 0;
         }
 
@@ -156,7 +156,6 @@ export class FbTopbar extends LitElement {
             background: var(--fb-surface-3);
             font-size: 13px;
             width: 100%;
-            justify-content: space-between;
             cursor: pointer;
             min-height: 44px;
             color: var(--fb-text);
@@ -181,6 +180,40 @@ export class FbTopbar extends LitElement {
         }
         .summaryName {
             font-weight: 600;
+        }
+
+        .summaryCounts {
+            margin-left: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .summaryMetric {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 700;
+        }
+
+        .summaryMetric ha-icon {
+            width: 16px;
+            height: 16px;
+            color: var(--fb-muted);
+        }
+
+        @media (max-width: 900px) {
+            .summaryRow {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 8px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .summaryRow {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
         }
     `;
 
@@ -340,8 +373,8 @@ export class FbTopbar extends LitElement {
 
             ${['schedule', 'chores'].includes(screen) && summary.length
                 ? (() => {
-                      const row1 = summary.filter((p) => (p.header_row || 1) === 1).slice(0, 4);
-                      const row2 = summary.filter((p) => (p.header_row || 1) === 2).slice(0, 4);
+                      const row1 = summary.filter((p) => (p.header_row || 1) === 1).slice(0, 5);
+                      const row2 = summary.filter((p) => (p.header_row || 1) === 2).slice(0, 5);
                       const rows = [row1, row2].filter((r) => r.length);
                       return html`
                           ${rows.map(
@@ -359,9 +392,16 @@ export class FbTopbar extends LitElement {
                                       >
                                           <span class="dot" style="background:${p.color}"></span>
                                           <span class="summaryName" style="flex:1">${p.name}</span>
-                                          <span>${p.eventsLeft ?? 0}</span>
-                                          <span>/</span>
-                                          <span>${p.todosLeft ?? 0}</span>
+                                          <span class="summaryCounts">
+                                              <span class="summaryMetric">
+                                                  <ha-icon icon="mdi:calendar-month-outline"></ha-icon>
+                                                  <span>${p.eventsLeft ?? 0}</span>
+                                              </span>
+                                              <span class="summaryMetric">
+                                                  <ha-icon icon="mdi:check-circle-outline"></ha-icon>
+                                                  <span>${p.todosLeft ?? 0}</span>
+                                              </span>
+                                          </span>
                                       </button>
                                           `
                                       )}
