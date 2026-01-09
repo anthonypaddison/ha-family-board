@@ -1174,7 +1174,9 @@ class FamilyBoardCard extends LitElement {
         if (!personId) return;
         if (this._personFilterSet.has(personId)) this._personFilterSet.delete(personId);
         else this._personFilterSet.add(personId);
+        this._personFilterSet = new Set(this._personFilterSet);
         this._savePrefs();
+        this.requestUpdate();
         this._queueRefresh();
     };
 
