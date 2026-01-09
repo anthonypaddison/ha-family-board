@@ -49,6 +49,8 @@ export class FbScheduleView extends LitElement {
             background: var(--fb-bg);
             display: flex;
             flex-direction: column;
+            min-height: 0;
+            box-sizing: border-box;
         }
         .card {
             background: var(--fb-surface);
@@ -60,6 +62,7 @@ export class FbScheduleView extends LitElement {
             flex-direction: column;
             min-height: 0;
             height: 100%;
+            flex: 1;
         }
         .board {
             min-width: 0;
@@ -67,6 +70,8 @@ export class FbScheduleView extends LitElement {
             display: flex;
             flex-direction: column;
             gap: 8px;
+            min-height: 0;
+            flex: 1;
         }
         .linkBtn {
             border: 0;
