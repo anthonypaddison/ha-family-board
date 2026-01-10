@@ -387,6 +387,7 @@ class FamilyBoardCard extends LitElement {
                         <fb-manage-sources
                             .open=${this._sourcesOpen}
                             .config=${this._config}
+                            .hass=${this._hass}
                             @fb-sources-save=${this._onSourcesSave}
                             @fb-sources-close=${this._onSourcesClose}
                             @fb-open-editor=${this._openEditor}

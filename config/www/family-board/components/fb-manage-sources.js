@@ -8,6 +8,7 @@ export class FbManageSources extends LitElement {
     static properties = {
         open: { type: Boolean },
         config: { type: Object },
+        hass: { type: Object },
         _draft: { state: true },
     };
 
@@ -201,10 +202,19 @@ export class FbManageSources extends LitElement {
         const people = Array.isArray(cfg.people) ? cfg.people : [];
         const calendars = Array.isArray(cfg.calendars) ? cfg.calendars : [];
         const todos = Array.isArray(cfg.todos) ? cfg.todos : [];
+        const stateIds = Object.keys(this.hass?.states || {});
+        const calendarEntities = stateIds.filter((id) => id.startsWith('calendar.'));
+        const todoEntities = stateIds.filter((id) => id.startsWith('todo.'));
 
         return html`
             <div class="backdrop" @click=${(e) => e.target === e.currentTarget && this.close()}>
                 <div class="dlg">
+                    <datalist id="fb-cal-entities">
+                        ${calendarEntities.map((id) => html`<option value=${id}></option>`)}
+                    </datalist>
+                    <datalist id="fb-todo-entities">
+                        ${todoEntities.map((id) => html`<option value=${id}></option>`)}
+                    </datalist>
                     <div class="h">
                         <div>Manage sources</div>
                         <button class="btn" @click=${this.close}>Close</button>
@@ -277,6 +287,7 @@ export class FbManageSources extends LitElement {
                                     <input
                                         placeholder="calendar.entity"
                                         .value=${c.entity || ''}
+                                        list="fb-cal-entities"
                                         @input=${(e) => (c.entity = e.target.value)}
                                     />
                                     <input
@@ -327,6 +338,7 @@ export class FbManageSources extends LitElement {
                                     <input
                                         placeholder="todo.entity"
                                         .value=${t.entity || ''}
+                                        list="fb-todo-entities"
                                         @input=${(e) => (t.entity = e.target.value)}
                                     />
                                     <input
@@ -372,6 +384,7 @@ export class FbManageSources extends LitElement {
                             <input
                                 placeholder="todo.shopping_list_2"
                                 .value=${cfg.shopping?.entity || ''}
+                                list="fb-todo-entities"
                                 @input=${(e) => {
                                     if (!cfg.shopping) cfg.shopping = {};
                                     cfg.shopping.entity = e.target.value;
