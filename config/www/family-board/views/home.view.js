@@ -20,19 +20,24 @@ export class FbHomeView extends LitElement {
         .grid {
             display: grid;
             gap: 8px;
-            grid-template-columns: repeat(auto-fit, minmax(180px, max-content));
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         }
         .tile {
             border: 1px solid var(--fb-grid);
             background: var(--fb-surface);
             border-radius: 14px;
             padding: 8px 10px;
-            display: inline-flex;
+            display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            justify-content: space-between;
+            width: 100%;
         }
         .name {
             font-weight: 700;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         button {
             border: 0;
@@ -109,7 +114,7 @@ export class FbHomeView extends LitElement {
                         const isOn = state === 'on';
                         return html`
                             <div class="tile">
-                                <div>
+                                <div style="flex:1;min-width:0">
                                     <div class="name">${label}</div>
                                 </div>
                                 <label class="toggle">
