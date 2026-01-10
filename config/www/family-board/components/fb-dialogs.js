@@ -262,6 +262,9 @@ export class FbDialogs extends LitElement {
                               <div class="row">
                                   <label>Person</label>
                                   <select id="todoEntity" .value=${this.entityId || ''}>
+                                      ${!this.entityId
+                                          ? html`<option value="">Select a list</option>`
+                                          : html``}
                                       ${todos.map(
                                           (t) =>
                                               html`<option value=${t.entity}>
