@@ -7,6 +7,7 @@ const { LitElement, html, css } = getHaLit();
 export class FbEditorGuideDialog extends LitElement {
     static properties = {
         open: { type: Boolean },
+        card: { type: Object },
     };
 
     static styles = css`
@@ -76,6 +77,12 @@ export class FbEditorGuideDialog extends LitElement {
         this.dispatchEvent(new CustomEvent('fb-editor-guide-open', { bubbles: true, composed: true }));
     }
 
+    _copyConfig() {
+        const yaml = this.card?._buildYamlConfig?.(this.card?._config);
+        if (!yaml) return;
+        navigator.clipboard?.writeText?.(yaml);
+    }
+
     render() {
         if (!this.open) return html``;
         return html`
@@ -97,6 +104,7 @@ export class FbEditorGuideDialog extends LitElement {
                     </ul>
                     <div class="actions">
                         <button class="btn" @click=${this._openEditor}>Try open editor</button>
+                        <button class="btn" @click=${this._copyConfig}>Copy config</button>
                     </div>
                 </div>
             </div>

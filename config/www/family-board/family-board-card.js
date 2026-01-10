@@ -419,6 +419,7 @@ class FamilyBoardCard extends LitElement {
                         ></fb-help-dialog>
                         <fb-editor-guide-dialog
                             .open=${this._editorGuideOpen}
+                            .card=${this}
                             @fb-editor-guide-close=${this._onEditorGuideClose}
                             @fb-editor-guide-open=${this._onOpenEditor}
                         ></fb-editor-guide-dialog>

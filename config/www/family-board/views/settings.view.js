@@ -48,6 +48,9 @@ export class FbSettingsView extends LitElement {
             padding: 8px 0;
             border-bottom: 1px dashed var(--fb-grid);
         }
+        .row label {
+            color: var(--fb-text);
+        }
         .row:last-child {
             border-bottom: 0;
         }
@@ -111,6 +114,9 @@ export class FbSettingsView extends LitElement {
                 <div class="section">
                     <div class="title">Sources</div>
                     <div class="panelBody">
+                        <div class="muted">
+                            Manage which calendars, todos, and people appear on the board.
+                        </div>
                         <div class="row">
                             <div>Calendars</div>
                             <div class="muted">${calendars.length}</div>
@@ -175,6 +181,7 @@ export class FbSettingsView extends LitElement {
                 <div class="section">
                     <div class="title">Preferences</div>
                     <div class="panelBody">
+                        <div class="muted">Saved per user/device unless stated otherwise.</div>
                         <div class="row">
                             <div>Refresh interval</div>
                             <input
