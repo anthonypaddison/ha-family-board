@@ -135,7 +135,7 @@ export function fbStyles() {
             cursor: pointer;
             text-align: left;
             color: var(--fb-text);
-            font-size: 15px;
+            font-size: 16px;
         }
 
         .navbtn:hover {

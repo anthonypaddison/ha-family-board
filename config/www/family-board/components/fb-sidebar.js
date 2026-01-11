@@ -76,7 +76,7 @@ export class FbSidebar extends LitElement {
         }
 
         .navlabel {
-            font-size: 15px;
+            font-size: 16px;
             line-height: 1.2;
         }
 

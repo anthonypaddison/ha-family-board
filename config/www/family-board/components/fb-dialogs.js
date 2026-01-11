@@ -61,7 +61,7 @@ export class FbDialogs extends LitElement {
             padding: 10px 12px;
             border-radius: 10px;
             border: 1px solid var(--fb-grid);
-            font-size: 15px;
+            font-size: 16px;
             background: var(--fb-surface);
             color: var(--fb-text);
             font-family: inherit;
