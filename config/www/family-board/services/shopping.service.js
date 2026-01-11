@@ -45,8 +45,6 @@ export class ShoppingService {
             return_response: true,
         };
 
-        debugLog(this.debug, 'Shopping get_items', msg);
-
         const res = await hass.connection.sendMessagePromise(msg);
 
         const payload = res?.response ?? res;

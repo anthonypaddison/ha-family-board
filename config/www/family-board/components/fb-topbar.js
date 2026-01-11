@@ -43,12 +43,12 @@ export class FbTopbar extends LitElement {
 
         .title {
             font-weight: 800;
-            font-size: 20px;
+            font-size: 28px;
             white-space: nowrap;
         }
 
         .time {
-            font-size: 18px;
+            font-size: 22px;
             font-weight: 800;
             color: var(--fb-muted);
             font-variant-numeric: tabular-nums;
@@ -72,7 +72,7 @@ export class FbTopbar extends LitElement {
             border-radius: 999px;
             padding: 7px 14px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 14px;
             min-height: 36px;
         }
 
@@ -80,7 +80,7 @@ export class FbTopbar extends LitElement {
             background: var(--fb-surface);
             border-color: transparent;
             color: var(--fb-text);
-            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+            box-shadow: var(--shadow-sm);
         }
 
         .dateNav {
@@ -154,7 +154,7 @@ export class FbTopbar extends LitElement {
             border-radius: 12px;
             padding: 10px 12px;
             background: var(--fb-surface-3);
-            font-size: 13px;
+            font-size: 14px;
             width: 100%;
             cursor: pointer;
             min-height: 44px;

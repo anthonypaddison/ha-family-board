@@ -58,7 +58,7 @@ export class FbSettingsView extends LitElement {
             font-weight: 700;
             margin-bottom: 6px;
             color: var(--fb-text);
-            font-size: 18px;
+            font-size: 20px;
         }
         .muted {
             color: var(--fb-muted);
@@ -67,7 +67,7 @@ export class FbSettingsView extends LitElement {
         .btn {
             border: 1px solid var(--fb-grid);
             border-radius: 8px;
-            background: var(--palette-lilac, #cfbaf0);
+            background: var(--fb-accent);
             padding: 8px 10px;
             cursor: pointer;
             color: var(--fb-text);

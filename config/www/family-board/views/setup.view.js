@@ -61,13 +61,13 @@ export class FbSetupView extends LitElement {
             padding: 8px 10px;
             border-radius: 10px;
             border: 1px solid var(--fb-grid);
-            font-size: 13px;
+            font-size: 14px;
             background: var(--fb-surface);
         }
         textarea {
             min-height: 120px;
             font-family: monospace;
-            font-size: 12px;
+            font-size: 14px;
         }
         .btn {
             border: 1px solid var(--fb-grid);
@@ -75,15 +75,15 @@ export class FbSetupView extends LitElement {
             background: var(--fb-surface-2);
             padding: 6px 10px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 14px;
         }
         .btn.primary {
-            background: var(--palette-lilac, #cfbaf0);
+            background: var(--fb-accent);
             border-color: transparent;
         }
         .note {
             color: var(--fb-muted);
-            font-size: 12px;
+            font-size: 14px;
             margin-top: 8px;
         }
     `;

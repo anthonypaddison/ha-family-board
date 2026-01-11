@@ -80,7 +80,7 @@ export class FbWeekView extends LitElement {
             align-items: center;
             justify-content: flex-end;
             color: var(--fb-muted);
-            font-size: 12px;
+            font-size: 14px;
         }
         .alldayRow {
             border-bottom: 1px solid var(--fb-grid);
@@ -92,13 +92,13 @@ export class FbWeekView extends LitElement {
             min-height: 46px;
         }
         .chip {
-            border: 1px solid rgba(15, 23, 42, 0.12);
+            border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
             border-left: 5px solid transparent;
             border-radius: 999px;
             padding: 6px 10px;
             background: var(--fb-surface);
             cursor: pointer;
-            font-size: 12px;
+            font-size: 14px;
             max-width: 260px;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -114,13 +114,13 @@ export class FbWeekView extends LitElement {
             padding-left: 10px;
         }
         .timeRow.hour {
-            border-top-color: rgba(15, 23, 42, 0.22);
+            border-top-color: color-mix(in srgb, var(--border) 85%, transparent);
         }
         .timeLabel {
             position: absolute;
             top: -9px;
             left: 10px;
-            font-size: 12px;
+            font-size: 14px;
             background: var(--fb-surface);
             padding-right: 6px;
             color: var(--fb-muted);
@@ -148,20 +148,20 @@ export class FbWeekView extends LitElement {
             right: 0;
             border-radius: 12px;
             border-left: 5px solid transparent;
-            border: 1px solid rgba(15, 23, 42, 0.12);
+            border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
             background: var(--fb-surface);
             padding: 8px 8px 6px;
             overflow: hidden;
             text-align: left;
         }
         .eventTime {
-            font-size: 12px;
+            font-size: 14px;
             color: var(--fb-muted);
             margin-bottom: 2px;
             font-variant-numeric: tabular-nums;
         }
         .eventTitle {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 700;
             line-height: 1.15;
         }
@@ -170,7 +170,7 @@ export class FbWeekView extends LitElement {
             left: 0;
             right: 0;
             height: 2px;
-            background: rgba(236, 64, 122, 0.7);
+            background: color-mix(in srgb, var(--urgent) 70%, transparent);
             z-index: 3;
         }
     `;
@@ -215,14 +215,6 @@ export class FbWeekView extends LitElement {
             const allDay = this._allDayEventsForDay(card, calendars, d);
             const timed = this._timedEventsForDay(card, calendars, d, { startMin, endMin });
             return { d, allDay, timed };
-        });
-
-        debugLog(card._debug, 'WeekView event counts', {
-            days: dayData.map((x) => ({
-                day: x.d.toDateString(),
-                allDay: x.allDay.length,
-                timed: x.timed.length,
-            })),
         });
 
         return html`
@@ -362,7 +354,7 @@ export class FbWeekView extends LitElement {
         const out = [];
         for (const c of calendars) {
             const entityId = c.entity;
-            const colour = c.color || '#a3c4f3';
+            const colour = c.color || 'var(--pastel-bluegrey)';
             const name = c.name || entityId;
             const evs = card._eventsForEntityOnDay(entityId, day);
             for (const e of evs) {
@@ -377,7 +369,7 @@ export class FbWeekView extends LitElement {
         const raw = [];
         for (const c of calendars) {
             const entityId = c.entity;
-            const colour = c.color || '#a3c4f3';
+            const colour = c.color || 'var(--pastel-bluegrey)';
             const name = c.name || entityId;
             const evs = card._eventsForEntityOnDay(entityId, day);
             for (const e of evs) {

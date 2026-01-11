@@ -58,13 +58,13 @@ export class FbSidebar extends LitElement {
         }
 
         .navbtn.active {
-            background: #00ced1;
-            color: #073c3d;
+            background: var(--family);
+            color: var(--text-on-accent);
             font-weight: 700;
         }
 
         .navbtn.active .navicon {
-            color: #073c3d;
+            color: var(--text-on-accent);
         }
 
         .navicon {
@@ -81,7 +81,7 @@ export class FbSidebar extends LitElement {
         }
 
         .navmeta {
-            font-size: 12px;
+            font-size: 14px;
             color: var(--fb-muted);
             background: color-mix(in srgb, var(--fb-bg) 50%, transparent);
             border: 0;
@@ -93,7 +93,7 @@ export class FbSidebar extends LitElement {
 
         .brand {
             font-weight: 800;
-            font-size: 18px;
+            font-size: 20px;
             height: 64px;
             padding: 0 14px;
             border-radius: 0;
@@ -128,8 +128,8 @@ export class FbSidebar extends LitElement {
         }
 
         .footerBtn:hover {
-            background: color-mix(in srgb, #00ced1 15%, transparent);
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+            background: color-mix(in srgb, var(--family) 15%, transparent);
+            box-shadow: var(--shadow-sm);
         }
 
         .rail.collapsed .navbtn {

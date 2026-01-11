@@ -34,7 +34,7 @@ export class FbTodoView extends LitElement {
             gap: 8px;
         }
         .toggle.active {
-            background: var(--palette-lilac);
+            background: var(--fb-accent);
             border-color: transparent;
         }
         .dot {
@@ -78,7 +78,7 @@ export class FbTodoView extends LitElement {
         }
         .muted {
             color: var(--fb-muted);
-            font-size: 13px;
+            font-size: 14px;
         }
     `;
 
@@ -105,7 +105,10 @@ export class FbTodoView extends LitElement {
                                 class="toggle ${active ? 'active' : ''}"
                                 @click=${() => card._toggleTodoVisible(t.entity)}
                             >
-                                <span class="dot" style="background:${t.color || '#a3c4f3'}"></span>
+                                <span
+                                    class="dot"
+                                    style="background:${t.color || 'var(--pastel-bluegrey)'}"
+                                ></span>
                                 <span>${t.name || t.entity}</span>
                             </button>
                         `;
@@ -122,7 +125,7 @@ export class FbTodoView extends LitElement {
                                     <div class="h">
                                         <span
                                             class="dot"
-                                            style="background:${t.color || '#a3c4f3'}"
+                                            style="background:${t.color || 'var(--pastel-bluegrey)'}"
                                         ></span>
                                         <span>${t.name || t.entity}</span>
                                         <span style="margin-left:auto" class="muted"

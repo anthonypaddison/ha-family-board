@@ -37,8 +37,6 @@ export class TodoService {
             return_response: true,
         };
 
-        debugLog(this.debug, 'Todo get_items', msg);
-
         const res = await hass.connection.sendMessagePromise(msg);
 
         // Defensive parsing across HA versions / response shapes

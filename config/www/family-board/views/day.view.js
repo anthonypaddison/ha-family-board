@@ -89,7 +89,7 @@ export class FbDayView extends LitElement {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            font-size: 12px;
+            font-size: 14px;
             color: var(--fb-muted);
             border: 1px solid var(--fb-grid);
             background: var(--fb-surface-2);
@@ -119,14 +119,14 @@ export class FbDayView extends LitElement {
         }
 
         .chip {
-            border: 1px solid rgba(15, 23, 42, 0.12);
+            border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
             border-left: 5px solid transparent;
             border-radius: 999px;
             padding: 6px 10px;
             background: var(--fb-surface);
             color: var(--fb-text);
             cursor: pointer;
-            font-size: 12px;
+            font-size: 14px;
             max-width: 320px;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -143,13 +143,13 @@ export class FbDayView extends LitElement {
             padding-left: 10px;
         }
         .timeRow.hour {
-            border-top-color: rgba(15, 23, 42, 0.22);
+            border-top-color: color-mix(in srgb, var(--border) 85%, transparent);
         }
         .timeLabel {
             position: absolute;
             top: -9px;
             left: 10px;
-            font-size: 12px;
+            font-size: 14px;
             background: var(--fb-surface);
             padding-right: 6px;
             color: var(--fb-muted);
@@ -177,7 +177,7 @@ export class FbDayView extends LitElement {
             pointer-events: auto;
             border-radius: 12px;
             border-left: 5px solid transparent;
-            border: 1px solid rgba(15, 23, 42, 0.12);
+            border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
             background: var(--fb-surface);
             color: var(--fb-text);
             padding: 8px 8px 6px;
@@ -186,13 +186,13 @@ export class FbDayView extends LitElement {
         }
 
         .eventTime {
-            font-size: 12px;
+            font-size: 14px;
             color: var(--fb-muted);
             margin-bottom: 2px;
             font-variant-numeric: tabular-nums;
         }
         .eventTitle {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 700;
             line-height: 1.15;
         }
@@ -202,7 +202,7 @@ export class FbDayView extends LitElement {
             left: 0;
             right: 0;
             height: 2px;
-            background: rgba(236, 64, 122, 0.7);
+            background: color-mix(in srgb, var(--urgent) 70%, transparent);
             z-index: 3;
         }
     `;
@@ -245,7 +245,7 @@ export class FbDayView extends LitElement {
 
         for (const c of calendars) {
             const entityId = c.entity;
-            const colour = c.color || '#a3c4f3';
+            const colour = c.color || 'var(--pastel-bluegrey)';
             const name = c.name || entityId;
 
             const evs = card._eventsForEntityOnDay(entityId, day);
@@ -284,15 +284,6 @@ export class FbDayView extends LitElement {
         const nowTopSlots = (nowMin - startMin) / slotMinutes;
         const nowTop = clamp(nowTopSlots * slotPx, 0, slots * slotPx);
 
-        debugLog(card._debug, 'DayView(single)', {
-            slotPx,
-            slotMinutes,
-            startMin,
-            endMin,
-            timed: timed.length,
-            allDay: allDay.length,
-        });
-
         const dateLabel = day.toLocaleDateString(undefined, {
             weekday: 'long',
             day: 'numeric',
@@ -317,7 +308,7 @@ export class FbDayView extends LitElement {
                                         >
                                             <span
                                                 class="dot"
-                                                style="background:${c.color || '#a3c4f3'}"
+                                                style="background:${c.color || 'var(--pastel-bluegrey)'}"
                                             ></span>
                                             <span>${c.name || c.entity}</span>
                                         </button>

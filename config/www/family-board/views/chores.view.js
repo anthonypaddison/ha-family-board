@@ -64,7 +64,7 @@ export class FbChoresView extends LitElement {
         }
         .muted {
             color: var(--fb-muted);
-            font-size: 12px;
+            font-size: 14px;
         }
         .actions {
             margin-left: auto;
@@ -76,7 +76,7 @@ export class FbChoresView extends LitElement {
             background: var(--fb-surface);
             border-radius: 10px;
             padding: 4px 8px;
-            font-size: 12px;
+            font-size: 14px;
             cursor: pointer;
             color: var(--fb-text);
         }
@@ -92,7 +92,7 @@ export class FbChoresView extends LitElement {
         .empty {
             padding: 12px;
             color: var(--fb-muted);
-            font-size: 13px;
+            font-size: 14px;
         }
     `;
 

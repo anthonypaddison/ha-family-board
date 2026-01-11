@@ -26,10 +26,10 @@ export class FbFab extends LitElement {
             border: 0;
             cursor: pointer;
             background: var(--fb-accent);
-            color: #ffffff;
+            color: var(--text-on-accent);
             font-size: 26px;
             line-height: 0;
-            box-shadow: 0 18px 36px rgba(15, 23, 42, 0.22);
+            box-shadow: var(--shadow-lg);
         }
 
         button:active {

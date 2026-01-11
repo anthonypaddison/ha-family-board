@@ -18,7 +18,7 @@ export class FamilyBoardEditor extends LitElement {
             padding: 12px;
         }
         .section {
-            border: 1px solid var(--fb-grid, #e5e7eb);
+            border: 1px solid var(--fb-grid);
             border-radius: 10px;
             padding: 10px;
             margin-bottom: 12px;
@@ -40,7 +40,7 @@ export class FamilyBoardEditor extends LitElement {
             grid-template-columns: 1fr auto;
         }
         label {
-            font-size: 13px;
+            font-size: 14px;
             color: var(--fb-muted);
         }
         input,
@@ -58,12 +58,12 @@ export class FamilyBoardEditor extends LitElement {
             background: var(--fb-surface-2);
             padding: 6px 10px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 14px;
             color: var(--fb-text);
         }
         .note {
             color: var(--fb-muted);
-            font-size: 13px;
+            font-size: 14px;
             margin-top: 6px;
         }
     `;

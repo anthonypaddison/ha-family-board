@@ -69,7 +69,7 @@ export class FbShoppingView extends LitElement {
         }
         .inputRow button {
             border: 1px solid var(--fb-grid);
-            background: var(--palette-lilac, #cfbaf0);
+            background: var(--fb-accent);
             border-radius: 10px;
             padding: 8px 12px;
             cursor: pointer;
@@ -91,7 +91,7 @@ export class FbShoppingView extends LitElement {
         }
         .muted {
             color: var(--fb-muted);
-            font-size: 13px;
+            font-size: 14px;
         }
         .actions {
             display: inline-flex;
@@ -102,7 +102,7 @@ export class FbShoppingView extends LitElement {
             background: var(--fb-surface);
             border-radius: 10px;
             padding: 4px 8px;
-            font-size: 12px;
+            font-size: 14px;
             cursor: pointer;
             color: var(--fb-text);
         }
@@ -140,7 +140,7 @@ export class FbShoppingView extends LitElement {
             padding: 8px 10px;
             cursor: pointer;
             text-align: left;
-            font-size: 13px;
+            font-size: 14px;
             display: inline-flex;
             align-items: center;
             gap: 8px;
@@ -159,7 +159,7 @@ export class FbShoppingView extends LitElement {
             border: 1px solid var(--fb-grid);
             border-radius: 8px;
             padding: 2px 6px;
-            font-size: 12px;
+            font-size: 14px;
             line-height: 1.1;
             background: var(--fb-surface);
             color: var(--fb-text);
@@ -184,8 +184,8 @@ export class FbShoppingView extends LitElement {
             flex: 0 0 auto;
         }
         .starBtn.active {
-            color: #f5c20a;
-            border-color: #f5c20a;
+            color: var(--warning);
+            border-color: var(--warning);
         }
         @media (max-width: 900px) {
             .layout {

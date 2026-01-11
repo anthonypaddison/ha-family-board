@@ -17,7 +17,7 @@ export class FbEditorGuideDialog extends LitElement {
         .backdrop {
             position: fixed;
             inset: 0;
-            background: rgba(15, 23, 42, 0.35);
+            background: var(--overlay);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -43,7 +43,7 @@ export class FbEditorGuideDialog extends LitElement {
         }
         .note {
             color: var(--fb-muted);
-            font-size: 13px;
+            font-size: 14px;
             margin-top: 6px;
         }
         .btn {
@@ -52,7 +52,7 @@ export class FbEditorGuideDialog extends LitElement {
             background: var(--fb-surface-2);
             padding: 6px 10px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 14px;
             color: var(--fb-text);
         }
         ul {

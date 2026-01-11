@@ -19,7 +19,7 @@ export class FbManageSources extends LitElement {
         .backdrop {
             position: fixed;
             inset: 0;
-            background: rgba(15, 23, 42, 0.35);
+            background: var(--overlay);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -45,7 +45,7 @@ export class FbManageSources extends LitElement {
         }
         .section {
             margin-top: 14px;
-            border: 1px solid var(--fb-grid, #e5e7eb);
+            border: 1px solid var(--fb-grid);
             border-radius: 10px;
             padding: 10px;
         }
@@ -66,7 +66,7 @@ export class FbManageSources extends LitElement {
             grid-template-columns: 1fr auto;
         }
         label {
-            font-size: 13px;
+            font-size: 14px;
             color: var(--fb-muted);
         }
         input,
@@ -82,7 +82,7 @@ export class FbManageSources extends LitElement {
         textarea {
             min-height: 120px;
             font-family: monospace;
-            font-size: 12px;
+            font-size: 14px;
             width: 100%;
             box-sizing: border-box;
         }
@@ -92,16 +92,16 @@ export class FbManageSources extends LitElement {
             background: var(--fb-surface-2);
             padding: 6px 10px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 14px;
             color: var(--fb-text);
         }
         .btn.primary {
-            background: var(--palette-lilac, #cfbaf0);
+            background: var(--fb-accent);
             border-color: transparent;
         }
         .note {
             color: var(--fb-muted);
-            font-size: 13px;
+            font-size: 14px;
             margin-top: 8px;
         }
     `;

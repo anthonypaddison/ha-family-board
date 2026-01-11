@@ -160,12 +160,12 @@ class FamilyBoardCard extends LitElement {
                 border-radius: 10px;
                 padding: 8px 12px;
                 box-shadow: var(--fb-shadow);
-                font-size: 13px;
+                font-size: 14px;
                 z-index: 5;
             }
             .toastDetail {
                 color: var(--fb-muted);
-                font-size: 12px;
+                font-size: 14px;
                 margin-top: 2px;
             }
             @media (max-width: 900px) {
@@ -241,7 +241,6 @@ class FamilyBoardCard extends LitElement {
 
     connectedCallback() {
         super.connectedCallback();
-        debugLog(this._debug, 'connectedCallback');
         this._resetRefreshTimer();
         this._queueRefresh();
     }
@@ -522,8 +521,6 @@ class FamilyBoardCard extends LitElement {
         const { start, end } = this._currentCalendarRange();
         const rangeKey = `${start.toISOString()}|${end.toISOString()}`;
 
-        debugLog(this._debug, 'Calendar range', rangeKey);
-
         try {
             const results = await Promise.all(
                 calendars.map(async (c) => {
@@ -541,8 +538,8 @@ class FamilyBoardCard extends LitElement {
             for (const [entityId, items] of results) next[entityId] = items;
             this._eventsByEntity = next;
             this._eventsVersion += 1;
-        } catch (err) {
-            debugLog(this._debug, 'Calendar fetch error', err);
+        } catch {
+            // Ignore calendar fetch errors in UI.
         }
     }
 
@@ -559,8 +556,8 @@ class FamilyBoardCard extends LitElement {
             const next = {};
             for (const [entityId, items] of results) next[entityId] = items;
             this._todoItems = next;
-        } catch (err) {
-            debugLog(this._debug, 'Todo fetch error', err);
+        } catch {
+            // Ignore todo fetch errors in UI.
         }
     }
 
@@ -569,8 +566,8 @@ class FamilyBoardCard extends LitElement {
         try {
             const items = await this._todoService.fetchItems(this._hass, entityId);
             this._todoItems = { ...(this._todoItems || {}), [entityId]: items };
-        } catch (err) {
-            debugLog(this._debug, 'Todo fetch error', err);
+        } catch {
+            // Ignore todo fetch errors in UI.
         }
     }
 
@@ -579,8 +576,8 @@ class FamilyBoardCard extends LitElement {
         if (!shopping) return;
         try {
             this._shoppingItems = await this._shoppingService.fetchItems(this._hass, shopping);
-        } catch (err) {
-            debugLog(this._debug, 'Shopping fetch error', err);
+        } catch {
+            // Ignore shopping fetch errors in UI.
         }
     }
 
@@ -697,11 +694,6 @@ class FamilyBoardCard extends LitElement {
                 header_row: person.header_row || 1,
                 eventsLeft: this._countEventsTodayForPerson(person.id),
                 todosLeft: this._countTodosTodayForPerson(person.id),
-            });
-            debugLog(this._debug, 'Header counts', {
-                personId: person.id,
-                eventsToday: summaryById.get(person.id).eventsLeft,
-                todosToday: summaryById.get(person.id).todosLeft,
             });
         }
 
@@ -853,7 +845,6 @@ class FamilyBoardCard extends LitElement {
     _onFab = () => {
         const screen = this._screen || 'schedule';
         if (screen === 'home' || screen === 'settings') return;
-        debugLog(this._debug, 'fab click', { screen, mode: this._mainMode || 'schedule' });
         this._closeAllDialogs();
         this._dialogOpen = true;
         if (screen === 'chores') {
@@ -872,7 +863,6 @@ class FamilyBoardCard extends LitElement {
             this._dialogItem = null;
             this._dialogEntity = '';
         }
-        debugLog(this._debug, 'dialog open', { type: 'main', mode: this._dialogMode });
     };
 
     _openTodoAddForEntity(entityId) {
@@ -883,7 +873,6 @@ class FamilyBoardCard extends LitElement {
         this._dialogTitle = 'Add chore';
         this._dialogItem = null;
         this._dialogEntity = entityId;
-        debugLog(this._debug, 'dialog open', { type: 'main', mode: this._dialogMode });
     }
 
     _onAddCalendar = async (ev) => {
@@ -996,7 +985,6 @@ class FamilyBoardCard extends LitElement {
         if (!this._hass?.user?.is_admin) return;
         this._closeAllDialogs();
         this._sourcesOpen = true;
-        debugLog(this._debug, 'dialog open', { type: 'sources' });
     }
 
     _onSourcesSave = async (ev) => {
@@ -1020,20 +1008,11 @@ class FamilyBoardCard extends LitElement {
     }
 
     _closeAllDialogs() {
-        const wasOpen =
-            this._dialogOpen ||
-            this._eventDialogOpen ||
-            this._sourcesOpen ||
-            this._helpOpen ||
-            this._editorGuideOpen;
         if (this._dialogOpen) this._clearDialogState();
         if (this._eventDialogOpen) this._onEventDialogClose();
         this._sourcesOpen = false;
         this._helpOpen = false;
         this._editorGuideOpen = false;
-        if (wasOpen) {
-            debugLog(this._debug, 'dialog close', { type: 'all' });
-        }
     }
 
     _clearDialogState() {
@@ -1047,22 +1026,18 @@ class FamilyBoardCard extends LitElement {
     _onDialogClose = () => {
         if (!this._dialogOpen) return;
         this._clearDialogState();
-        debugLog(this._debug, 'dialog close', { type: 'main' });
     };
 
     _onSourcesClose = () => {
         this._sourcesOpen = false;
-        debugLog(this._debug, 'dialog close', { type: 'sources' });
     };
 
     _onHelpClose = () => {
         this._helpOpen = false;
-        debugLog(this._debug, 'dialog close', { type: 'help' });
     };
 
     _onEditorGuideClose = () => {
         this._editorGuideOpen = false;
-        debugLog(this._debug, 'dialog close', { type: 'editor-guide' });
     };
 
     _onOpenEditor = () => {
@@ -1091,7 +1066,6 @@ class FamilyBoardCard extends LitElement {
         this._dialogTitle = 'Edit chore';
         this._dialogItem = item;
         this._dialogEntity = entityId;
-        debugLog(this._debug, 'dialog open', { type: 'main', mode: this._dialogMode });
     }
 
     async _deleteTodoItem(entityId, item) {
@@ -1147,7 +1121,6 @@ class FamilyBoardCard extends LitElement {
         this._dialogTitle = 'Edit item';
         this._dialogItem = item;
         this._dialogEntity = this._config?.shopping?.entity || '';
-        debugLog(this._debug, 'dialog open', { type: 'main', mode: this._dialogMode });
     }
 
     async _deleteShoppingItem(item) {
@@ -1313,14 +1286,12 @@ class FamilyBoardCard extends LitElement {
         this._eventDialogEntity = entityId;
         this._eventDialogEvent = event;
         this._eventDialogOpen = true;
-        debugLog(this._debug, 'dialog open', { type: 'event' });
     }
 
     _onEventDialogClose = () => {
         this._eventDialogOpen = false;
         this._eventDialogEntity = '';
         this._eventDialogEvent = null;
-        debugLog(this._debug, 'dialog close', { type: 'event' });
     };
 
     _onEventUpdate = async (ev) => {
@@ -1559,22 +1530,18 @@ class FamilyBoardCard extends LitElement {
         this._closeAllDialogs();
         this._onOpenEditor();
         this._editorGuideOpen = true;
-        debugLog(this._debug, 'dialog open', { type: 'editor-guide' });
         this.requestUpdate();
     }
 
     _openHelp() {
         this._closeAllDialogs();
         this._helpOpen = true;
-        debugLog(this._debug, 'dialog open', { type: 'help' });
         this.requestUpdate();
     }
 
     _applyConfigImmediate(config, { useDefaults = false, refresh = false } = {}) {
         this._config = config;
         this._debug = Boolean(config.debug);
-
-        debugLog(this._debug, 'applyConfig', config);
 
         const dayStart = useDefaults ? 6 : this._dayStartHour ?? 6;
         const dayEnd = useDefaults ? 22 : this._dayEndHour ?? 22;

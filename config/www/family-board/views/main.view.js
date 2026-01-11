@@ -6,13 +6,11 @@ const { html } = getHaLit();
 
 import './schedule.view.js';
 import './month.view.js';
-import { debugLog } from '../family-board.util.js';
 
 export function renderMainView(card) {
     const mode = card._mainMode || 'schedule';
     if (card._debug && card._lastMainMode !== mode) {
         card._lastMainMode = mode;
-        debugLog(card._debug, 'renderMainView mode', mode);
     }
 
     // This key MUST change when:

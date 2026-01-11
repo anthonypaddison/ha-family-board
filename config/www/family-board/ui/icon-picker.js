@@ -34,7 +34,7 @@ export class FbIconPicker extends LitElement {
             border: 1px solid var(--fb-border);
             border-radius: 10px;
             padding: 10px;
-            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+            box-shadow: var(--shadow-md);
             width: 280px;
             z-index: 20;
         }
@@ -45,7 +45,7 @@ export class FbIconPicker extends LitElement {
         }
         .cat {
             font-weight: 700;
-            font-size: 13px;
+            font-size: 14px;
             margin: 6px 0;
             color: var(--fb-muted);
         }
@@ -64,7 +64,7 @@ export class FbIconPicker extends LitElement {
             color: var(--fb-text);
         }
         .clearBtn {
-            font-size: 13px;
+            font-size: 14px;
             padding: 4px 8px;
         }
     `;

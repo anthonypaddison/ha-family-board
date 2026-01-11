@@ -40,12 +40,12 @@ export class FbMobileView extends LitElement {
             font-weight: 800;
         }
         .date {
-            font-size: 12px;
+            font-size: 14px;
             color: var(--fb-muted);
         }
         .chip {
             border-radius: 12px;
-            border: 1px solid rgba(15, 23, 42, 0.12);
+            border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
             padding: 8px 10px;
             background: color-mix(in srgb, var(--event-color) 18%, var(--fb-surface));
             margin-bottom: 8px;
@@ -54,11 +54,11 @@ export class FbMobileView extends LitElement {
             font-weight: 700;
         }
         .time {
-            font-size: 12px;
+            font-size: 14px;
             color: var(--fb-muted);
         }
         .sectionTitle {
-            font-size: 12px;
+            font-size: 14px;
             color: var(--fb-muted);
             margin: 6px 0;
         }

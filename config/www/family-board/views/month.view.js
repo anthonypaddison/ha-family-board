@@ -66,16 +66,16 @@ export class FbMonthView extends LitElement {
         }
         .cell.header {
             cursor: default;
-            background: #f1ecff;
+            background: var(--highlight);
             font-weight: 700;
-            color: #6b5aa6;
+            color: var(--highlight-text);
         }
         .cell:nth-child(7n) {
             border-right: 0;
         }
         .num {
             font-weight: 700;
-            font-size: 13px;
+            font-size: 14px;
         }
         .pips {
             margin-top: 8px;
@@ -93,7 +93,7 @@ export class FbMonthView extends LitElement {
             color: var(--fb-text);
         }
         .today {
-            background: #efeaff;
+            background: var(--highlight-soft);
         }
         .muted {
             color: var(--fb-muted);
@@ -158,25 +158,6 @@ export class FbMonthView extends LitElement {
 
         const daysWithEvents = dayStats.filter((x) => x.dayTotal > 0).length;
         const totalEvents = dayStats.reduce((sum, x) => sum + x.dayTotal, 0);
-
-        if (card._debug) {
-            const totalEventsAll = cells.reduce((sum, d) => {
-                if (!d) return sum;
-                return (
-                    sum +
-                    calendars.reduce(
-                        (inner, c) => inner + card._eventsForEntityOnDay(c.entity, d).length,
-                        0
-                    )
-                );
-            }, 0);
-            debugLog(card._debug, 'MonthView filter', {
-                totalEventsAll,
-                totalEventsFiltered: totalEvents,
-                calendarsAll: calendars.length,
-                calendarsFiltered: filteredCalendars.length,
-            });
-        }
 
         return html`
             <div class="wrap">

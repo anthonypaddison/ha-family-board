@@ -32,8 +32,6 @@ export class CalendarService {
         const cached = this._cache.get(key);
         if (cached && Date.now() - cached.ts < this._cacheMs) return cached.data;
 
-        debugLog(this.debug, 'Fetching calendar', entityId, startISO, endISO);
-
         const path = `calendars/${encodeURIComponent(entityId)}?start=${encodeURIComponent(
             startISO
         )}&end=${encodeURIComponent(endISO)}`;
@@ -42,9 +40,6 @@ export class CalendarService {
         const normalised = Array.isArray(data)
             ? data.map((e) => this._normaliseEvent(e)).filter(Boolean)
             : [];
-
-        debugLog(this.debug, 'Calendar response length', entityId, normalised.length);
-        debugLog(this.debug, 'Calendar normalised sample', entityId, normalised[0]);
 
         this._cache.set(key, { ts: Date.now(), data: normalised });
         return normalised;

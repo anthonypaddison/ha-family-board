@@ -32,7 +32,7 @@ export class FbDialogs extends LitElement {
         .backdrop {
             position: fixed;
             inset: 0;
-            background: rgba(15, 23, 42, 0.35);
+            background: var(--overlay);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -77,7 +77,7 @@ export class FbDialogs extends LitElement {
             border-radius: 10px;
             padding: 10px 12px;
             cursor: pointer;
-            background: var(--palette-lilac, #cfbaf0);
+            background: var(--fb-accent);
             color: var(--fb-text);
         }
         button.secondary {

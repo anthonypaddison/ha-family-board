@@ -111,7 +111,7 @@ export class FbScheduleView extends LitElement {
             align-items: center;
             justify-content: flex-end;
             padding: 8px;
-            font-size: 12px;
+            font-size: 14px;
             color: var(--fb-muted);
         }
         .gutterTimes {
@@ -130,7 +130,7 @@ export class FbScheduleView extends LitElement {
             position: absolute;
             top: -9px;
             left: 10px;
-            font-size: 12px;
+            font-size: 14px;
             background: var(--fb-surface);
             padding-right: 6px;
             color: var(--fb-muted);
@@ -151,16 +151,16 @@ export class FbScheduleView extends LitElement {
             gap: 4px;
         }
         .dayHead.highlight {
-            background: #f1ecff;
-            color: #6b5aa6;
-            border-color: color-mix(in srgb, #f1ecff 60%, var(--fb-border));
+            background: var(--highlight);
+            color: var(--highlight-text);
+            border-color: color-mix(in srgb, var(--highlight) 60%, var(--fb-border));
         }
         .dayName {
             font-weight: 800;
             font-size: 14px;
         }
         .dayDate {
-            font-size: 13px;
+            font-size: 14px;
             color: var(--fb-muted);
         }
         .allDay {
@@ -175,14 +175,14 @@ export class FbScheduleView extends LitElement {
             align-content: flex-start;
         }
         .allDay.todayCol {
-            background: #efeaff;
-            border-color: color-mix(in srgb, #efeaff 60%, var(--fb-border));
+            background: var(--highlight-soft);
+            border-color: color-mix(in srgb, var(--highlight-soft) 60%, var(--fb-border));
         }
         .chip {
             border-radius: 10px;
             border: 1px solid color-mix(in srgb, var(--event-color) 60%, var(--fb-border));
             padding: 6px 12px;
-            font-size: 12px;
+            font-size: 14px;
             cursor: pointer;
             background: var(--event-color);
             color: var(--event-text);
@@ -205,15 +205,15 @@ export class FbScheduleView extends LitElement {
             position: relative;
             border-radius: 10px;
             border: 1px solid var(--fb-border);
-            background: color-mix(in srgb, var(--fb-surface) 92%, var(--palette-lilac));
+            background: color-mix(in srgb, var(--fb-surface) 92%, var(--fb-accent));
             overflow: hidden;
         }
         .dayCol.todayCol {
-            background: #efeaff;
-            border-color: color-mix(in srgb, #efeaff 60%, var(--fb-border));
+            background: var(--highlight-soft);
+            border-color: color-mix(in srgb, var(--highlight-soft) 60%, var(--fb-border));
         }
         .dayCol.todayCol .slotBg {
-            background-color: #efeaff;
+            background-color: var(--highlight-soft);
         }
         .slotBg {
             position: relative;
@@ -243,17 +243,17 @@ export class FbScheduleView extends LitElement {
             padding: 8px 10px;
             text-align: left;
             overflow: hidden;
-            box-shadow: 0 6px 14px color-mix(in srgb, #000 10%, transparent);
+            box-shadow: var(--shadow-sm);
         }
         .eventTime {
-            font-size: 12px;
+            font-size: 14px;
             color: var(--event-text);
             margin-bottom: 4px;
             font-variant-numeric: tabular-nums;
             opacity: 0.9;
         }
         .eventTitle {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 800;
             line-height: 1.15;
         }
@@ -264,7 +264,7 @@ export class FbScheduleView extends LitElement {
             border-radius: 999px;
             border: 1px solid var(--fb-border);
             background: var(--fb-surface-2);
-            font-size: 12px;
+            font-size: 14px;
             color: var(--fb-muted);
         }
         .nowLine {
@@ -272,7 +272,7 @@ export class FbScheduleView extends LitElement {
             left: 0;
             right: 0;
             height: 2px;
-            background: rgba(236, 64, 122, 0.7);
+            background: color-mix(in srgb, var(--urgent) 70%, transparent);
             z-index: 2;
         }
     `;
@@ -385,15 +385,6 @@ export class FbScheduleView extends LitElement {
             (sum, row) => sum + row.allDay.length + row.timed.length,
             0
         );
-
-        debugLog(card._debug, 'ScheduleView event counts', {
-            days: dayData.map((x) => ({
-                day: x.day.toDateString(),
-                allDay: x.allDay.length,
-                timed: x.timed.length,
-                overflow: x.overflows.reduce((sum, o) => sum + o.count, 0),
-            })),
-        });
 
         return html`
             <div class="wrap">

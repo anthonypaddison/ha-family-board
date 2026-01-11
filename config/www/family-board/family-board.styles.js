@@ -46,6 +46,7 @@ export function fbStyles() {
             --info: #42a5f5;
             --highlight: #f1ecff;
             --highlight-soft: #efeaff;
+            --highlight-text: #6b5aa6;
 
             --radius-sm: 8px;
             --radius-md: 12px;
@@ -146,7 +147,7 @@ export function fbStyles() {
         }
 
         .navmeta {
-            font-size: 12px;
+            font-size: 14px;
             color: var(--fb-muted);
         }
 
@@ -174,7 +175,7 @@ export function fbStyles() {
         }
 
         .title {
-            font-size: 19px;
+            font-size: 28px;
             font-weight: 800;
         }
 
@@ -190,7 +191,7 @@ export function fbStyles() {
             padding: 7px 12px;
             border-radius: 999px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 14px;
         }
 
         .pill.active {
@@ -212,7 +213,7 @@ export function fbStyles() {
             border-radius: 999px;
             padding: 8px 12px;
             background: var(--fb-surface-3);
-            font-size: 13px;
+            font-size: 14px;
             min-height: 40px;
         }
 
