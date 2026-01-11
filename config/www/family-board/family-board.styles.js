@@ -9,35 +9,73 @@ export function fbStyles() {
 
     return css`
         :host {
-            --palette-mint: #b9fbc0;
-            --palette-aqua: #98f5e1;
-            --palette-cyan: #8eecf5;
-            --palette-sky: #90dbf4;
-            --palette-bluegrey: #a3c4f3;
-            --palette-lilac: #cfbaf0;
-            --palette-rose: #ffcfd2;
-            --palette-vanilla: #fbf8cc;
+            font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            font-size: 16px;
 
-            --fb-bg: color-mix(in srgb, #00ced1 18%, #ffffff);
-            --fb-surface: #ffffff;
-            --fb-surface-2: #f4fbfa;
-            --fb-surface-3: #edf7f6;
-            --fb-text: color-mix(in srgb, var(--primary-text-color) 20%, #1f2937);
-            --fb-muted: color-mix(in srgb, var(--secondary-text-color) 30%, #6b7280);
-            --fb-accent: var(--palette-lilac);
-            --fb-grid: #e6e1db;
-            --fb-today: #eef7f6;
-            --fb-weekend: #e8f3f2;
-            --fb-pill-text: var(--primary-text-color);
-            --fb-print-text: var(--primary-text-color);
-            --fb-radius: 12px;
-            --fb-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
-            --fb-border: #e8e2dc;
+            --pastel-mint: #b9fbc0;
+            --pastel-aqua: #98f5e1;
+            --pastel-cyan: #8eecf5;
+            --pastel-sky: #90dbf4;
+            --pastel-bluegrey: #a3c4f3;
+            --pastel-lilac: #cfbaf0;
+            --pastel-rose: #ffcfd2;
+            --pastel-vanilla: #fbf8cc;
 
-            --fb-icon: var(--primary-text-color);
+            --palette-mint: var(--pastel-mint);
+            --palette-aqua: var(--pastel-aqua);
+            --palette-cyan: var(--pastel-cyan);
+            --palette-sky: var(--pastel-sky);
+            --palette-bluegrey: var(--pastel-bluegrey);
+            --palette-lilac: var(--pastel-lilac);
+            --palette-rose: var(--pastel-rose);
+            --palette-vanilla: var(--pastel-vanilla);
 
-            --utility-bar-background: var(--palette-lilac);
-            --app-header-background-color: var(--palette-lilac);
+            --bg: color-mix(in srgb, var(--family) 16%, #ffffff);
+            --surface: #ffffff;
+            --surface-2: #f4fbfa;
+            --surface-3: #edf7f6;
+            --border: #e6e1db;
+            --text: #1f2937;
+            --text-2: #6b7280;
+            --text-3: #94a3b8;
+
+            --success: #36b37e;
+            --family: #00ced1;
+            --warning: #f4b400;
+            --urgent: #ec407a;
+            --info: #42a5f5;
+            --highlight: #f1ecff;
+            --highlight-soft: #efeaff;
+
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 8px 18px rgba(15, 23, 42, 0.12);
+            --shadow-md: 0 14px 28px rgba(15, 23, 42, 0.12);
+            --shadow-lg: 0 18px 36px rgba(15, 23, 42, 0.22);
+            --overlay: rgba(15, 23, 42, 0.35);
+            --text-on-accent: #111827;
+
+            --fb-bg: var(--bg);
+            --fb-surface: var(--surface);
+            --fb-surface-2: var(--surface-2);
+            --fb-surface-3: var(--surface-3);
+            --fb-text: var(--text);
+            --fb-muted: var(--text-2);
+            --fb-accent: var(--pastel-lilac);
+            --fb-grid: var(--border);
+            --fb-today: var(--highlight-soft);
+            --fb-weekend: color-mix(in srgb, var(--border) 35%, transparent);
+            --fb-pill-text: var(--text);
+            --fb-print-text: var(--text);
+            --fb-radius: var(--radius-md);
+            --fb-shadow: var(--shadow-md);
+            --fb-border: var(--border);
+
+            --fb-icon: var(--text);
+
+            --utility-bar-background: var(--pastel-lilac);
+            --app-header-background-color: var(--pastel-lilac);
 
             display: block;
             width: 100%;
