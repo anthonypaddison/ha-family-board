@@ -70,13 +70,17 @@ export class TodoService {
         if (!item) throw new Error('Missing item');
 
         const ref = this.normalizeItemRef(item);
-        const { item: _ignored, ...rest } = updates || {};
+        const payload = { entity_id: entityId, item: ref };
+        const rename = updates?.rename ?? updates?.name ?? updates?.summary;
+        if (rename) payload.rename = rename;
+        if (updates?.status) payload.status = updates.status;
         debugLog(this.debug, 'Todo update_item', {
             entityId,
             ref,
             keys: this._itemKeys(item),
+            payloadKeys: Object.keys(payload),
         });
-        await hass.callService('todo', 'update_item', { entity_id: entityId, item: ref, ...rest });
+        await hass.callService('todo', 'update_item', payload);
     }
 
     async removeItem(hass, entityId, item) {
@@ -109,7 +113,7 @@ export class TodoService {
         if (!item) throw new Error('Missing item');
         if (!text) throw new Error('Missing text');
 
-        await this.updateItem(hass, entityId, item, { summary: text, name: text });
+        await this.updateItem(hass, entityId, item, { rename: text });
     }
 
     async clearCompleted(hass, entityId) {
