@@ -178,6 +178,7 @@ export class FbScheduleView extends LitElement {
             color: var(--fb-muted);
             font-variant-numeric: tabular-nums;
             transform: translateY(-50%);
+            line-height: 1;
         }
         .timeLabel.half {
             opacity: 0.7;
@@ -198,13 +199,10 @@ export class FbScheduleView extends LitElement {
             color: var(--highlight-text);
             border-color: color-mix(in srgb, var(--highlight) 60%, var(--fb-border));
         }
-        .dayName {
+        .dayLabel {
             font-weight: 800;
-            font-size: 14px;
-        }
-        .dayDate {
-            font-size: 14px;
-            color: var(--fb-muted);
+            font-size: 15px;
+            white-space: nowrap;
         }
         .allDay {
             border-radius: 10px;
@@ -213,9 +211,11 @@ export class FbScheduleView extends LitElement {
             padding: 6px;
             min-height: 52px;
             display: flex;
-            gap: 6px;
             flex-direction: column;
-            align-content: stretch;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 6px;
         }
         .allDay.todayCol {
             background: var(--highlight-soft);
@@ -461,10 +461,10 @@ export class FbScheduleView extends LitElement {
                                 month: 'short',
                             });
                             const isToday = card._isSameDay(d, now);
+                            const dayLabel = `${dayName} ${dayDate}`;
                             return html`
                                 <div class="dayHead ${isToday ? 'highlight' : ''}">
-                                    <div class="dayName">${dayName}</div>
-                                    <div class="dayDate">${dayDate}</div>
+                                    <div class="dayLabel">${dayLabel}</div>
                                 </div>
                             `;
                         })}
@@ -495,9 +495,7 @@ export class FbScheduleView extends LitElement {
                                                   </button>
                                               `
                                           )
-                                        : html`<span style="color:var(--fb-muted);font-size:12px"
-                                              >-</span
-                                          >`}
+                                        : html``}
                                     ${row.allDayHidden
                                         ? html`<button
                                               class="chip"
