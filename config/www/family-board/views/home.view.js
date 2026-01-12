@@ -16,11 +16,20 @@ export class FbHomeView extends LitElement {
             height: 100%;
             overflow: auto;
             padding: 10px;
+            box-sizing: border-box;
         }
         .grid {
             display: grid;
             gap: 8px;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(220px, 25%));
+            align-items: stretch;
+        }
+        .banner {
+            border: 1px dashed var(--fb-border);
+            border-radius: 12px;
+            padding: 12px;
+            color: var(--fb-muted);
+            background: var(--fb-surface-2);
         }
         .tile {
             border: 1px solid var(--fb-grid);
@@ -35,9 +44,8 @@ export class FbHomeView extends LitElement {
         }
         .name {
             font-weight: 700;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            overflow-wrap: anywhere;
+            white-space: normal;
         }
         button {
             border: 0;
@@ -103,11 +111,20 @@ export class FbHomeView extends LitElement {
         const controls = Array.isArray(card._config?.home_controls)
             ? card._config.home_controls
             : [];
+        const validControls = controls.filter((eid) => hass?.states?.[eid]);
 
         return html`
             <div class="wrap">
+                ${validControls.length === 0
+                    ? html`<div class="banner">
+                          No home controls configured.
+                          ${card._hass?.user?.is_admin
+                              ? html`Add entities in Settings -> Home controls.`
+                              : html`Ask an admin to configure home controls.`}
+                      </div>`
+                    : html``}
                 <div class="grid">
-                    ${controls.map((eid) => {
+                    ${validControls.map((eid) => {
                         const st = hass?.states?.[eid];
                         const label = this._friendlyName(eid, st);
                         const state = st?.state ?? 'unknown';
@@ -121,6 +138,7 @@ export class FbHomeView extends LitElement {
                                     <input
                                         type="checkbox"
                                         .checked=${isOn}
+                                        ?disabled=${!st}
                                         @change=${(e) =>
                                             card._setHomeEntityState(eid, e.target.checked)}
                                     />

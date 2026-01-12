@@ -5,7 +5,10 @@ import { getHaLit } from '../ha-lit.js';
 const { LitElement, html, css } = getHaLit();
 
 export class FbSettingsView extends LitElement {
-    static properties = { card: { type: Object } };
+    static properties = {
+        card: { type: Object },
+        _homeControlAdd: { state: true },
+    };
 
     static styles = css`
         :host {
@@ -126,6 +129,9 @@ export class FbSettingsView extends LitElement {
         const todos = Array.isArray(cfg.todos) ? cfg.todos : [];
         const people = Array.isArray(cfg.people) ? cfg.people : [];
         const shopping = cfg.shopping?.entity || 'todo.shopping_list_2';
+        const homeControls = Array.isArray(cfg.home_controls) ? cfg.home_controls : [];
+        const entityIds = Object.keys(card._hass?.states || {}).sort();
+        const addValue = this._homeControlAdd || '';
 
         return html`
             <div class="wrap">
@@ -313,6 +319,65 @@ export class FbSettingsView extends LitElement {
                         </div>
                         <div class="muted">Mobile layout is stored per user and device.</div>
                         <div class="muted">Use the card editor for schedule layout changes.</div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="title">Home controls</div>
+                    <div class="panelBody">
+                        <div class="muted">Pick entities from your Home Assistant instance.</div>
+                        <div class="row">
+                            <div>Add entity</div>
+                            <div class="unitRow">
+                                <select
+                                    class="input"
+                                    .value=${addValue}
+                                    @change=${(e) => (this._homeControlAdd = e.target.value)}
+                                >
+                                    <option value="">Select entity</option>
+                                    ${entityIds.map(
+                                        (eid) =>
+                                            html`<option value=${eid}>${eid}</option>`
+                                    )}
+                                </select>
+                                <button
+                                    class="btn"
+                                    ?disabled=${!addValue}
+                                    @click=${() => {
+                                        if (!addValue) return;
+                                        if (!entityIds.includes(addValue)) return;
+                                        if (homeControls.includes(addValue)) return;
+                                        const next = [...homeControls, addValue];
+                                        card._updateConfigPartial({ home_controls: next });
+                                        this._homeControlAdd = '';
+                                    }}
+                                >
+                                    Add
+                                </button>
+                            </div>
+                        </div>
+                        ${homeControls.length
+                            ? homeControls.map(
+                                  (eid) => html`
+                                      <div class="row">
+                                          <div>${eid}</div>
+                                          <button
+                                              class="btn"
+                                              @click=${() => {
+                                                  const next = homeControls.filter(
+                                                      (item) => item !== eid
+                                                  );
+                                                  card._updateConfigPartial({
+                                                      home_controls: next,
+                                                  });
+                                              }}
+                                          >
+                                              Remove
+                                          </button>
+                                      </div>
+                                  `
+                              )
+                            : html`<div class="muted">No home controls selected.</div>`}
                     </div>
                 </div>
                 </div>
