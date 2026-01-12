@@ -87,6 +87,7 @@ export class FbShoppingView extends LitElement {
             gap: 8px;
             overflow: auto;
             min-height: 0;
+            flex: 1 1 auto;
         }
         .item {
             display: flex;
@@ -203,6 +204,7 @@ export class FbShoppingView extends LitElement {
             gap: 8px;
             overflow: auto;
             min-height: 0;
+            flex: 1 1 auto;
         }
         .commonRow {
             display: flex;
