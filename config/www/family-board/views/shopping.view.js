@@ -7,7 +7,6 @@ const { LitElement, html, css } = getHaLit();
 export class FbShoppingView extends LitElement {
     static properties = {
         card: { type: Object },
-        _commonExpanded: { state: true },
     };
 
     _addCommonItem(item) {
@@ -287,7 +286,6 @@ export class FbShoppingView extends LitElement {
             .map((item) => String(item))
             .filter((item) => !favKeys.has(item.toLowerCase()));
         const commonList = [...favList, ...defaultList];
-        const visibleCommon = this._commonExpanded ? commonList : commonList.slice(0, 10);
 
         return html`
             <div class="wrap">
@@ -420,16 +418,13 @@ export class FbShoppingView extends LitElement {
                     </div>
 
                     <div class="card">
-                        <div
-                            class="h commonHeader"
-                            @click=${() => (this._commonExpanded = !this._commonExpanded)}
-                        >
-                            <span>Common items</span>
+                        <div class="h commonHeader">
+                            <span>Favourites</span>
                             <span class="muted">${commonList.length}</span>
                         </div>
                         <div class="commonList">
-                            ${visibleCommon.length
-                                ? visibleCommon.map((item) => {
+                            ${commonList.length
+                                ? commonList.map((item) => {
                                       const key = String(item).toLowerCase();
                                       const fav = favourites.some(
                                           (f) => String(f).toLowerCase() === key
