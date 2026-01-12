@@ -1636,6 +1636,14 @@ class FamilyBoardCard extends LitElement {
             if (shopping.name) push(`  name: ${shopping.name}`);
         }
 
+        const homeControls = Array.isArray(draft.home_controls) ? draft.home_controls : [];
+        if (homeControls.length) {
+            push(`home_controls:`);
+            for (const eid of homeControls) {
+                push(`  - ${eid}`);
+            }
+        }
+
         return lines.join('\n');
     }
 
