@@ -84,7 +84,7 @@ export class FbMobileView extends LitElement {
         const activeCalendars = calendars.filter(
             (c) =>
                 visibleSet.has(c.entity) &&
-                card._isPersonAllowed(c.person_id || c.personId || c.person || c.entity)
+                card._isPersonAllowed(card._personIdForConfig(c, c.entity))
         );
 
         const totalEvents = days.reduce((sum, d) => {

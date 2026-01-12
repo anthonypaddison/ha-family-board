@@ -351,7 +351,7 @@ export class FbScheduleView extends LitElement {
         const calendars = calendarList.filter(
             (c) =>
                 visibleSet.has(c.entity) &&
-                card._isPersonAllowed(c.person_id || c.personId || c.person || c.entity)
+                card._isPersonAllowed(card._personIdForConfig(c, c.entity))
         );
 
         const maxAllDayVisible = 2;

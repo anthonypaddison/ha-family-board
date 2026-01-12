@@ -132,7 +132,7 @@ export class FbChoresView extends LitElement {
                 <div class="grid">
                     ${todos
                         .filter((t) =>
-                            card._isPersonAllowed(t.person_id || t.personId || t.person || t.entity)
+                            card._isPersonAllowed(card._personIdForConfig(t, t.entity))
                         )
                         .map((t) => {
                         const person =

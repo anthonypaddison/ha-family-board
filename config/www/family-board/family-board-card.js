@@ -653,6 +653,18 @@ class FamilyBoardCard extends LitElement {
         return this._personByEntity?.get(entityId) || null;
     }
 
+    _personIdForConfig(entry, entityId) {
+        const person = entityId ? this._personForEntity(entityId) : null;
+        return (
+            person?.id ||
+            entry?.person_id ||
+            entry?.personId ||
+            entry?.person ||
+            entityId ||
+            ''
+        );
+    }
+
     _isPersonAllowed(personId) {
         if (!this._personFilterSet || this._personFilterSet.size === 0) return true;
         const key = this._normalisePersonId(personId);
@@ -671,6 +683,7 @@ class FamilyBoardCard extends LitElement {
 
         const { start, end } = this._todayRange();
         const totalEvents = calendars.reduce((sum, c) => {
+            if (!this._isPersonAllowed(this._personIdForConfig(c, c.entity))) return sum;
             const items = this._eventsByEntity?.[c.entity] || [];
             const count = items.filter((e) => {
                 if (!e?._start || !e?._end) return false;
@@ -680,7 +693,10 @@ class FamilyBoardCard extends LitElement {
         }, 0);
 
         const totalTodos = todos.reduce(
-            (sum, t) => sum + this._incompleteTodoCount(this._todoItems?.[t.entity] || []),
+            (sum, t) => {
+                if (!this._isPersonAllowed(this._personIdForConfig(t, t.entity))) return sum;
+                return sum + this._incompleteTodoCount(this._todoItems?.[t.entity] || []);
+            },
             0
         );
 
@@ -723,29 +739,26 @@ class FamilyBoardCard extends LitElement {
     }
 
     _countEventsTodayForPerson(personId) {
+        if (!this._isPersonAllowed(personId)) return 0;
         const calendars = Array.isArray(this._config?.calendars) ? this._config.calendars : [];
         const target = this._normalisePersonId(personId);
         if (!target) return 0;
         const today = startOfDay(new Date());
 
         return calendars.reduce((sum, c) => {
-            const person = this._personForEntity(c.entity);
-            const mappedId = this._normalisePersonId(
-                person?.id || c.person_id || c.personId || c.person || c.entity
-            );
+            const mappedId = this._normalisePersonId(this._personIdForConfig(c, c.entity));
             if (!mappedId || mappedId !== target) return sum;
             return sum + this._eventsForEntityOnDay(c.entity, today).length;
         }, 0);
     }
 
     _countTodosTodayForPerson(personId) {
+        if (!this._isPersonAllowed(personId)) return 0;
         const todos = Array.isArray(this._config?.todos) ? this._config.todos : [];
         const target = this._normalisePersonId(personId);
         if (!target) return 0;
         return todos.reduce((sum, t) => {
-            const mappedId = this._normalisePersonId(
-                t.person_id || t.personId || t.person || t.entity
-            );
+            const mappedId = this._normalisePersonId(this._personIdForConfig(t, t.entity));
             if (!mappedId || mappedId !== target) return sum;
             const items = this._todoItems?.[t.entity] || [];
             return sum + this._dueTodayOrNoDueCount(items);

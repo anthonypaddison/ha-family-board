@@ -107,7 +107,7 @@ export class FbMonthView extends LitElement {
         const cfg = card._config || {};
         const calendars = Array.isArray(cfg.calendars) ? cfg.calendars : [];
         const filteredCalendars = calendars.filter((c) =>
-            card._isPersonAllowed(c.person_id || c.personId || c.person || c.entity)
+            card._isPersonAllowed(card._personIdForConfig(c, c.entity))
         );
 
         // IMPORTANT: month view must use the month-offset date, not the day view date
