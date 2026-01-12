@@ -44,6 +44,27 @@ export class FbScheduleView extends LitElement {
         this.style.setProperty('--fb-scrollbar-width', `${width}px`);
     }
 
+    _handleSlotClick(ev, day) {
+        const card = this.card;
+        if (!card) return;
+        const target = ev?.currentTarget;
+        if (!target) return;
+        const rect = target.getBoundingClientRect();
+        const y = ev.clientY - rect.top;
+        const slotPx = this._slotPx ?? 0;
+        const slotMinutes = this._slotMinutes ?? 30;
+        const startMin = this._startMin ?? 0;
+        const slots = this._slotCount ?? 0;
+        if (!slotPx || !slots) return;
+        const maxY = slots * slotPx - 1;
+        const clamped = clamp(y, 0, maxY);
+        const slotIndex = Math.floor(clamped / slotPx);
+        const minutes = startMin + slotIndex * slotMinutes;
+        const date = new Date(day);
+        date.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
+        card._openAddEventAt?.(date);
+    }
+
     static styles = css`
         :host {
             display: block;
@@ -343,6 +364,7 @@ export class FbScheduleView extends LitElement {
         this._slotMinutes = slotMinutes;
         this._slotPx = slotPx;
         this._startMin = startMin;
+        this._slotCount = slots;
         this._autoScrollEnabled = showNow;
 
         const calendarList = Array.isArray(cfg.calendars) ? cfg.calendars : [];
@@ -503,7 +525,10 @@ export class FbScheduleView extends LitElement {
                                 const isToday = card._isSameDay(row.day, now);
                                 return html`
                                     <div class="dayCol ${isToday ? 'todayCol' : ''}">
-                                        <div class="slotBg">
+                                        <div
+                                            class="slotBg"
+                                            @click=${(ev) => this._handleSlotClick(ev, row.day)}
+                                        >
                                             ${Array.from({ length: slots + 1 }).map(
                                                 () => html`<div class="slotRow"></div>`
                                             )}

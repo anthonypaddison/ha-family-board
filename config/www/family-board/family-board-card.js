@@ -11,6 +11,7 @@ import {
     startOfDay,
     endOfDay,
     addDays,
+    pad2,
     formatDayTitle,
 } from './family-board.util.js';
 import { NEUTRAL_COLOUR, getPersonColour } from './util/colour.util.js';
@@ -73,6 +74,8 @@ class FamilyBoardCard extends LitElement {
         _dialogTitle: { state: true },
         _dialogItem: { state: true },
         _dialogEntity: { state: true },
+        _dialogStartValue: { state: true },
+        _dialogEndValue: { state: true },
         _sourcesOpen: { state: true },
         _eventDialogOpen: { state: true },
         _eventDialogEntity: { state: true },
@@ -381,6 +384,8 @@ class FamilyBoardCard extends LitElement {
                             .title=${this._dialogTitle}
                             .entityId=${this._dialogEntity}
                             .item=${this._dialogItem}
+                            .startValue=${this._dialogStartValue}
+                            .endValue=${this._dialogEndValue}
                             .calendars=${this._config?.calendars || []}
                             .todos=${this._config?.todos || []}
                             .shopping=${this._config?.shopping || {}}
@@ -892,8 +897,34 @@ class FamilyBoardCard extends LitElement {
             this._dialogTitle = 'Add event';
             this._dialogItem = null;
             this._dialogEntity = '';
+            this._dialogStartValue = '';
+            this._dialogEndValue = '';
         }
     };
+
+    _toLocalDateTimeValue(date) {
+        const d = new Date(date);
+        if (Number.isNaN(d.getTime())) return '';
+        return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(
+            d.getHours()
+        )}:${pad2(d.getMinutes())}`;
+    }
+
+    _openAddEventAt(date) {
+        if (!date) return;
+        const start = new Date(date);
+        if (Number.isNaN(start.getTime())) return;
+        const minutes = Number(this._defaultEventMinutes || 30);
+        const end = new Date(start.getTime() + minutes * 60 * 1000);
+        this._closeAllDialogs();
+        this._dialogOpen = true;
+        this._dialogMode = 'calendar';
+        this._dialogTitle = 'Add event';
+        this._dialogItem = null;
+        this._dialogEntity = '';
+        this._dialogStartValue = this._toLocalDateTimeValue(start);
+        this._dialogEndValue = this._toLocalDateTimeValue(end);
+    }
 
     _openTodoAddForEntity(entityId) {
         if (!entityId) return;
@@ -1061,6 +1092,8 @@ class FamilyBoardCard extends LitElement {
         this._dialogTitle = '';
         this._dialogItem = null;
         this._dialogEntity = '';
+        this._dialogStartValue = '';
+        this._dialogEndValue = '';
     }
 
     _onDialogClose = () => {

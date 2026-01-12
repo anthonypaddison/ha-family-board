@@ -16,6 +16,8 @@ export class FbDialogs extends LitElement {
         title: { type: String },
         entityId: { type: String },
         item: { type: Object },
+        startValue: { type: String },
+        endValue: { type: String },
         calendars: { type: Array },
         todos: { type: Array },
         shopping: { type: Object },
@@ -195,6 +197,9 @@ export class FbDialogs extends LitElement {
             if (this._emoji === undefined) this._emoji = parsed.emoji;
         }
 
+        const startValue = this.startValue || this._todayLocalDateTimeInputValue();
+        const endValue = this.endValue || this._defaultEndValue(startValue);
+
         return html`
             <div class="backdrop" @click=${(e) => e.target === e.currentTarget && this.close()}>
                 <div class="dlg">
@@ -230,7 +235,7 @@ export class FbDialogs extends LitElement {
                                   <input
                                       id="start"
                                       type="datetime-local"
-                                      .value=${this._todayLocalDateTimeInputValue()}
+                                      .value=${startValue}
                                       @change=${this._syncEndTime}
                                   />
                               </div>
@@ -240,9 +245,7 @@ export class FbDialogs extends LitElement {
                                   <input
                                       id="end"
                                       type="datetime-local"
-                                      .value=${this._defaultEndValue(
-                                          this._todayLocalDateTimeInputValue()
-                                      )}
+                                      .value=${endValue}
                                   />
                               </div>
 
