@@ -684,7 +684,7 @@ class FamilyBoardCard extends LitElement {
             0
         );
 
-        const shopping = this._incompleteTodoCount(shoppingItems);
+        const shopping = this._shoppingQuantityCount(shoppingItems);
 
         return {
             schedule: totalEvents ? String(totalEvents) : null,
@@ -1124,10 +1124,7 @@ class FamilyBoardCard extends LitElement {
 
     async _toggleShoppingItem(item, completed) {
         if (!item) return;
-        if (typeof item === 'object') {
-            item.status = completed ? 'completed' : 'needs_action';
-            this.requestUpdate();
-        }
+        this._optimisticShoppingStatus(item, completed);
         if (!completed) {
             this._clearShoppingRemoval(item);
         }
@@ -1332,6 +1329,18 @@ class FamilyBoardCard extends LitElement {
         this.requestUpdate();
     }
 
+    _optimisticShoppingStatus(item, completed) {
+        if (!item) return;
+        const list = Array.isArray(this._shoppingItems) ? [...this._shoppingItems] : [];
+        const nextList = list.map((entry) => {
+            if (entry !== item) return entry;
+            entry.status = completed ? 'completed' : 'needs_action';
+            return entry;
+        });
+        this._shoppingItems = nextList;
+        this.requestUpdate();
+    }
+
     async _updateShoppingItemText(item, text) {
         if (!item || !text) return;
         this._optimisticShoppingUpdate(item, text);
@@ -1522,6 +1531,15 @@ class FamilyBoardCard extends LitElement {
         return items.filter(
             (it) => !['completed', 'done'].includes(String(it.status || '').toLowerCase())
         ).length;
+    }
+
+    _shoppingQuantityCount(items) {
+        return (items || []).reduce((sum, item) => {
+            const status = String(item?.status || '').toLowerCase();
+            if (status === 'completed' || status === 'done') return sum;
+            const parsed = this._parseShoppingText(this._shoppingItemText(item));
+            return sum + (parsed.qty || 1);
+        }, 0);
     }
 
     _dueTodayOrNoDueCount(items) {
