@@ -66,6 +66,10 @@ export class FbSidebar extends LitElement {
         .navbtn.active .navicon {
             color: #ffffff;
         }
+        .navbtn.active .navmeta {
+            color: #ffffff;
+            background: color-mix(in srgb, #ffffff 20%, transparent);
+        }
 
         .navicon {
             width: 28px;
