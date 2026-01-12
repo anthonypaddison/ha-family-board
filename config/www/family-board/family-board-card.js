@@ -950,6 +950,18 @@ class FamilyBoardCard extends LitElement {
         this.requestUpdate();
     }
 
+    _optimisticTodoStatus(entityId, item, completed) {
+        const list = Array.isArray(this._todoItems?.[entityId])
+            ? [...this._todoItems[entityId]]
+            : [];
+        const nextList = list.map((entry) => {
+            if (entry !== item) return entry;
+            return { ...entry, status: completed ? 'completed' : 'needs_action' };
+        });
+        this._todoItems = { ...(this._todoItems || {}), [entityId]: nextList };
+        this.requestUpdate();
+    }
+
     _onAddTodo = async (ev) => {
         const { entityId, text } = ev?.detail || {};
         if (!entityId || !text) return;
@@ -1054,10 +1066,7 @@ class FamilyBoardCard extends LitElement {
 
     async _toggleTodoItem(entityId, item, completed) {
         if (!entityId || !item) return;
-        if (typeof item === 'object') {
-            item.status = completed ? 'completed' : 'needs_action';
-            this.requestUpdate();
-        }
+        this._optimisticTodoStatus(entityId, item, completed);
         try {
             await this._todoService.setStatus(this._hass, entityId, item, completed);
         } finally {
