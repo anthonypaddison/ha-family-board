@@ -1032,10 +1032,18 @@ class FamilyBoardCard extends LitElement {
         this.requestUpdate();
     };
 
-    _updateConfigPartial(patch) {
+    async _updateConfigPartial(patch) {
         if (!patch) return;
-        this._applyConfigImmediate({ ...this._config, ...patch }, { useDefaults: false });
-        this._refreshAll();
+        const next = { ...this._config, ...patch };
+        this._applyConfigImmediate(next, { useDefaults: false });
+        await this._refreshAll();
+        const result = await this._persistConfig(next);
+        if (result?.mode === 'local') {
+            this._showToast('Saved', 'Saved on this device');
+        } else {
+            this._showToast('Saved');
+        }
+        this.requestUpdate();
     }
 
     _closeAllDialogs() {
