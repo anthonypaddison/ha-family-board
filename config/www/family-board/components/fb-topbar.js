@@ -36,21 +36,15 @@ export class FbTopbar extends LitElement {
 
         .titleWrap {
             display: flex;
-            align-items: baseline;
+            align-items: center;
             gap: 10px;
             justify-self: start;
         }
 
-        .title {
-            font-weight: 800;
-            font-size: 28px;
-            white-space: nowrap;
-        }
-
         .time {
-            font-size: 22px;
+            font-size: 26px;
             font-weight: 800;
-            color: var(--fb-muted);
+            color: var(--fb-text);
             font-variant-numeric: tabular-nums;
         }
 
@@ -150,7 +144,7 @@ export class FbTopbar extends LitElement {
             display: flex;
             align-items: center;
             gap: 8px;
-            border: 1px solid var(--fb-grid);
+            border: 1px solid var(--fb-border);
             border-radius: 12px;
             padding: 10px 12px;
             background: var(--fb-surface-3);
@@ -162,14 +156,12 @@ export class FbTopbar extends LitElement {
         }
 
         .summaryBadge.active {
-            border-color: var(--person-colour);
-            box-shadow: 0 8px 18px color-mix(in srgb, var(--person-colour) 35%, transparent);
-            background: var(--fb-surface);
+            border-color: var(--fb-accent-teal);
         }
 
         .summaryBadge:not(.active) {
-            background: var(--fb-surface-2);
-            opacity: 0.65;
+            background: var(--fb-surface-3);
+            opacity: 1;
         }
 
         .dot {
@@ -193,8 +185,9 @@ export class FbTopbar extends LitElement {
         .summaryMetric {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
+            gap: 8px;
             font-weight: 700;
+            line-height: 1;
         }
 
         .summaryMetric ha-icon {
@@ -313,16 +306,13 @@ export class FbTopbar extends LitElement {
     }
 
     render() {
-        const title = this.title || 'Family Board';
         const screen = this.screen || 'schedule';
         const mainMode = this.mainMode || 'schedule';
         const summary = Array.isArray(this.summary) ? this.summary : [];
         const activeFilters = Array.isArray(this.activeFilters) ? this.activeFilters : [];
-
         return html`
             <div class="toprow">
                 <div class="titleWrap">
-                    <div class="title">${title}</div>
                     <div class="time">${this._timeLabel || ''}</div>
                 </div>
 
