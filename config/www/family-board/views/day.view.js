@@ -9,7 +9,6 @@ import {
     clamp,
     assignOverlapLanes,
     minutesSinceMidnight,
-    debugLog,
 } from '../family-board.util.js';
 
 export class FbDayView extends LitElement {

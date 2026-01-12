@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { debugLog, addDays } from '../family-board.util.js';
+import { addDays } from '../family-board.util.js';
 
 export const CALENDAR_FEATURES = {
     CREATE: 1,

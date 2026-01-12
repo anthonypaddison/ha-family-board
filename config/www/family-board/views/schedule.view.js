@@ -4,7 +4,7 @@
 import { getHaLit } from '../ha-lit.js';
 const { LitElement, html, css } = getHaLit();
 
-import { addDays, startOfDay, pad2, clamp, minutesSinceMidnight, debugLog } from '../family-board.util.js';
+import { addDays, startOfDay, pad2, clamp, minutesSinceMidnight } from '../family-board.util.js';
 import { getReadableTextColour } from '../util/colour.util.js';
 import { layoutDayEvents } from './schedule.layout.js';
 

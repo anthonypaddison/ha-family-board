@@ -4,7 +4,7 @@
 import { getHaLit } from '../ha-lit.js';
 const { LitElement, html, css } = getHaLit();
 
-import { startOfDay, isSameDay, debugLog } from '../family-board.util.js';
+import { startOfDay, isSameDay } from '../family-board.util.js';
 
 export class FbMonthView extends LitElement {
     static properties = {

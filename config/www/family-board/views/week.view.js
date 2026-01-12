@@ -15,7 +15,6 @@ import {
     clamp,
     assignOverlapLanes,
     minutesSinceMidnight,
-    debugLog,
 } from '../family-board.util.js';
 
 export class FbWeekView extends LitElement {
