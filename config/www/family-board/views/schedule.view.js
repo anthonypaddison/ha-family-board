@@ -4,7 +4,14 @@
 import { getHaLit } from '../ha-lit.js';
 const { LitElement, html, css } = getHaLit();
 
-import { addDays, startOfDay, pad2, clamp, minutesSinceMidnight } from '../family-board.util.js';
+import {
+    addDays,
+    startOfDay,
+    endOfDay,
+    pad2,
+    clamp,
+    minutesSinceMidnight,
+} from '../family-board.util.js';
 import { getReadableTextColour } from '../util/colour.util.js';
 import { layoutDayEvents } from './schedule.layout.js';
 
@@ -380,6 +387,8 @@ export class FbScheduleView extends LitElement {
         const dayData = days.map((day) => {
             const allDay = [];
             const timedRaw = [];
+            const dayStart = startOfDay(day);
+            const dayEnd = endOfDay(day);
 
             for (const c of calendars) {
                 const events = card._eventsForEntityOnDay(c.entity, day);
@@ -401,8 +410,9 @@ export class FbScheduleView extends LitElement {
                     const s = e._start;
                     const en = e._end;
                     if (!s || !en) continue;
-                    const startMinEv = s.getHours() * 60 + s.getMinutes();
-                    const endMinEv = en.getHours() * 60 + en.getMinutes();
+                    const startMinEv =
+                        s <= dayStart ? startMin : s.getHours() * 60 + s.getMinutes();
+                    const endMinEv = en >= dayEnd ? endMin : en.getHours() * 60 + en.getMinutes();
                     const clampedStart = Math.max(startMin, startMinEv);
                     const clampedEnd = Math.min(endMin, endMinEv);
 
