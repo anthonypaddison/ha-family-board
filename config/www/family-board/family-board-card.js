@@ -26,6 +26,7 @@ import './components/fb-fab.js';
 import './components/fb-dialogs.js';
 import './components/fb-manage-sources.js';
 import './components/fb-event-dialog.js';
+import './components/fb-all-day-dialog.js';
 import './ui/help.dialog.js';
 import './ui/editor-guide.dialog.js';
 import './views/home.view.js';
@@ -76,6 +77,9 @@ class FamilyBoardCard extends LitElement {
         _eventDialogOpen: { state: true },
         _eventDialogEntity: { state: true },
         _eventDialogEvent: { state: true },
+        _allDayDialogOpen: { state: true },
+        _allDayDialogDay: { state: true },
+        _allDayDialogEvents: { state: true },
         _helpOpen: { state: true },
         _editorGuideOpen: { state: true },
         _sidebarCollapsed: { state: true },
@@ -109,7 +113,8 @@ class FamilyBoardCard extends LitElement {
                 display: block;
                 height: 100%;
                 width: 100%;
-                max-height: 100vh;
+                max-height: 100%;
+                min-height: 0;
                 overflow: hidden;
             }
             :host,
@@ -201,6 +206,9 @@ class FamilyBoardCard extends LitElement {
         this._eventDialogOpen = false;
         this._eventDialogEntity = '';
         this._eventDialogEvent = null;
+        this._allDayDialogOpen = false;
+        this._allDayDialogDay = null;
+        this._allDayDialogEvents = [];
         this._helpOpen = false;
         this._editorGuideOpen = false;
         this._refreshIntervalMs = 300_000;
@@ -209,6 +217,7 @@ class FamilyBoardCard extends LitElement {
         this._scheduleDays = 5;
         this._shoppingCommon = [];
         this._shoppingFavourites = [];
+        this._shoppingRemoveTimers = new Map();
         this._defaultEventMinutes = 30;
         this._storageLoaded = false;
         this._storageLoadPromise = null;
@@ -412,6 +421,14 @@ class FamilyBoardCard extends LitElement {
                             @fb-event-update=${this._onEventUpdate}
                             @fb-event-delete=${this._onEventDelete}
                         ></fb-event-dialog>
+
+                        <fb-all-day-dialog
+                            .open=${this._allDayDialogOpen}
+                            .day=${this._allDayDialogDay}
+                            .events=${this._allDayDialogEvents}
+                            .card=${this}
+                            @fb-all-day-close=${this._onAllDayDialogClose}
+                        ></fb-all-day-dialog>
 
                         <fb-help-dialog
                             .open=${this._helpOpen}
@@ -943,13 +960,7 @@ class FamilyBoardCard extends LitElement {
     _onAddShopping = async (ev) => {
         const { text } = ev?.detail || {};
         if (!text) return;
-        this._optimisticShoppingAdd(text);
-        this._trackShoppingCommon(text);
-        try {
-            await this._shoppingService.addItem(this._hass, this._config?.shopping, text);
-        } finally {
-            await this._refreshShopping();
-        }
+        await this._addShoppingItem(text);
     };
 
     _onEditTodo = async (ev) => {
@@ -966,19 +977,10 @@ class FamilyBoardCard extends LitElement {
     _onEditShopping = async (ev) => {
         const { item, text } = ev?.detail || {};
         if (!item || !text) return;
-        this._optimisticShoppingUpdate(item, text);
-        this._trackShoppingCommon(text);
-        const supportsUpdate = this._supportsService('todo', 'update_item');
-        try {
-            if (supportsUpdate) {
-                await this._shoppingService.renameItem(this._hass, this._config?.shopping, item, text);
-            } else {
-                await this._shoppingService.removeItem(this._hass, this._config?.shopping, item);
-                await this._shoppingService.addItem(this._hass, this._config?.shopping, text);
-            }
-        } finally {
-            await this._refreshShopping();
-        }
+        const parsed = this._parseShoppingText(text);
+        const normalised = this._formatShoppingText(parsed.base, parsed.qty);
+        this._trackShoppingCommon(parsed.base);
+        await this._updateShoppingItemText(item, normalised);
     };
 
     _openManageSources() {
@@ -1010,6 +1012,7 @@ class FamilyBoardCard extends LitElement {
     _closeAllDialogs() {
         if (this._dialogOpen) this._clearDialogState();
         if (this._eventDialogOpen) this._onEventDialogClose();
+        if (this._allDayDialogOpen) this._onAllDayDialogClose();
         this._sourcesOpen = false;
         this._helpOpen = false;
         this._editorGuideOpen = false;
@@ -1085,11 +1088,22 @@ class FamilyBoardCard extends LitElement {
     }
 
     async _addShoppingItem(text) {
-        if (!text) return;
-        this._optimisticShoppingAdd(text);
-        this._trackShoppingCommon(text);
+        const parsed = this._parseShoppingText(text);
+        const base = parsed.base;
+        if (!base) return;
+        const existing = this._findShoppingItemByName(base);
+        if (existing) {
+            const nextQty = existing.parsed.qty + parsed.qty;
+            const nextText = this._formatShoppingText(existing.parsed.base, nextQty);
+            this._trackShoppingCommon(existing.parsed.base);
+            await this._updateShoppingItemText(existing.item, nextText);
+            return;
+        }
+        const formatted = this._formatShoppingText(base, parsed.qty);
+        this._optimisticShoppingAdd(formatted);
+        this._trackShoppingCommon(base);
         try {
-            await this._shoppingService.addItem(this._hass, this._config?.shopping, text);
+            await this._shoppingService.addItem(this._hass, this._config?.shopping, formatted);
         } finally {
             await this._refreshShopping();
         }
@@ -1101,6 +1115,9 @@ class FamilyBoardCard extends LitElement {
             item.status = completed ? 'completed' : 'needs_action';
             this.requestUpdate();
         }
+        if (!completed) {
+            this._clearShoppingRemoval(item);
+        }
         try {
             await this._shoppingService.setStatus(
                 this._hass,
@@ -1109,7 +1126,11 @@ class FamilyBoardCard extends LitElement {
                 completed
             );
         } finally {
-            await this._refreshShopping();
+            if (completed) {
+                this._scheduleShoppingRemoval(item);
+            } else {
+                await this._refreshShopping();
+            }
         }
     }
 
@@ -1125,6 +1146,7 @@ class FamilyBoardCard extends LitElement {
 
     async _deleteShoppingItem(item) {
         if (!item) return;
+        this._clearShoppingRemoval(item);
         this._optimisticShoppingRemove(item);
         try {
             await this._shoppingService.removeItem(this._hass, this._config?.shopping, item);
@@ -1196,7 +1218,8 @@ class FamilyBoardCard extends LitElement {
     }
 
     _toggleShoppingFavourite(name) {
-        const text = String(name || '').trim();
+        const parsed = this._parseShoppingText(name);
+        const text = String(parsed.base || '').trim();
         if (!text) return;
         const key = text.toLowerCase();
         const list = Array.isArray(this._shoppingFavourites) ? this._shoppingFavourites : [];
@@ -1227,6 +1250,40 @@ class FamilyBoardCard extends LitElement {
         this._shoppingCommon = list.filter((item) => String(item).toLowerCase() !== key);
         this._savePrefs();
         this.requestUpdate();
+    }
+
+    _shoppingItemText(item) {
+        return item?.summary ?? item?.name ?? item?.item ?? '';
+    }
+
+    _parseShoppingText(text) {
+        const raw = String(text || '').trim();
+        if (!raw) return { base: '', qty: 1 };
+        const match = raw.match(/^(.*?)(?:\s+x(\d+))$/i);
+        if (!match) return { base: raw, qty: 1 };
+        const base = String(match[1] || '').trim();
+        const qty = Math.max(1, Number(match[2] || 1));
+        if (!base) return { base: raw, qty: 1 };
+        return { base, qty };
+    }
+
+    _formatShoppingText(base, qty) {
+        const name = String(base || '').trim();
+        if (!name) return '';
+        const count = Number.isFinite(qty) ? Math.max(1, Number(qty)) : 1;
+        if (count <= 1) return name;
+        return `${name} x${count}`;
+    }
+
+    _findShoppingItemByName(baseName) {
+        const key = String(baseName || '').trim().toLowerCase();
+        if (!key) return null;
+        const list = Array.isArray(this._shoppingItems) ? this._shoppingItems : [];
+        for (const item of list) {
+            const parsed = this._parseShoppingText(this._shoppingItemText(item));
+            if (parsed.base.toLowerCase() === key) return { item, parsed };
+        }
+        return null;
     }
 
     _buildShoppingItem(text) {
@@ -1262,11 +1319,83 @@ class FamilyBoardCard extends LitElement {
         this.requestUpdate();
     }
 
+    async _updateShoppingItemText(item, text) {
+        if (!item || !text) return;
+        this._optimisticShoppingUpdate(item, text);
+        const supportsUpdate = this._supportsService('todo', 'update_item');
+        try {
+            if (supportsUpdate) {
+                await this._shoppingService.updateItem(this._hass, this._config?.shopping, item, {
+                    rename: text,
+                });
+            } else {
+                await this._shoppingService.removeItem(this._hass, this._config?.shopping, item);
+                await this._shoppingService.addItem(this._hass, this._config?.shopping, text);
+            }
+        } finally {
+            await this._refreshShopping();
+        }
+    }
+
     _optimisticShoppingRemove(item) {
         const list = Array.isArray(this._shoppingItems) ? this._shoppingItems : [];
         const nextList = list.filter((entry) => entry !== item);
         this._shoppingItems = nextList;
         this.requestUpdate();
+    }
+
+    async _adjustShoppingQuantity(item, delta) {
+        if (!item || !delta) return;
+        const parsed = this._parseShoppingText(this._shoppingItemText(item));
+        const nextQty = parsed.qty + Number(delta);
+        if (nextQty <= 0) {
+            await this._deleteShoppingItem(item);
+            return;
+        }
+        const nextText = this._formatShoppingText(parsed.base, nextQty);
+        await this._updateShoppingItemText(item, nextText);
+    }
+
+    _clearShoppingRemoval(item) {
+        if (!item) return;
+        const timer = this._shoppingRemoveTimers?.get(item);
+        if (timer) clearTimeout(timer);
+        if (this._shoppingRemoveTimers) this._shoppingRemoveTimers.delete(item);
+        if (typeof item === 'object') {
+            item._fbPendingRemove = false;
+            item._fbRemoving = false;
+        }
+        this.requestUpdate();
+    }
+
+    _scheduleShoppingRemoval(item) {
+        if (!item) return;
+        this._clearShoppingRemoval(item);
+        if (typeof item === 'object') {
+            item._fbPendingRemove = true;
+            item._fbRemoving = false;
+        }
+        this.requestUpdate();
+        const timer = setTimeout(() => {
+            if (typeof item === 'object') {
+                item._fbRemoving = true;
+                this.requestUpdate();
+            }
+            setTimeout(async () => {
+                this._optimisticShoppingRemove(item);
+                try {
+                    await this._shoppingService.removeItem(
+                        this._hass,
+                        this._config?.shopping,
+                        item
+                    );
+                } finally {
+                    if (this._shoppingRemoveTimers) this._shoppingRemoveTimers.delete(item);
+                    await this._refreshShopping();
+                }
+            }, 300);
+        }, 3500);
+        if (this._shoppingRemoveTimers) this._shoppingRemoveTimers.set(item, timer);
     }
 
     _toggleSidebarCollapsed() {
@@ -1292,6 +1421,20 @@ class FamilyBoardCard extends LitElement {
         this._eventDialogOpen = false;
         this._eventDialogEntity = '';
         this._eventDialogEvent = null;
+    };
+
+    _openAllDayDialog(day, events) {
+        if (!day || !Array.isArray(events)) return;
+        this._closeAllDialogs();
+        this._allDayDialogDay = day;
+        this._allDayDialogEvents = events;
+        this._allDayDialogOpen = true;
+    }
+
+    _onAllDayDialogClose = () => {
+        this._allDayDialogOpen = false;
+        this._allDayDialogDay = null;
+        this._allDayDialogEvents = [];
     };
 
     _onEventUpdate = async (ev) => {
@@ -1352,6 +1495,8 @@ class FamilyBoardCard extends LitElement {
         if (draft.px_per_hour !== undefined) push(`px_per_hour: ${draft.px_per_hour}`);
         if (draft.refresh_interval_ms !== undefined)
             push(`refresh_interval_ms: ${draft.refresh_interval_ms}`);
+        if (draft.accent_teal) push(`accent_teal: '${draft.accent_teal}'`);
+        if (draft.accent_lilac) push(`accent_lilac: '${draft.accent_lilac}'`);
 
         const people = Array.isArray(draft.people) ? draft.people : [];
         if (people.length) {
@@ -1557,6 +1702,21 @@ class FamilyBoardCard extends LitElement {
         this._daysToShow = daysToShow;
         this._scheduleDays = daysToShow;
         this._refreshIntervalMs = config.refresh_interval_ms ?? refreshMs;
+
+        const accentTeal =
+            typeof config.accent_teal === 'string' ? config.accent_teal.trim() : '';
+        if (accentTeal) {
+            this.style.setProperty('--fb-accent-teal', accentTeal);
+        } else {
+            this.style.removeProperty('--fb-accent-teal');
+        }
+        const accentLilac =
+            typeof config.accent_lilac === 'string' ? config.accent_lilac.trim() : '';
+        if (accentLilac) {
+            this.style.setProperty('--fb-accent', accentLilac);
+        } else {
+            this.style.removeProperty('--fb-accent');
+        }
 
         this._ensureVisibilitySets();
         this._buildPeopleMap();

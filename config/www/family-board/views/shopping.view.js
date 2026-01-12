@@ -23,7 +23,7 @@ export class FbShoppingView extends LitElement {
         }
         .wrap {
             height: 100%;
-            overflow: auto;
+            overflow: hidden;
             padding: 14px;
             min-height: 0;
             box-sizing: border-box;
@@ -32,12 +32,19 @@ export class FbShoppingView extends LitElement {
             display: grid;
             gap: 14px;
             grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.5fr);
+            height: 100%;
+            min-height: 0;
+            align-items: stretch;
         }
         .card {
             border: 1px solid var(--fb-grid);
             background: var(--fb-surface);
             border-radius: 14px;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            height: 100%;
         }
         .h {
             padding: 10px 12px;
@@ -79,6 +86,8 @@ export class FbShoppingView extends LitElement {
             display: flex;
             flex-direction: column;
             gap: 8px;
+            overflow: auto;
+            min-height: 0;
         }
         .item {
             display: flex;
@@ -88,6 +97,20 @@ export class FbShoppingView extends LitElement {
             border: 1px solid var(--fb-grid);
             border-radius: 12px;
             padding: 10px 12px;
+            transition: opacity 0.3s ease;
+        }
+        .item.pendingRemove {
+            opacity: 0.6;
+        }
+        .item.removing {
+            opacity: 0;
+        }
+        .itemTitle {
+            font-weight: 700;
+        }
+        .itemTitle.completed {
+            text-decoration: line-through;
+            color: var(--fb-muted);
         }
         .muted {
             color: var(--fb-muted);
@@ -96,6 +119,52 @@ export class FbShoppingView extends LitElement {
         .actions {
             display: inline-flex;
             gap: 6px;
+        }
+        .itemMain {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+            flex: 1;
+        }
+        .itemLabel {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+            flex: 1;
+        }
+        .itemName {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .qty {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid var(--fb-grid);
+            border-radius: 999px;
+            padding: 2px 6px;
+            background: var(--fb-surface-2);
+            flex: 0 0 auto;
+        }
+        .qtyBtn {
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+            width: 20px;
+            height: 20px;
+            border-radius: 999px;
+            display: grid;
+            place-items: center;
+            font-weight: 700;
+            color: var(--fb-text);
+        }
+        .qtyValue {
+            min-width: 18px;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
         }
         .btn {
             border: 1px solid var(--fb-grid);
@@ -118,6 +187,12 @@ export class FbShoppingView extends LitElement {
             cursor: pointer;
             color: var(--fb-muted);
         }
+        .iconBtn ha-icon,
+        .starBtn ha-icon {
+            width: 16px;
+            height: 16px;
+            display: block;
+        }
         .iconBtn.active {
             color: var(--fb-accent);
             border-color: var(--fb-accent);
@@ -127,6 +202,8 @@ export class FbShoppingView extends LitElement {
             display: flex;
             flex-direction: column;
             gap: 8px;
+            overflow: auto;
+            min-height: 0;
         }
         .commonRow {
             display: flex;
@@ -244,29 +321,64 @@ export class FbShoppingView extends LitElement {
                         <div class="items">
                             ${items.length
                                 ? items.map((it) => {
-                                      const itemName =
+                                      const rawName =
                                           it.name ?? it.summary ?? it.item ?? '(Item)';
+                                      const parsed = card._parseShoppingText
+                                          ? card._parseShoppingText(rawName)
+                                          : { base: rawName, qty: 1 };
+                                      const itemName = parsed.base || rawName;
+                                      const qty = parsed.qty || 1;
                                       const fav = favourites.some(
                                           (f) =>
                                               String(f).toLowerCase() ===
                                               String(itemName).toLowerCase()
                                       );
+                                      const isDone = ['completed', 'done'].includes(
+                                          String(it.status || '').toLowerCase()
+                                      );
+                                      const pendingRemove = Boolean(it._fbPendingRemove);
+                                      const removing = Boolean(it._fbRemoving);
                                       return html`
-                                          <div class="item">
-                                              <label style="display:flex;align-items:center;gap:10px">
-                                                  <input
-                                                      type="checkbox"
-                                                      .checked=${['completed', 'done'].includes(
-                                                          String(it.status || '').toLowerCase()
-                                                      )}
-                                                      @change=${(e) =>
-                                                          card._toggleShoppingItem(
-                                                              it,
-                                                              e.target.checked
-                                                          )}
-                                                  />
-                                                  <div style="font-weight:700">${itemName}</div>
-                                              </label>
+                                          <div
+                                              class="item ${pendingRemove ? 'pendingRemove' : ''} ${removing ? 'removing' : ''}"
+                                          >
+                                              <div class="itemMain">
+                                                  <label class="itemLabel">
+                                                      <input
+                                                          type="checkbox"
+                                                          .checked=${isDone}
+                                                          @change=${(e) =>
+                                                              card._toggleShoppingItem(
+                                                                  it,
+                                                                  e.target.checked
+                                                              )}
+                                                      />
+                                                      <div
+                                                          class="itemTitle ${isDone ? 'completed' : ''} itemName"
+                                                      >
+                                                          ${itemName}
+                                                      </div>
+                                                  </label>
+                                                  <div class="qty">
+                                                      <button
+                                                          class="qtyBtn"
+                                                          title="Decrease"
+                                                          @click=${() =>
+                                                              card._adjustShoppingQuantity(it, -1)}
+                                                      >
+                                                          -
+                                                      </button>
+                                                      <span class="qtyValue">${qty}</span>
+                                                      <button
+                                                          class="qtyBtn"
+                                                          title="Increase"
+                                                          @click=${() =>
+                                                              card._adjustShoppingQuantity(it, 1)}
+                                                      >
+                                                          +
+                                                      </button>
+                                                  </div>
+                                              </div>
                                               <div class="actions">
                                                   <button
                                                       class="iconBtn ${fav ? 'active' : ''}"
