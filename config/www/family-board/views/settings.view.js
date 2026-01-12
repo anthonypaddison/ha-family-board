@@ -285,6 +285,7 @@ export class FbSettingsView extends LitElement {
                                 <span class="unit">minutes</span>
                             </div>
                         </div>
+                        <div class="muted">How often the board refreshes data.</div>
                         <div class="row">
                             <div>Debug</div>
                             <label>
@@ -313,6 +314,7 @@ export class FbSettingsView extends LitElement {
                                 <option value="60">60 minutes</option>
                             </select>
                         </div>
+                        <div class="muted">Controls schedule zoom on this device only.</div>
                         <div class="row">
                             <div>Default event duration (minutes)</div>
                             <div class="unitRow">
@@ -327,6 +329,7 @@ export class FbSettingsView extends LitElement {
                                 <span class="unit">minutes</span>
                             </div>
                         </div>
+                        <div class="muted">Used when creating new calendar events.</div>
                         <div class="row">
                             <div>Accent teal</div>
                             <input
@@ -339,6 +342,7 @@ export class FbSettingsView extends LitElement {
                                     })}
                             />
                         </div>
+                        <div class="muted">Applies to sidebar selection and teal accents.</div>
                         <div class="row">
                             <div>Accent lilac</div>
                             <input
@@ -351,6 +355,7 @@ export class FbSettingsView extends LitElement {
                                     })}
                             />
                         </div>
+                        <div class="muted">Updates lilac highlights across the UI.</div>
                         <div class="row">
                             <div>Background theme</div>
                             <select
@@ -368,6 +373,7 @@ export class FbSettingsView extends LitElement {
                                 <option value="slate">Slate</option>
                             </select>
                         </div>
+                        <div class="muted">Changes the overall page background tint.</div>
                         <div class="row">
                             <div>Mobile layout (this device)</div>
                             <label>
@@ -379,7 +385,9 @@ export class FbSettingsView extends LitElement {
                                 <span class="muted">${card._useMobileView ? 'On' : 'Off'}</span>
                             </label>
                         </div>
-                        <div class="muted">Mobile layout is stored per user and device.</div>
+                        <div class="muted">
+                            Per user/device and only applies on mobile screens.
+                        </div>
                         <div class="muted">Use the card editor for schedule layout changes.</div>
                     </div>
                 </div>
