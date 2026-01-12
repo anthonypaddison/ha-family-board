@@ -19,6 +19,7 @@ export class FbScheduleView extends LitElement {
             this._didInitialScroll = false;
         }
         this._scrollToNow();
+        this._updateScrollbarWidth();
     }
 
     _scrollToNow() {
@@ -34,6 +35,13 @@ export class FbScheduleView extends LitElement {
         const nowTop = ((nowMin - startMin) / slotMinutes) * slotPx;
         scroller.scrollTop = Math.max(0, nowTop - slotPx * 2);
         this._didInitialScroll = true;
+    }
+
+    _updateScrollbarWidth() {
+        const scroller = this.renderRoot.querySelector('.gridScroll');
+        if (!scroller) return;
+        const width = scroller.offsetWidth - scroller.clientWidth;
+        this.style.setProperty('--fb-scrollbar-width', `${width}px`);
     }
 
     static styles = css`
@@ -63,6 +71,7 @@ export class FbScheduleView extends LitElement {
             min-height: 0;
             height: 100%;
             flex: 1;
+            box-sizing: border-box;
         }
         .board {
             min-width: 0;
@@ -92,6 +101,11 @@ export class FbScheduleView extends LitElement {
             grid-template-columns: var(--fb-time-width, 80px) repeat(var(--fb-days), minmax(0, 1fr));
             gap: 8px;
             align-items: stretch;
+            box-sizing: border-box;
+        }
+        .row.headerRow,
+        .row.allDayRow {
+            padding-right: var(--fb-scrollbar-width, 0px);
         }
         .gutterHead,
         .gutterAllDay,
@@ -170,9 +184,9 @@ export class FbScheduleView extends LitElement {
             padding: 6px;
             min-height: 52px;
             display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            align-content: flex-start;
+            gap: 6px;
+            flex-direction: column;
+            align-content: stretch;
         }
         .allDay.todayCol {
             background: var(--highlight-soft);
@@ -189,7 +203,8 @@ export class FbScheduleView extends LitElement {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            max-width: 220px;
+            width: 100%;
+            max-width: 100%;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -240,10 +255,20 @@ export class FbScheduleView extends LitElement {
             border: 1px solid color-mix(in srgb, var(--event-color) 70%, var(--fb-border));
             background: var(--event-color);
             color: var(--event-text);
-            padding: 8px 10px;
+            padding: 0;
             text-align: left;
             overflow: hidden;
             box-shadow: var(--shadow-sm);
+        }
+        .eventInner {
+            padding: 8px 10px;
+        }
+        .eventSticky {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: color-mix(in srgb, var(--event-color) 88%, #ffffff);
+            padding-bottom: 4px;
         }
         .eventTime {
             font-size: 14px;
@@ -323,17 +348,19 @@ export class FbScheduleView extends LitElement {
         const visibleSet =
             card._calendarVisibleSet || new Set(calendarList.map((c) => c.entity));
         const calendars = calendarList.filter(
-            (c) => visibleSet.has(c.entity) && card._isPersonAllowed(c.person_id || c.personId || c.person || c.entity)
+            (c) =>
+                visibleSet.has(c.entity) &&
+                card._isPersonAllowed(c.person_id || c.personId || c.person || c.entity)
         );
 
-        const maxAllDay = 6;
+        const maxAllDayVisible = 2;
         const dayData = days.map((day) => {
             const allDay = [];
             const timedRaw = [];
 
             for (const c of calendars) {
                 const events = card._eventsForEntityOnDay(c.entity, day);
-                        const person = card._personForEntity(c.entity);
+                const person = card._personForEntity(c.entity);
                 const colour = person?.color || card._neutralColor();
                 const personName = person?.name || c.name || c.entity;
 
@@ -370,11 +397,13 @@ export class FbScheduleView extends LitElement {
             }
 
             const layout = layoutDayEvents(timedRaw, { maxColumns: 3 });
-            const visibleAllDay = allDay.slice(0, maxAllDay);
+            const visibleAllDay =
+                allDay.length > maxAllDayVisible ? allDay.slice(0, 1) : allDay.slice(0, 2);
             const hiddenAllDay = Math.max(allDay.length - visibleAllDay.length, 0);
             return {
                 day,
                 allDay: visibleAllDay,
+                allDayFull: allDay,
                 allDayHidden: hiddenAllDay,
                 timed: layout.items,
                 overflows: layout.overflows,
@@ -390,7 +419,7 @@ export class FbScheduleView extends LitElement {
             <div class="wrap">
                 <div class="card">
                     <div class="board">
-                    <div class="row">
+                    <div class="row headerRow">
                         <div class="gutterHead"></div>
                         ${days.map((d) => {
                             const dayName = d.toLocaleDateString(undefined, { weekday: 'short' });
@@ -408,7 +437,7 @@ export class FbScheduleView extends LitElement {
                         })}
                     </div>
 
-                    <div class="row">
+                    <div class="row allDayRow">
                         <div class="gutterAllDay">All day</div>
                         ${dayData.map((row) => {
                             const allDay = row.allDay;
@@ -437,13 +466,18 @@ export class FbScheduleView extends LitElement {
                                               >-</span
                                           >`}
                                     ${row.allDayHidden
-                                        ? html`<span
+                                        ? html`<button
                                               class="chip"
                                               style="--event-color:var(--fb-surface-2);--event-text:var(--fb-muted)"
+                                              @click=${() =>
+                                                  card._openAllDayDialog(
+                                                      row.day,
+                                                      row.allDayFull
+                                                  )}
                                           >
                                               <span class="chipDot"></span>
-                                              <span>+${row.allDayHidden} more</span>
-                                          </span>`
+                                              <span>View ${row.allDayHidden} more...</span>
+                                          </button>`
                                         : html``}
                                 </div>
                             `;
@@ -517,8 +551,10 @@ export class FbScheduleView extends LitElement {
                                                             )}
                                                         title=${ev.summary}
                                                     >
-                                                        <div class="eventTime">${timeText}</div>
-                                                        <div class="eventTitle">${ev.summary}</div>
+                                                        <div class="eventInner eventSticky">
+                                                            <div class="eventTime">${timeText}</div>
+                                                            <div class="eventTitle">${ev.summary}</div>
+                                                        </div>
                                                     </button>
                                                 `;
                                             })}
