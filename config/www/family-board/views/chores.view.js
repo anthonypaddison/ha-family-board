@@ -62,6 +62,13 @@ export class FbChoresView extends LitElement {
         .itemTitle {
             font-weight: 700;
         }
+        .item.completed {
+            background: var(--fb-surface);
+            opacity: 0.6;
+        }
+        .item.completed .itemTitle {
+            text-decoration: line-through;
+        }
         .muted {
             color: var(--fb-muted);
             font-size: 14px;
@@ -165,7 +172,10 @@ export class FbChoresView extends LitElement {
                                                   String(it.status || '').toLowerCase()
                                               );
                                               return html`
-                                                  <div class="item" data-key=${this._itemKey(it, idx)}>
+                                                  <div
+                                                      class="item ${isDone ? 'completed' : ''}"
+                                                      data-key=${this._itemKey(it, idx)}
+                                                  >
                                                       <input
                                                           type="checkbox"
                                                           .checked=${isDone}
@@ -180,7 +190,6 @@ export class FbChoresView extends LitElement {
                                                           <div class="itemTitle">
                                                               ${it.summary ?? it.name ?? it.item ?? '(Todo)'}
                                                           </div>
-                                                          <div class="muted">${it.status ?? ''}</div>
                                                       </div>
                                                       <div class="actions">
                                                           <button
