@@ -1548,6 +1548,7 @@ class FamilyBoardCard extends LitElement {
             push(`refresh_interval_ms: ${draft.refresh_interval_ms}`);
         if (draft.accent_teal) push(`accent_teal: '${draft.accent_teal}'`);
         if (draft.accent_lilac) push(`accent_lilac: '${draft.accent_lilac}'`);
+        if (draft.background_theme) push(`background_theme: '${draft.background_theme}'`);
 
         const people = Array.isArray(draft.people) ? draft.people : [];
         if (people.length) {
@@ -1767,6 +1768,18 @@ class FamilyBoardCard extends LitElement {
             this.style.setProperty('--fb-accent', accentLilac);
         } else {
             this.style.removeProperty('--fb-accent');
+        }
+        const backgroundTheme =
+            typeof config.background_theme === 'string' ? config.background_theme.trim() : '';
+        const themeMap = {
+            mint: '#f2fbf7',
+            sand: '#fff5e8',
+            slate: '#f3f6fb',
+        };
+        if (backgroundTheme && themeMap[backgroundTheme]) {
+            this.style.setProperty('--fb-bg', themeMap[backgroundTheme]);
+        } else {
+            this.style.removeProperty('--fb-bg');
         }
 
         this._ensureVisibilitySets();

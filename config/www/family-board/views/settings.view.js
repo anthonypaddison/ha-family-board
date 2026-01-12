@@ -47,6 +47,7 @@ export class FbSettingsView extends LitElement {
             gap: 12px;
             padding: 8px 0;
             border-bottom: 1px dashed var(--fb-grid);
+            align-items: center;
         }
         .row label {
             color: var(--fb-text);
@@ -79,6 +80,24 @@ export class FbSettingsView extends LitElement {
             font-size: 16px;
             background: var(--fb-surface);
             color: var(--fb-text);
+        }
+        .unitRow {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .unit {
+            color: var(--fb-muted);
+            font-size: 14px;
+        }
+        .status {
+            font-weight: 700;
+        }
+        .status.on {
+            color: var(--warning);
+        }
+        .status.off {
+            color: var(--success);
         }
         ul {
             margin: 6px 0 0;
@@ -184,15 +203,19 @@ export class FbSettingsView extends LitElement {
                         <div class="muted">Saved per user/device unless stated otherwise.</div>
                         <div class="row">
                             <div>Refresh interval</div>
-                            <input
-                                class="input"
-                                type="number"
-                                .value=${Math.round(card._refreshIntervalMs / 60000)}
-                                @change=${(e) =>
-                                    card._updateConfigPartial({
-                                        refresh_interval_ms: Number(e.target.value) * 60000,
-                                    })}
-                            />
+                            <div class="unitRow">
+                                <input
+                                    class="input"
+                                    type="number"
+                                    min="1"
+                                    .value=${Math.round(card._refreshIntervalMs / 60000)}
+                                    @change=${(e) =>
+                                        card._updateConfigPartial({
+                                            refresh_interval_ms: Number(e.target.value) * 60000,
+                                        })}
+                                />
+                                <span class="unit">minutes</span>
+                            </div>
                         </div>
                         <div class="row">
                             <div>Debug</div>
@@ -203,7 +226,9 @@ export class FbSettingsView extends LitElement {
                                     @change=${(e) =>
                                         card._updateConfigPartial({ debug: e.target.checked })}
                                 />
-                                <span class="muted">${card._debug ? 'On' : 'Off'}</span>
+                                <span
+                                    class="status ${card._debug ? 'on' : 'off'}"
+                                >${card._debug ? 'On' : 'Off'}</span>
                             </label>
                         </div>
                         <div class="muted">
@@ -222,13 +247,58 @@ export class FbSettingsView extends LitElement {
                         </div>
                         <div class="row">
                             <div>Default event duration (minutes)</div>
+                            <div class="unitRow">
+                                <input
+                                    class="input"
+                                    type="number"
+                                    min="5"
+                                    .value=${card._defaultEventMinutes || 30}
+                                    @change=${(e) =>
+                                        card._setDefaultEventMinutesPref(e.target.value)}
+                                />
+                                <span class="unit">minutes</span>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div>Accent teal</div>
                             <input
                                 class="input"
-                                type="number"
-                                min="5"
-                                .value=${card._defaultEventMinutes || 30}
-                                @change=${(e) => card._setDefaultEventMinutesPref(e.target.value)}
+                                placeholder="#00CED1"
+                                .value=${card._config?.accent_teal || ''}
+                                @change=${(e) =>
+                                    card._updateConfigPartial({
+                                        accent_teal: e.target.value,
+                                    })}
                             />
+                        </div>
+                        <div class="row">
+                            <div>Accent lilac</div>
+                            <input
+                                class="input"
+                                placeholder="#CFBAF0"
+                                .value=${card._config?.accent_lilac || ''}
+                                @change=${(e) =>
+                                    card._updateConfigPartial({
+                                        accent_lilac: e.target.value,
+                                    })}
+                            />
+                        </div>
+                        <div class="row">
+                            <div>Background theme</div>
+                            <select
+                                class="input"
+                                .value=${card._config?.background_theme || 'default'}
+                                @change=${(e) =>
+                                    card._updateConfigPartial({
+                                        background_theme:
+                                            e.target.value === 'default' ? '' : e.target.value,
+                                    })}
+                            >
+                                <option value="default">Default</option>
+                                <option value="mint">Mint</option>
+                                <option value="sand">Sand</option>
+                                <option value="slate">Slate</option>
+                            </select>
                         </div>
                         <div class="row">
                             <div>Mobile layout (this device)</div>

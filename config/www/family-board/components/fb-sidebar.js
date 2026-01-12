@@ -58,13 +58,13 @@ export class FbSidebar extends LitElement {
         }
 
         .navbtn.active {
-            background: var(--family);
-            color: var(--text-on-accent);
+            background: var(--fb-accent-teal);
+            color: #ffffff;
             font-weight: 700;
         }
 
         .navbtn.active .navicon {
-            color: var(--text-on-accent);
+            color: #ffffff;
         }
 
         .navicon {
@@ -128,7 +128,7 @@ export class FbSidebar extends LitElement {
         }
 
         .footerBtn:hover {
-            background: color-mix(in srgb, var(--family) 15%, transparent);
+            background: color-mix(in srgb, var(--fb-accent-teal) 15%, transparent);
             box-shadow: var(--shadow-sm);
         }
 
