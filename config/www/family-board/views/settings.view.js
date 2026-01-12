@@ -8,6 +8,9 @@ export class FbSettingsView extends LitElement {
     static properties = {
         card: { type: Object },
         _homeControlAdd: { state: true },
+        _infoOpen: { state: true },
+        _infoTitle: { state: true },
+        _infoText: { state: true },
     };
 
     static styles = css`
@@ -63,6 +66,51 @@ export class FbSettingsView extends LitElement {
             margin-bottom: 6px;
             color: var(--fb-text);
             font-size: 20px;
+        }
+        .titleRow {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .infoBtn {
+            border: 1px solid var(--fb-grid);
+            background: var(--fb-surface);
+            border-radius: 999px;
+            width: 28px;
+            height: 28px;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            color: var(--fb-muted);
+            font-weight: 700;
+        }
+        .infoBackdrop {
+            position: fixed;
+            inset: 0;
+            background: var(--overlay);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 14px;
+        }
+        .infoDlg {
+            width: 100%;
+            max-width: 520px;
+            background: var(--fb-surface);
+            border-radius: 12px;
+            border: 1px solid var(--fb-border);
+            padding: 14px;
+            display: grid;
+            gap: 10px;
+        }
+        .infoHead {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            font-weight: 700;
         }
         .muted {
             color: var(--fb-muted);
@@ -204,7 +252,21 @@ export class FbSettingsView extends LitElement {
                 </div>
 
                 <div class="section">
-                    <div class="title">Preferences</div>
+                    <div class="titleRow">
+                        <div class="title">Preferences</div>
+                        <button
+                            class="infoBtn"
+                            title="About preferences"
+                            @click=${() => {
+                                this._infoTitle = 'Preferences';
+                                this._infoText =
+                                    'Preferences are stored per user/device. Mobile layout only applies on mobile screens and can be toggled per device.';
+                                this._infoOpen = true;
+                            }}
+                        >
+                            ⓘ
+                        </button>
+                    </div>
                     <div class="panelBody">
                         <div class="muted">Saved per user/device unless stated otherwise.</div>
                         <div class="row">
@@ -382,6 +444,22 @@ export class FbSettingsView extends LitElement {
                 </div>
                 </div>
             </div>
+            ${this._infoOpen
+                ? html`<div
+                      class="infoBackdrop"
+                      @click=${(e) => e.target === e.currentTarget && (this._infoOpen = false)}
+                  >
+                      <div class="infoDlg">
+                          <div class="infoHead">
+                              <div>${this._infoTitle || 'Info'}</div>
+                              <button class="btn" @click=${() => (this._infoOpen = false)}>
+                                  Close
+                              </button>
+                          </div>
+                          <div class="muted">${this._infoText || ''}</div>
+                      </div>
+                  </div>`
+                : html``}
         `;
     }
 }
