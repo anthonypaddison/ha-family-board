@@ -88,6 +88,7 @@ class FamilyBoardCard extends LitElement {
         _sidebarCollapsed: { state: true },
         _toastMessage: { state: true },
         _toastDetail: { state: true },
+        _syncingCalendars: { state: true },
     };
 
     static async getConfigElement() {
@@ -205,6 +206,8 @@ class FamilyBoardCard extends LitElement {
         this._dialogTitle = '';
         this._dialogItem = null;
         this._dialogEntity = '';
+        this._dialogStartValue = '';
+        this._dialogEndValue = '';
         this._sourcesOpen = false;
         this._eventDialogOpen = false;
         this._eventDialogEntity = '';
@@ -229,6 +232,7 @@ class FamilyBoardCard extends LitElement {
         this._persistMode = 'none';
         this._toastMessage = '';
         this._toastDetail = '';
+        this._syncingCalendars = false;
     }
 
     setConfig(config) {
@@ -345,10 +349,12 @@ class FamilyBoardCard extends LitElement {
                             .dateValue=${this._selectedDayValue()}
                             .activeFilters=${Array.from(this._personFilterSet || [])}
                             .isAdmin=${isAdmin}
+                            .syncing=${this._syncingCalendars}
                             @fb-main-mode=${this._onMainMode}
                             @fb-date-nav=${this._onDateNav}
                             @fb-date-today=${this._onToday}
                             @fb-date-set=${this._onDateSet}
+                            @fb-sync-calendars=${this._onSyncCalendars}
                             @fb-person-toggle=${this._onPersonToggle}
                             @fb-open-sources=${() => this._openManageSources()}
                         ></fb-topbar>
@@ -868,6 +874,19 @@ class FamilyBoardCard extends LitElement {
         this._dayOffset = 0;
         this._monthOffset = 0;
         this._queueRefresh();
+    };
+
+    _onSyncCalendars = async () => {
+        if (this._syncingCalendars) return;
+        this._syncingCalendars = true;
+        this.requestUpdate();
+        try {
+            await this._refreshCalendarRange();
+        } finally {
+            this._syncingCalendars = false;
+            this._showToast('Calendars synced');
+            this.requestUpdate();
+        }
     };
 
     _onDateSet = (ev) => {

@@ -14,6 +14,7 @@ export class FbTopbar extends LitElement {
         dateValue: { type: String },
         activeFilters: { type: Array },
         isAdmin: { type: Boolean },
+        syncing: { type: Boolean },
         _timeLabel: { state: true },
     };
 
@@ -131,6 +132,15 @@ export class FbTopbar extends LitElement {
             display: inline-flex;
             align-items: center;
             gap: 6px;
+        }
+        .syncBtn {
+            margin-left: 8px;
+            min-width: 86px;
+            justify-content: center;
+        }
+        .syncBtn[disabled] {
+            opacity: 0.6;
+            cursor: default;
         }
 
         .summaryRow {
@@ -263,6 +273,16 @@ export class FbTopbar extends LitElement {
         );
     }
 
+    _syncCalendars() {
+        if (this.syncing) return;
+        this.dispatchEvent(
+            new CustomEvent('fb-sync-calendars', {
+                bubbles: true,
+                composed: true,
+            })
+        );
+    }
+
     _openSources() {
         this.dispatchEvent(
             new CustomEvent('fb-open-sources', {
@@ -356,6 +376,13 @@ export class FbTopbar extends LitElement {
                                       >
                                   </button>
                               </div>
+                              <button
+                                  class="settingsBtn syncBtn"
+                                  ?disabled=${this.syncing}
+                                  @click=${this._syncCalendars}
+                              >
+                                  ${this.syncing ? 'Syncing…' : 'Sync'}
+                              </button>
                           </div>
                       `
                     : html``}
