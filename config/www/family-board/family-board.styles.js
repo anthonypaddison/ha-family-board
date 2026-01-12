@@ -30,7 +30,8 @@ export function fbStyles() {
             --palette-rose: var(--pastel-rose);
             --palette-vanilla: var(--pastel-vanilla);
 
-            --bg: color-mix(in srgb, var(--family) 16%, #ffffff);
+            --fb-accent-teal: var(--family);
+            --bg: color-mix(in srgb, var(--fb-accent-teal) 16%, #ffffff);
             --surface: #ffffff;
             --surface-2: #f4fbfa;
             --surface-3: #edf7f6;
@@ -81,7 +82,7 @@ export function fbStyles() {
             display: block;
             width: 100%;
             height: 100%;
-            max-height: 100vh;
+            max-height: 100%;
             min-height: 0;
             overflow: hidden;
         }
@@ -98,8 +99,8 @@ export function fbStyles() {
         }
 
         .sidebar {
-            background: var(--fb-surface-2);
-            border-right: 1px solid var(--fb-grid);
+            background: var(--fb-surface);
+            border-right: 0;
             padding: 14px;
             display: flex;
             flex-direction: column;
@@ -165,6 +166,7 @@ export function fbStyles() {
             display: flex;
             flex-direction: column;
             gap: 10px;
+            min-height: 0;
         }
 
         .toprow {

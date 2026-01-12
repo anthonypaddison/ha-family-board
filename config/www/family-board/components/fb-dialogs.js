@@ -154,6 +154,28 @@ export class FbDialogs extends LitElement {
         if (!this._selectedCalendar && calendars.length) {
             this._selectedCalendar = calendars[0].entity;
         }
+        const calendarCounts = new Map();
+        calendars.forEach((c) => {
+            const person =
+                this.card?._personForEntity?.(c.entity) ||
+                this.card?._peopleById?.get?.(c.person_id || c.personId || c.person) ||
+                null;
+            const id = person?.id || c.person_id || c.personId || c.person || '';
+            if (!id) return;
+            calendarCounts.set(id, (calendarCounts.get(id) || 0) + 1);
+        });
+        const calendarLabel = (c) => {
+            const person =
+                this.card?._personForEntity?.(c.entity) ||
+                this.card?._peopleById?.get?.(c.person_id || c.personId || c.person) ||
+                null;
+            const personName = person?.name || person?.id || '';
+            const id = person?.id || c.person_id || c.personId || c.person || '';
+            const calendarName = c.name || c.entity;
+            if (!personName) return calendarName;
+            if (calendarCounts.get(id) > 1) return `${personName} - ${calendarName}`;
+            return personName;
+        };
         const canCreate = this.card?._calendarSupports?.(
             this._selectedCalendar,
             CALENDAR_FEATURES.CREATE
@@ -192,7 +214,7 @@ export class FbDialogs extends LitElement {
                                       ${calendars.map(
                                           (c) =>
                                               html`<option value=${c.entity}>
-                                                  ${c.name || c.entity}
+                                                  ${calendarLabel(c)}
                                               </option>`
                                       )}
                                   </select>

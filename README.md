@@ -82,6 +82,10 @@ todos:
 shopping:
   entity: todo.shopping_list_2
   name: Shopping
+
+accent_teal: '#00CED1'
+accent_lilac: '#CFBAF0'
+background_theme: 'mint'
 ```
 
 ## Configuration reference
@@ -102,6 +106,11 @@ shopping:
 - `shopping`:
   - `entity` (string): Shopping list `todo.*` entity id (default `todo.shopping_list_2`).
   - `name` (string, optional): Display label.
+- `accent_teal` (string, optional): Hex color for the teal accent used in the sidebar selection and
+  background tint.
+- `accent_lilac` (string, optional): Hex color for the primary accent used in buttons/highlights.
+- `background_theme` (string, optional): `mint` | `sand` | `slate` to tint the board background.
+- `home_controls` (list, optional): Entity ids to show on the Home controls view.
 - `slot_minutes`: 30 or 60 (per-device preference available in Settings).
 - `px_per_hour`: Height scaling for the schedule grid.
 - `refresh_interval_ms`: Polling interval for refreshes.
@@ -109,6 +118,10 @@ shopping:
 Header row behavior:
 - Row 1 renders first, then row 2.
 - Max 10 tiles are visible (5 per row); extra tiles are omitted in config order.
+
+Mobile layout:
+- Toggle "Mobile layout (this device)" in Settings -> Preferences.
+- When enabled on a mobile device, the schedule renders with the mobile layout.
 
 ## Persistence modes
 

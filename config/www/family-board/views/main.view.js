@@ -4,8 +4,10 @@
 import { getHaLit } from '../ha-lit.js';
 const { html } = getHaLit();
 
+import { getDeviceKind } from '../util/prefs.util.js';
 import './schedule.view.js';
 import './month.view.js';
+import './mobile.view.js';
 
 export function renderMainView(card) {
     const mode = card._mainMode || 'schedule';
@@ -26,6 +28,9 @@ export function renderMainView(card) {
         String(card._calendarVisibleSet?.size ?? 0),
         String(card._eventsVersion ?? 0), // <-- critical
     ].join('|');
+
+    if (card._useMobileView && getDeviceKind() === 'mobile')
+        return html`<fb-mobile-view .card=${card} .renderKey=${renderKey}></fb-mobile-view>`;
 
     if (mode === 'month')
         return html`<fb-month-view .card=${card} .renderKey=${renderKey}></fb-month-view>`;

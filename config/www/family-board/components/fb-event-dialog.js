@@ -156,6 +156,7 @@ export class FbEventDialog extends LitElement {
         const canUpdate = Boolean(this.supportsUpdate && eventId);
         const canDelete = Boolean(this.supportsDelete && eventId);
         const providerUrl = this.event?.url || this.event?.htmlLink;
+        const showReadOnlyNote = !canUpdate || !canDelete;
 
         return html`
             <div class="backdrop" @click=${(e) => e.target === e.currentTarget && this._close()}>
@@ -192,10 +193,6 @@ export class FbEventDialog extends LitElement {
                         />
                     </div>
 
-                    ${!canUpdate
-                        ? html`<div class="note">Editing is not supported for this calendar.</div>`
-                        : html``}
-
                     <div class="actions">
                         ${providerUrl
                             ? html`<button class="btn secondary" @click=${this._openProvider}>
@@ -212,8 +209,11 @@ export class FbEventDialog extends LitElement {
                             : html``}
                     </div>
 
-                    ${!canDelete
-                        ? html`<div class="note">Delete is not supported for this calendar.</div>`
+                    ${showReadOnlyNote
+                        ? html`<div class="note">
+                              Edit/Delete not available for this calendar in Home Assistant
+                              (read-only source).
+                          </div>`
                         : html``}
                 </div>
             </div>
