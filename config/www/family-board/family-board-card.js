@@ -896,8 +896,12 @@ class FamilyBoardCard extends LitElement {
         const { entityId, summary, start, end } = ev?.detail || {};
         if (!entityId || !summary || !start || !end) return;
         if (!this._calendarSupports(entityId, CALENDAR_FEATURES.CREATE)) return;
-        await this._calendarService.createEvent(this._hass, entityId, { summary, start, end });
-        this._queueRefresh();
+        this._optimisticCalendarAdd(entityId, { summary, start, end, allDay: false });
+        try {
+            await this._calendarService.createEvent(this._hass, entityId, { summary, start, end });
+        } finally {
+            this._queueRefresh();
+        }
     };
 
     _buildTodoItem(text) {
@@ -1441,22 +1445,69 @@ class FamilyBoardCard extends LitElement {
         const { entityId, event, summary, start, end, allDay } = ev?.detail || {};
         if (!entityId || !event) return;
         if (!this._calendarSupports(entityId, CALENDAR_FEATURES.UPDATE)) return;
-        await this._calendarService.updateEvent(this._hass, entityId, event, {
-            summary,
-            start,
-            end,
-            allDay,
-        });
-        this._queueRefresh();
+        this._optimisticCalendarUpdate(entityId, event, { summary, start, end, allDay });
+        try {
+            await this._calendarService.updateEvent(this._hass, entityId, event, {
+                summary,
+                start,
+                end,
+                allDay,
+            });
+        } finally {
+            this._queueRefresh();
+        }
     };
 
     _onEventDelete = async (ev) => {
         const { entityId, event } = ev?.detail || {};
         if (!entityId || !event) return;
         if (!this._calendarSupports(entityId, CALENDAR_FEATURES.DELETE)) return;
-        await this._calendarService.deleteEvent(this._hass, entityId, event);
-        this._queueRefresh();
+        this._optimisticCalendarRemove(entityId, event);
+        try {
+            await this._calendarService.deleteEvent(this._hass, entityId, event);
+        } finally {
+            this._queueRefresh();
+        }
     };
+
+    _optimisticCalendarAdd(entityId, { summary, start, end, allDay } = {}) {
+        const list = Array.isArray(this._eventsByEntity?.[entityId])
+            ? [...this._eventsByEntity[entityId]]
+            : [];
+        const optimistic = {
+            summary: summary || '(No title)',
+            _start: start,
+            _end: end,
+            all_day: Boolean(allDay),
+            id: `optimistic-${Date.now()}`,
+        };
+        list.push(optimistic);
+        this._eventsByEntity = { ...(this._eventsByEntity || {}), [entityId]: list };
+        this._eventsVersion = (this._eventsVersion || 0) + 1;
+        this.requestUpdate();
+        return optimistic;
+    }
+
+    _optimisticCalendarUpdate(entityId, event, { summary, start, end, allDay } = {}) {
+        if (!event) return;
+        event.summary = summary ?? event.summary;
+        event._start = start ?? event._start;
+        event._end = end ?? event._end;
+        event.all_day = allDay !== undefined ? Boolean(allDay) : event.all_day;
+        this._eventsVersion = (this._eventsVersion || 0) + 1;
+        this.requestUpdate();
+    }
+
+    _optimisticCalendarRemove(entityId, event) {
+        if (!event) return;
+        const list = Array.isArray(this._eventsByEntity?.[entityId])
+            ? this._eventsByEntity[entityId]
+            : [];
+        const nextList = list.filter((entry) => entry !== event);
+        this._eventsByEntity = { ...(this._eventsByEntity || {}), [entityId]: nextList };
+        this._eventsVersion = (this._eventsVersion || 0) + 1;
+        this.requestUpdate();
+    }
 
     _incompleteTodoCount(items) {
         return items.filter(
