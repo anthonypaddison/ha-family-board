@@ -142,13 +142,14 @@ export class FbScheduleView extends LitElement {
         }
         .timeLabel {
             position: absolute;
-            top: -9px;
+            top: 0;
             left: 10px;
             font-size: 14px;
             background: var(--fb-surface);
             padding-right: 6px;
             color: var(--fb-muted);
             font-variant-numeric: tabular-nums;
+            transform: translateY(-50%);
         }
         .timeLabel.half {
             opacity: 0.7;
