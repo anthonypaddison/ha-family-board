@@ -93,14 +93,12 @@ export class FbEditorGuideDialog extends LitElement {
                         <button class="btn" @click=${this._close}>Close</button>
                     </div>
                     <div class="note">
-                        If the editor does not open automatically, follow these steps.
+                        If the editor does not open automatically, use one of these options.
                     </div>
                     <ul>
-                        <li>Open the Family Board dashboard.</li>
-                        <li>Tap the three dots menu and choose Edit dashboard.</li>
-                        <li>Select the Family Board card.</li>
-                        <li>Use the card editor to update settings.</li>
-                        <li>Save the dashboard.</li>
+                        <li>Open the card editor from the UI and update settings.</li>
+                        <li>If you are in YAML mode, paste the copied config into the card.</li>
+                        <li>Save changes and refresh the dashboard if needed.</li>
                     </ul>
                     <div class="actions">
                         <button class="btn" @click=${this._openEditor}>Try open editor</button>
