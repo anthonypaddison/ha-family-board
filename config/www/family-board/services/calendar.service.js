@@ -27,6 +27,10 @@ export class CalendarService {
         console.log('[family-board]', ...args);
     }
 
+    _toRfc3339NoMs(date) {
+        return date.toISOString().replace(/\.\d{3}Z$/, 'Z');
+    }
+
     _key(entityId, startISO, endISO) {
         return `${entityId}|${startISO}|${endISO}`;
     }
@@ -35,8 +39,9 @@ export class CalendarService {
         if (!hass) throw new Error('Missing hass');
         if (!entityId) throw new Error('Missing calendar entityId');
 
-        const startISO = start.toISOString();
-        const endISO = end.toISOString();
+        // Calendar endpoints reject timestamps with milliseconds.
+        const startISO = this._toRfc3339NoMs(start);
+        const endISO = this._toRfc3339NoMs(end);
         const key = this._key(entityId, startISO, endISO);
 
         if (!force) {
@@ -52,19 +57,26 @@ export class CalendarService {
         const url = `api/${path}`;
         this._debugLog('calendar fetch', { entityId, url });
 
-        // Log response details when calendars return non-2xx to diagnose 400s.
-        const res = await hass.fetchWithAuth(url, { method: 'GET' });
-        if (!res.ok) {
-            const body = this._calendarDebugEnabled() ? await res.text() : '';
-            this._debugLog('calendar fetch failed', {
-                entityId,
-                status: res.status,
-                body,
-            });
-            throw new Error(`Calendar fetch failed (${res.status})`);
-        }
+        const fetchOnce = async (retryOn400) => {
+            // Log response details when calendars return non-2xx to diagnose 400s.
+            const res = await hass.fetchWithAuth(url, { method: 'GET' });
+            if (!res.ok) {
+                const body = this._calendarDebugEnabled() ? await res.text() : '';
+                this._debugLog('calendar fetch failed', {
+                    entityId,
+                    status: res.status,
+                    body,
+                });
+                if (res.status === 400 && retryOn400) {
+                    this._debugLog('calendar fetch retry', { entityId, url });
+                    return fetchOnce(false);
+                }
+                throw new Error(`Calendar fetch failed (${res.status})`);
+            }
+            return res.json();
+        };
 
-        const data = await res.json();
+        const data = await fetchOnce(true);
         const normalised = Array.isArray(data)
             ? data.map((e) => this._normaliseEvent(e)).filter(Boolean)
             : [];
