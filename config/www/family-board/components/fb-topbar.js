@@ -16,6 +16,7 @@ export class FbTopbar extends LitElement {
         isAdmin: { type: Boolean },
         syncing: { type: Boolean },
         calendarStale: { type: Boolean },
+        calendarError: { type: Boolean },
         calendarInFlight: { type: Boolean },
         _timeLabel: { state: true },
     };
@@ -366,6 +367,7 @@ export class FbTopbar extends LitElement {
         const mainMode = this.mainMode || 'schedule';
         const summary = Array.isArray(this.summary) ? this.summary : [];
         const activeFilters = Array.isArray(this.activeFilters) ? this.activeFilters : [];
+        // Retry is only shown for hard failures without usable cached data.
         return html`
             <div class="toprow">
                 <div class="titleWrap">
@@ -419,17 +421,25 @@ export class FbTopbar extends LitElement {
                               >
                                   ${this.syncing ? 'Syncing…' : 'Sync'}
                               </button>
-                              ${this.calendarStale
+                              ${this.calendarStale || this.calendarError
                                   ? html`
                                         <div class="statusChip">
-                                            <span>Calendar updating… showing last saved.</span>
-                                            <button
-                                                class="statusBtn"
-                                                ?disabled=${this.calendarInFlight}
-                                                @click=${this._tryAgain}
-                                            >
-                                                Try again
-                                            </button>
+                                            <span>
+                                                ${this.calendarError
+                                                    ? 'Calendar update failed.'
+                                                    : 'Calendar updating… showing last saved.'}
+                                            </span>
+                                            ${this.calendarError
+                                                ? html`
+                                                      <button
+                                                          class="statusBtn"
+                                                          ?disabled=${this.calendarInFlight}
+                                                          @click=${this._tryAgain}
+                                                      >
+                                                          Try again
+                                                      </button>
+                                                  `
+                                                : html``}
                                         </div>
                                     `
                                   : html``}
