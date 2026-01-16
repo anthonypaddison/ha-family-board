@@ -17,6 +17,16 @@ export class CalendarService {
         this._cacheMs = 300_000;
     }
 
+    _calendarDebugEnabled() {
+        return localStorage.getItem('FB_DEBUG_CALENDAR') === '1';
+    }
+
+    _debugLog(...args) {
+        if (!this._calendarDebugEnabled()) return;
+        // eslint-disable-next-line no-console
+        console.log('[family-board]', ...args);
+    }
+
     _key(entityId, startISO, endISO) {
         return `${entityId}|${startISO}|${endISO}`;
     }
@@ -39,8 +49,22 @@ export class CalendarService {
         const path = `calendars/${encodeURIComponent(entityId)}?start=${encodeURIComponent(
             startISO
         )}&end=${encodeURIComponent(endISO)}`;
+        const url = `api/${path}`;
+        this._debugLog('calendar fetch', { entityId, url });
 
-        const data = await hass.callApi('GET', path);
+        // Log response details when calendars return non-2xx to diagnose 400s.
+        const res = await hass.fetchWithAuth(url, { method: 'GET' });
+        if (!res.ok) {
+            const body = this._calendarDebugEnabled() ? await res.text() : '';
+            this._debugLog('calendar fetch failed', {
+                entityId,
+                status: res.status,
+                body,
+            });
+            throw new Error(`Calendar fetch failed (${res.status})`);
+        }
+
+        const data = await res.json();
         const normalised = Array.isArray(data)
             ? data.map((e) => this._normaliseEvent(e)).filter(Boolean)
             : [];
