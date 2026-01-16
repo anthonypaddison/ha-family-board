@@ -20,12 +20,26 @@ export function renderMainView(card) {
     // - date offset changes
     // - visible calendars change
     // - events data changes (async fetch completes)
+    const personFilterSig = Array.from(card._personFilterSet || []).sort().join(',');
+    const calendarFilterSig = Array.from(card._calendarVisibleSet || []).sort().join(',');
+    const dayKey = typeof card._selectedDayValue === 'function' ? card._selectedDayValue() : '';
+    const monthKey =
+        typeof card._selectedMonthDay === 'function'
+            ? (() => {
+                  const d = card._selectedMonthDay();
+                  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+              })()
+            : '';
+
     const renderKey = [
         mode,
+        dayKey,
+        monthKey,
         String(card._dayOffset ?? 0),
         String(card._monthOffset ?? 0),
         String(card._scheduleDays ?? 5),
-        String(card._calendarVisibleSet?.size ?? 0),
+        personFilterSig,
+        calendarFilterSig,
         String(card._eventsVersion ?? 0), // <-- critical
     ].join('|');
 

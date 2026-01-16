@@ -365,6 +365,8 @@ export class FbWeekView extends LitElement {
     }
 
     _timedEventsForDay(card, calendars, day, { startMin, endMin }) {
+        const dayStart = startOfDay(day);
+        const dayEnd = addDays(dayStart, 1);
         const raw = [];
         for (const c of calendars) {
             const entityId = c.entity;
@@ -375,16 +377,22 @@ export class FbWeekView extends LitElement {
                 if (e.all_day) continue;
                 const s = e._start;
                 const en = e._end;
-                const startMinEv = s.getHours() * 60 + s.getMinutes();
-                const endMinEv = en.getHours() * 60 + en.getMinutes();
+                if (!s || !en) continue;
+                const clampedStartDate = s < dayStart ? dayStart : s;
+                const clampedEndDate = en > dayEnd ? dayEnd : en;
+                if (clampedEndDate <= clampedStartDate) continue;
+                const startMinEv =
+                    clampedStartDate.getHours() * 60 + clampedStartDate.getMinutes();
+                const endMinEv = clampedEndDate.getHours() * 60 + clampedEndDate.getMinutes();
 
                 const clampedStart = Math.max(startMin, startMinEv);
                 const clampedEnd = Math.min(endMin, endMinEv);
+                if (clampedEnd <= clampedStart) continue;
 
                 raw.push({
                     ...e,
-                    start: s,
-                    end: en,
+                    start: clampedStartDate,
+                    end: clampedEndDate,
                     startMin: clampedStart,
                     endMin: Math.max(clampedStart + 1, clampedEnd),
                     _fbEntityId: entityId,

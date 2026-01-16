@@ -89,6 +89,8 @@ class FamilyBoardCard extends LitElement {
         _toastMessage: { state: true },
         _toastDetail: { state: true },
         _syncingCalendars: { state: true },
+        _calendarStale: { state: true },
+        _calendarFetchInFlight: { state: true },
     };
 
     static async getConfigElement() {
@@ -233,6 +235,13 @@ class FamilyBoardCard extends LitElement {
         this._toastMessage = '';
         this._toastDetail = '';
         this._syncingCalendars = false;
+        this._calendarStale = false;
+        this._calendarFetchInFlight = false;
+        this._calendarLastSuccessTs = 0;
+        this._calendarRetryTimer = null;
+        this._calendarRetryMs = 0;
+        this._calendarForceNext = false;
+        this._calendarFetchPromise = null;
     }
 
     setConfig(config) {
@@ -349,12 +358,15 @@ class FamilyBoardCard extends LitElement {
                             .dateValue=${this._selectedDayValue()}
                             .activeFilters=${Array.from(this._personFilterSet || [])}
                             .isAdmin=${isAdmin}
-                            .syncing=${this._syncingCalendars}
+                            .syncing=${this._syncingCalendars || this._calendarFetchInFlight}
+                            .calendarStale=${this._calendarStale}
+                            .calendarInFlight=${this._calendarFetchInFlight}
                             @fb-main-mode=${this._onMainMode}
                             @fb-date-nav=${this._onDateNav}
                             @fb-date-today=${this._onToday}
                             @fb-date-set=${this._onDateSet}
                             @fb-sync-calendars=${this._onSyncCalendars}
+                            @fb-calendar-try-again=${this._onCalendarTryAgain}
                             @fb-person-toggle=${this._onPersonToggle}
                             @fb-open-sources=${() => this._openManageSources()}
                         ></fb-topbar>
@@ -528,8 +540,9 @@ class FamilyBoardCard extends LitElement {
         }
     }
 
-    _queueRefresh() {
+    _queueRefresh({ forceCalendars = false } = {}) {
         if (this._refreshQueued) return;
+        if (forceCalendars) this._calendarForceNext = true;
         this._refreshQueued = true;
         Promise.resolve().then(() => {
             this._refreshQueued = false;
@@ -537,37 +550,142 @@ class FamilyBoardCard extends LitElement {
         });
     }
 
-    async _refreshAll() {
-        if (!this._hass || !this._config) return;
-        await Promise.all([this._refreshCalendarRange(), this._refreshTodos(), this._refreshShopping()]);
+    _scheduleCalendarRetry() {
+        if (this._calendarRetryTimer) return;
+        const refreshMs = this._refreshIntervalMs ?? 300_000;
+        const base = Math.min(30_000, refreshMs);
+        const next = this._calendarRetryMs ? Math.min(this._calendarRetryMs * 2, refreshMs) : base;
+        this._calendarRetryMs = next;
+        this._calendarRetryTimer = setTimeout(() => {
+            this._calendarRetryTimer = null;
+            this._queueRefresh({ forceCalendars: true });
+        }, next);
     }
 
-    async _refreshCalendarRange() {
+    _clearCalendarRetry() {
+        if (this._calendarRetryTimer) {
+            clearTimeout(this._calendarRetryTimer);
+            this._calendarRetryTimer = null;
+        }
+        this._calendarRetryMs = 0;
+    }
+
+    _visibleCalendarEntities() {
+        const calendars = Array.isArray(this._config?.calendars) ? this._config.calendars : [];
+        const visibleSet = this._calendarVisibleSet || new Set(calendars.map((c) => c.entity));
+        return calendars
+            .filter(
+                (c) =>
+                    visibleSet.has(c.entity) &&
+                    this._isPersonAllowed(this._personIdForConfig(c, c.entity))
+            )
+            .map((c) => c.entity)
+            .filter(Boolean);
+    }
+
+    _withTimeout(promise, ms = 10_000) {
+        let timer = null;
+        const timeout = new Promise((_, reject) => {
+            timer = setTimeout(() => reject(new Error('timeout')), ms);
+        });
+        return Promise.race([promise, timeout]).finally(() => {
+            if (timer) clearTimeout(timer);
+        });
+    }
+
+    async _refreshCalendarsWithEntityUpdate() {
+        if (!this._hass) return;
+        const entityIds = this._visibleCalendarEntities();
+        if (entityIds.length) {
+            try {
+                await this._withTimeout(
+                    this._hass.callService('homeassistant', 'update_entity', {
+                        entity_id: entityIds,
+                    }),
+                    10_000
+                );
+            } catch {
+                // Proceed to fetch even if the update times out or fails.
+            }
+        }
+        await this._refreshCalendarRange({ force: true });
+    }
+
+    async _refreshAll() {
+        if (!this._hass || !this._config) return;
+        await Promise.all([
+            this._refreshCalendarRange({ force: this._calendarForceNext }),
+            this._refreshTodos(),
+            this._refreshShopping(),
+        ]);
+    }
+
+    async _refreshCalendarRange({ force = false } = {}) {
         const calendars = Array.isArray(this._config?.calendars) ? this._config.calendars : [];
         if (!calendars.length) return;
+        if (this._calendarFetchInFlight) return this._calendarFetchPromise || undefined;
+
+        const effectiveForce = Boolean(force || this._calendarForceNext);
+        this._calendarForceNext = false;
 
         const { start, end } = this._currentCalendarRange();
-        const rangeKey = `${start.toISOString()}|${end.toISOString()}`;
+        this._calendarFetchInFlight = true;
+        this.requestUpdate();
 
-        try {
-            const results = await Promise.all(
+        const fetchPromise = (async () => {
+            let hadFailure = false;
+            let hadSuccess = false;
+            const previous = this._eventsByEntity || {};
+            const next = { ...previous };
+
+            const results = await Promise.allSettled(
                 calendars.map(async (c) => {
                     const items = await this._calendarService.fetchEvents(
                         this._hass,
                         c.entity,
                         start,
-                        end
+                        end,
+                        { force: effectiveForce }
                     );
                     return [c.entity, items];
                 })
             );
 
-            const next = {};
-            for (const [entityId, items] of results) next[entityId] = items;
-            this._eventsByEntity = next;
-            this._eventsVersion += 1;
+            for (const result of results) {
+                if (result.status === 'fulfilled') {
+                    const [entityId, items] = result.value;
+                    next[entityId] = items;
+                    hadSuccess = true;
+                } else {
+                    hadFailure = true;
+                }
+            }
+
+            if (hadSuccess) {
+                this._eventsByEntity = next;
+                this._eventsVersion += 1;
+                this._calendarLastSuccessTs = Date.now();
+            }
+
+            if (hadFailure) {
+                this._calendarStale = true;
+                this._scheduleCalendarRetry();
+            } else {
+                this._calendarStale = false;
+                this._clearCalendarRetry();
+            }
+        })();
+
+        this._calendarFetchPromise = fetchPromise;
+        try {
+            await fetchPromise;
         } catch {
-            // Ignore calendar fetch errors in UI.
+            this._calendarStale = true;
+            this._scheduleCalendarRetry();
+        } finally {
+            this._calendarFetchInFlight = false;
+            this._calendarFetchPromise = null;
+            this.requestUpdate();
         }
     }
 
@@ -649,14 +767,16 @@ class FamilyBoardCard extends LitElement {
 
     _eventsForEntityOnDay(entityId, day) {
         const items = this._eventsByEntity?.[entityId] || [];
-        const dayStart = startOfDay(day).getTime();
-        const dayEnd = endOfDay(day).getTime();
+        const dayStart = startOfDay(day);
+        const dayEnd = addDays(dayStart, 1);
+        const dayStartMs = dayStart.getTime();
+        const dayEndMs = dayEnd.getTime();
 
         return items.filter((e) => {
             if (!e?._start || !e?._end) return false;
             const start = e._start.getTime();
             const end = e._end.getTime();
-            return start <= dayEnd && end >= dayStart;
+            return start < dayEndMs && end > dayStartMs;
         });
     }
 
@@ -877,16 +997,26 @@ class FamilyBoardCard extends LitElement {
     };
 
     _onSyncCalendars = async () => {
-        if (this._syncingCalendars) return;
+        if (this._syncingCalendars || this._calendarFetchInFlight) return;
         this._syncingCalendars = true;
         this.requestUpdate();
         try {
-            await this._refreshCalendarRange();
+            await this._refreshCalendarsWithEntityUpdate();
+            if (!this._calendarStale) this._showToast('Calendars synced');
         } finally {
             this._syncingCalendars = false;
-            this._showToast('Calendars synced');
             this.requestUpdate();
         }
+    };
+
+    _onCalendarTryAgain = () => {
+        if (this._syncingCalendars || this._calendarFetchInFlight) return;
+        this._syncingCalendars = true;
+        this.requestUpdate();
+        this._refreshCalendarsWithEntityUpdate().finally(() => {
+            this._syncingCalendars = false;
+            this.requestUpdate();
+        });
     };
 
     _onDateSet = (ev) => {

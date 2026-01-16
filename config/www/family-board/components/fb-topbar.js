@@ -15,6 +15,8 @@ export class FbTopbar extends LitElement {
         activeFilters: { type: Array },
         isAdmin: { type: Boolean },
         syncing: { type: Boolean },
+        calendarStale: { type: Boolean },
+        calendarInFlight: { type: Boolean },
         _timeLabel: { state: true },
     };
 
@@ -139,6 +141,31 @@ export class FbTopbar extends LitElement {
             justify-content: center;
         }
         .syncBtn[disabled] {
+            opacity: 0.6;
+            cursor: default;
+        }
+        .statusChip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--fb-border);
+            border-radius: 999px;
+            padding: 6px 10px;
+            background: var(--fb-surface-2);
+            color: var(--fb-muted);
+            font-size: 12px;
+            margin-left: 8px;
+            white-space: nowrap;
+        }
+        .statusBtn {
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 700;
+            color: var(--fb-text);
+            padding: 0;
+        }
+        .statusBtn[disabled] {
             opacity: 0.6;
             cursor: default;
         }
@@ -283,6 +310,15 @@ export class FbTopbar extends LitElement {
         );
     }
 
+    _tryAgain() {
+        this.dispatchEvent(
+            new CustomEvent('fb-calendar-try-again', {
+                bubbles: true,
+                composed: true,
+            })
+        );
+    }
+
     _openSources() {
         this.dispatchEvent(
             new CustomEvent('fb-open-sources', {
@@ -383,6 +419,20 @@ export class FbTopbar extends LitElement {
                               >
                                   ${this.syncing ? 'Syncing…' : 'Sync'}
                               </button>
+                              ${this.calendarStale
+                                  ? html`
+                                        <div class="statusChip">
+                                            <span>Calendar updating… showing last saved.</span>
+                                            <button
+                                                class="statusBtn"
+                                                ?disabled=${this.calendarInFlight}
+                                                @click=${this._tryAgain}
+                                            >
+                                                Try again
+                                            </button>
+                                        </div>
+                                    `
+                                  : html``}
                           </div>
                       `
                     : html``}

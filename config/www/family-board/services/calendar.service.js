@@ -21,7 +21,7 @@ export class CalendarService {
         return `${entityId}|${startISO}|${endISO}`;
     }
 
-    async fetchEvents(hass, entityId, start, end) {
+    async fetchEvents(hass, entityId, start, end, { force = false } = {}) {
         if (!hass) throw new Error('Missing hass');
         if (!entityId) throw new Error('Missing calendar entityId');
 
@@ -29,8 +29,12 @@ export class CalendarService {
         const endISO = end.toISOString();
         const key = this._key(entityId, startISO, endISO);
 
-        const cached = this._cache.get(key);
-        if (cached && Date.now() - cached.ts < this._cacheMs) return cached.data;
+        if (!force) {
+            const cached = this._cache.get(key);
+            if (cached && Date.now() - cached.ts < this._cacheMs) return cached.data;
+        } else {
+            this._cache.delete(key);
+        }
 
         const path = `calendars/${encodeURIComponent(entityId)}?start=${encodeURIComponent(
             startISO

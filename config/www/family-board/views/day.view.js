@@ -9,6 +9,8 @@ import {
     clamp,
     assignOverlapLanes,
     minutesSinceMidnight,
+    startOfDay,
+    addDays,
 } from '../family-board.util.js';
 
 export class FbDayView extends LitElement {
@@ -241,6 +243,8 @@ export class FbDayView extends LitElement {
 
         const allDay = [];
         const timedRaw = [];
+        const dayStart = startOfDay(day);
+        const dayEnd = addDays(dayStart, 1);
 
         for (const c of calendars) {
             const entityId = c.entity;
@@ -256,16 +260,22 @@ export class FbDayView extends LitElement {
 
                 const s = e._start;
                 const en = e._end;
-                const startMinEv = s.getHours() * 60 + s.getMinutes();
-                const endMinEv = en.getHours() * 60 + en.getMinutes();
+                if (!s || !en) continue;
+                const clampedStartDate = s < dayStart ? dayStart : s;
+                const clampedEndDate = en > dayEnd ? dayEnd : en;
+                if (clampedEndDate <= clampedStartDate) continue;
+                const startMinEv =
+                    clampedStartDate.getHours() * 60 + clampedStartDate.getMinutes();
+                const endMinEv = clampedEndDate.getHours() * 60 + clampedEndDate.getMinutes();
 
                 const clampedStart = Math.max(startMin, startMinEv);
                 const clampedEnd = Math.min(endMin, endMinEv);
+                if (clampedEnd <= clampedStart) continue;
 
                 timedRaw.push({
                     ...e,
-                    start: s,
-                    end: en,
+                    start: clampedStartDate,
+                    end: clampedEndDate,
                     startMin: clampedStart,
                     endMin: Math.max(clampedStart + 1, clampedEnd),
                     _fbEntityId: entityId,

@@ -397,9 +397,12 @@ export class FbScheduleView extends LitElement {
                 const personName = person?.name || c.name || c.entity;
 
                 for (const e of events) {
+                    const base = { ...e };
+                    delete base.lane;
+                    delete base.lanesTotal;
                     if (e.all_day) {
                         allDay.push({
-                            ...e,
+                            ...base,
                             _fbColour: colour,
                             _fbName: personName,
                             _fbEntityId: c.entity,
@@ -417,7 +420,7 @@ export class FbScheduleView extends LitElement {
                     const clampedEnd = Math.min(endMin, endMinEv);
 
                     timedRaw.push({
-                        ...e,
+                        ...base,
                         start: s,
                         end: en,
                         startMin: clampedStart,
@@ -430,8 +433,7 @@ export class FbScheduleView extends LitElement {
             }
 
             const layout = layoutDayEvents(timedRaw, { maxColumns: 3 });
-            const visibleAllDay =
-                allDay.length > maxAllDayVisible ? allDay.slice(0, 1) : allDay.slice(0, 2);
+            const visibleAllDay = allDay.slice(0, maxAllDayVisible);
             const hiddenAllDay = Math.max(allDay.length - visibleAllDay.length, 0);
             return {
                 day,
