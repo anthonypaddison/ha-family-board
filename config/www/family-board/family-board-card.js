@@ -244,6 +244,8 @@ class FamilyBoardCard extends LitElement {
         this._calendarRetryMs = 0;
         this._calendarForceNext = false;
         this._calendarFetchPromise = null;
+        this._calendarRequestSeq = 0;
+        this._calendarEventsMerged = [];
     }
 
     setConfig(config) {
@@ -592,6 +594,43 @@ class FamilyBoardCard extends LitElement {
         return entityIds.some((entityId) => Array.isArray(eventsByEntity?.[entityId]));
     }
 
+    _namespacedEventId(entityId, event, idx) {
+        const baseId = event?.uid || event?.id || event?.event_id || '';
+        const start = event?._start ? event._start.toISOString() : '';
+        const fallback = baseId || event?.summary || start || String(idx);
+        return `${entityId}:${fallback}`;
+    }
+
+    _mergeCalendarEvents(eventsByEntity) {
+        const merged = [];
+        const entries = Object.entries(eventsByEntity || {});
+        for (const [entityId, items] of entries) {
+            if (!Array.isArray(items)) continue;
+            items.forEach((event, idx) => {
+                merged.push({
+                    ...event,
+                    _fbEntityId: entityId,
+                    _fbEventId: this._namespacedEventId(entityId, event, idx),
+                });
+            });
+        }
+        return merged;
+    }
+
+    _mergedEventsForDay(day, entityIds) {
+        const items = Array.isArray(this._calendarEventsMerged) ? this._calendarEventsMerged : [];
+        if (!items.length || !entityIds?.size) return [];
+        const dayStart = startOfDay(day);
+        const dayEnd = addDays(dayStart, 1);
+        return items.filter((e) => {
+            if (!entityIds.has(e._fbEntityId)) return false;
+            if (!e?._start || !e?._end) return false;
+            const start = e._start.getTime();
+            const end = e._end.getTime();
+            return start < dayEnd.getTime() && end > dayStart.getTime();
+        });
+    }
+
     _calendarDebugEnabled() {
         return localStorage.getItem('FB_DEBUG_CALENDAR') === '1';
     }
@@ -646,6 +685,9 @@ class FamilyBoardCard extends LitElement {
         this._calendarForceNext = false;
 
         const { start, end } = this._currentCalendarRange();
+        // Guard against slow responses overwriting merged calendar state.
+        const requestId = (this._calendarRequestSeq || 0) + 1;
+        this._calendarRequestSeq = requestId;
         // Track loading vs stale/error separately to avoid retry prompts with usable cache.
         this._logCalendarState('loading', {
             hasCache: this._hasCalendarCache(),
@@ -662,14 +704,30 @@ class FamilyBoardCard extends LitElement {
 
             const results = await Promise.allSettled(
                 calendars.map(async (c) => {
-                    const items = await this._calendarService.fetchEvents(
-                        this._hass,
-                        c.entity,
-                        start,
-                        end,
-                        { force: effectiveForce }
-                    );
-                    return [c.entity, items];
+                    const entityId = c.entity;
+                    this._logCalendarState('request-start', { entityId, requestId });
+                    try {
+                        const items = await this._calendarService.fetchEvents(
+                            this._hass,
+                            entityId,
+                            start,
+                            end,
+                            { force: effectiveForce }
+                        );
+                        this._logCalendarState('request-end', {
+                            entityId,
+                            requestId,
+                            count: items?.length ?? 0,
+                        });
+                        return [entityId, items];
+                    } catch (error) {
+                        this._logCalendarState('request-error', {
+                            entityId,
+                            requestId,
+                            message: error?.message || String(error),
+                        });
+                        throw error;
+                    }
                 })
             );
 
@@ -684,9 +742,18 @@ class FamilyBoardCard extends LitElement {
             }
 
             if (hadSuccess) {
+                if (requestId !== this._calendarRequestSeq) {
+                    this._logCalendarState('request-stale', { requestId });
+                    return;
+                }
                 this._eventsByEntity = next;
+                this._calendarEventsMerged = this._mergeCalendarEvents(next);
                 this._eventsVersion += 1;
                 this._calendarLastSuccessTs = Date.now();
+                this._logCalendarState('merged', {
+                    requestId,
+                    count: this._calendarEventsMerged.length,
+                });
             }
 
             if (hadFailure) {
