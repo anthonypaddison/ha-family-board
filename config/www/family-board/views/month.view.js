@@ -109,6 +109,7 @@ export class FbMonthView extends LitElement {
         const filteredCalendars = calendars.filter((c) =>
             card._isPersonAllowed(card._personIdForConfig(c, c.entity))
         );
+        const visibleEntities = new Set(filteredCalendars.map((c) => c.entity));
 
         // IMPORTANT: month view must use the month-offset date, not the day view date
         const baseDay = startOfDay(card._selectedMonthDay());
@@ -130,22 +131,21 @@ export class FbMonthView extends LitElement {
         const dayStats = cells.map((d) => {
             if (!d) return { d: null, isToday: false, pips: [], remaining: 0, dayTotal: 0 };
 
-            const dayTotal = filteredCalendars.reduce(
-                (sum, c) => sum + card._eventsForEntityOnDay(c.entity, d).length,
-                0
-            );
-
             const perPerson = new Map();
-            for (const c of filteredCalendars) {
-                const events = card._eventsForEntityOnDay(c.entity, d);
-                if (!events.length) continue;
-                const person = card._personForEntity(c.entity);
-                const id = person?.id || c.entity;
+            // Use merged events to avoid per-entity overwrite in month counts.
+            const mergedEvents = card._mergedEventsForDay(d, visibleEntities);
+            for (const e of mergedEvents) {
+                const entityId = e._fbEntityId;
+                if (!entityId) continue;
+                const person = card._personForEntity(entityId);
+                const id = person?.id || entityId;
                 const color = person?.color || card._neutralColor();
                 const current = perPerson.get(id) || { color, count: 0 };
-                current.count += events.length;
+                current.count += 1;
                 perPerson.set(id, current);
             }
+
+            const dayTotal = mergedEvents.length;
 
             const pips = Array.from(perPerson.values());
             const visiblePips = pips.slice(0, 3);

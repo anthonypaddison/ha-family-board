@@ -382,6 +382,8 @@ export class FbScheduleView extends LitElement {
                 visibleSet.has(c.entity) &&
                 card._isPersonAllowed(card._personIdForConfig(c, c.entity))
         );
+        const calendarById = new Map(calendars.map((c) => [c.entity, c]));
+        const visibleEntities = new Set(calendars.map((c) => c.entity));
 
         const maxAllDayVisible = 2;
         const dayData = days.map((day) => {
@@ -390,46 +392,48 @@ export class FbScheduleView extends LitElement {
             const dayStart = startOfDay(day);
             const dayEnd = endOfDay(day);
 
-            for (const c of calendars) {
-                const events = card._eventsForEntityOnDay(c.entity, day);
-                const person = card._personForEntity(c.entity);
+            // Use merged events to avoid one entity overwriting another.
+            const mergedEvents = card._mergedEventsForDay(day, visibleEntities);
+            for (const e of mergedEvents) {
+                const entityId = e._fbEntityId;
+                if (!entityId) continue;
+                const entry = calendarById.get(entityId);
+                const person = card._personForEntity(entityId);
                 const colour = person?.color || card._neutralColor();
-                const personName = person?.name || c.name || c.entity;
+                const personName = person?.name || entry?.name || entityId;
 
-                for (const e of events) {
-                    const base = { ...e };
-                    delete base.lane;
-                    delete base.lanesTotal;
-                    if (e.all_day) {
-                        allDay.push({
-                            ...base,
-                            _fbColour: colour,
-                            _fbName: personName,
-                            _fbEntityId: c.entity,
-                        });
-                        continue;
-                    }
-
-                    const s = e._start;
-                    const en = e._end;
-                    if (!s || !en) continue;
-                    const startMinEv =
-                        s <= dayStart ? startMin : s.getHours() * 60 + s.getMinutes();
-                    const endMinEv = en >= dayEnd ? endMin : en.getHours() * 60 + en.getMinutes();
-                    const clampedStart = Math.max(startMin, startMinEv);
-                    const clampedEnd = Math.min(endMin, endMinEv);
-
-                    timedRaw.push({
+                const base = { ...e };
+                delete base.lane;
+                delete base.lanesTotal;
+                if (e.all_day) {
+                    allDay.push({
                         ...base,
-                        start: s,
-                        end: en,
-                        startMin: clampedStart,
-                        endMin: Math.max(clampedStart + 1, clampedEnd),
                         _fbColour: colour,
                         _fbName: personName,
-                        _fbEntityId: c.entity,
+                        _fbEntityId: entityId,
                     });
+                    continue;
                 }
+
+                const s = e._start;
+                const en = e._end;
+                if (!s || !en) continue;
+                const startMinEv =
+                    s <= dayStart ? startMin : s.getHours() * 60 + s.getMinutes();
+                const endMinEv = en >= dayEnd ? endMin : en.getHours() * 60 + en.getMinutes();
+                const clampedStart = Math.max(startMin, startMinEv);
+                const clampedEnd = Math.min(endMin, endMinEv);
+
+                timedRaw.push({
+                    ...base,
+                    start: s,
+                    end: en,
+                    startMin: clampedStart,
+                    endMin: Math.max(clampedStart + 1, clampedEnd),
+                    _fbColour: colour,
+                    _fbName: personName,
+                    _fbEntityId: entityId,
+                });
             }
 
             const layout = layoutDayEvents(timedRaw, { maxColumns: 3 });

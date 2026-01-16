@@ -6,6 +6,7 @@
    - timed events render for both
    - all-day row works
    - overlaps render in lanes, no full-width collisions
+   - simultaneous events from two calendars both remain visible
 4) Month view:
    - indicators appear for both
    - day click shows combined list
