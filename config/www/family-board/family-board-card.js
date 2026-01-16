@@ -90,6 +90,7 @@ class FamilyBoardCard extends LitElement {
         _toastDetail: { state: true },
         _syncingCalendars: { state: true },
         _calendarStale: { state: true },
+        _calendarError: { state: true },
         _calendarFetchInFlight: { state: true },
     };
 
@@ -236,6 +237,7 @@ class FamilyBoardCard extends LitElement {
         this._toastDetail = '';
         this._syncingCalendars = false;
         this._calendarStale = false;
+        this._calendarError = false;
         this._calendarFetchInFlight = false;
         this._calendarLastSuccessTs = 0;
         this._calendarRetryTimer = null;
@@ -360,6 +362,7 @@ class FamilyBoardCard extends LitElement {
                             .isAdmin=${isAdmin}
                             .syncing=${this._syncingCalendars || this._calendarFetchInFlight}
                             .calendarStale=${this._calendarStale}
+                            .calendarError=${this._calendarError}
                             .calendarInFlight=${this._calendarFetchInFlight}
                             @fb-main-mode=${this._onMainMode}
                             @fb-date-nav=${this._onDateNav}
@@ -583,6 +586,20 @@ class FamilyBoardCard extends LitElement {
             .filter(Boolean);
     }
 
+    _hasCalendarCache(eventsByEntity = this._eventsByEntity) {
+        const entityIds = this._visibleCalendarEntities();
+        if (!entityIds.length) return false;
+        return entityIds.some((entityId) => Array.isArray(eventsByEntity?.[entityId]));
+    }
+
+    _calendarDebugEnabled() {
+        return localStorage.getItem('FB_DEBUG_CALENDAR') === '1';
+    }
+
+    _logCalendarState(state, detail = {}) {
+        debugLog(this._calendarDebugEnabled(), 'calendar state', state, detail);
+    }
+
     _withTimeout(promise, ms = 10_000) {
         let timer = null;
         const timeout = new Promise((_, reject) => {
@@ -629,6 +646,11 @@ class FamilyBoardCard extends LitElement {
         this._calendarForceNext = false;
 
         const { start, end } = this._currentCalendarRange();
+        // Track loading vs stale/error separately to avoid retry prompts with usable cache.
+        this._logCalendarState('loading', {
+            hasCache: this._hasCalendarCache(),
+            force: effectiveForce,
+        });
         this._calendarFetchInFlight = true;
         this.requestUpdate();
 
@@ -668,11 +690,17 @@ class FamilyBoardCard extends LitElement {
             }
 
             if (hadFailure) {
-                this._calendarStale = true;
+                const hasCache = this._hasCalendarCache(next);
+                this._calendarStale = hasCache;
+                this._calendarError = !hasCache;
+                if (hasCache) this._logCalendarState('cache-used', { hasCache });
+                this._logCalendarState('error', { hasCache });
                 this._scheduleCalendarRetry();
             } else {
                 this._calendarStale = false;
+                this._calendarError = false;
                 this._clearCalendarRetry();
+                if (hadSuccess) this._logCalendarState('success', { force: effectiveForce });
             }
         })();
 
@@ -680,7 +708,11 @@ class FamilyBoardCard extends LitElement {
         try {
             await fetchPromise;
         } catch {
-            this._calendarStale = true;
+            const hasCache = this._hasCalendarCache();
+            this._calendarStale = hasCache;
+            this._calendarError = !hasCache;
+            if (hasCache) this._logCalendarState('cache-used', { hasCache });
+            this._logCalendarState('error', { hasCache });
             this._scheduleCalendarRetry();
         } finally {
             this._calendarFetchInFlight = false;
