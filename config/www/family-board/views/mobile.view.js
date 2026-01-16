@@ -142,6 +142,7 @@ export class FbMobileView extends LitElement {
                                           (e) => html`
                                               <div
                                                   class="chip"
+                                                  data-key=${e._fbKey || ''}
                                                   style="--event-color:${e._fbColour}"
                                                   @click=${() => card._openEventDialog(e._fbEntityId, e)}
                                               >
@@ -162,6 +163,7 @@ export class FbMobileView extends LitElement {
                                           return html`
                                               <div
                                                   class="chip"
+                                                  data-key=${e._fbKey || ''}
                                                   style="--event-color:${e._fbColour}"
                                                   @click=${() => card._openEventDialog(e._fbEntityId, e)}
                                               >

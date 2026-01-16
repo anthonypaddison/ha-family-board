@@ -243,6 +243,7 @@ export class FbWeekView extends LitElement {
                                                   (e) => html`
                                                       <button
                                                           class="chip"
+                                                          data-key=${e._fbKey || ''}
                                                           style="border-left-color:${e._fbColour}"
                                                           @click=${() =>
                                                               card._openMoreInfo(e._fbEntityId)}
@@ -314,6 +315,7 @@ export class FbWeekView extends LitElement {
                                                 return html`
                                                     <button
                                                         class="event"
+                                                        data-key=${ev._fbKey || ''}
                                                         style="
                               top:${top}px;
                               height:${height}px;

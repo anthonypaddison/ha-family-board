@@ -63,7 +63,12 @@ export function clamp(n, min, max) {
  * Each event must have startMin/endMin.
  */
 export function assignOverlapLanes(events) {
-    const sorted = [...events].sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
+    const sorted = [...events].sort(
+        (a, b) =>
+            a.startMin - b.startMin ||
+            a.endMin - b.endMin ||
+            String(a._fbKey || '').localeCompare(String(b._fbKey || ''))
+    );
 
     // Active events by endMin
     const active = [];

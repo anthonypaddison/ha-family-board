@@ -488,6 +488,7 @@ export class FbScheduleView extends LitElement {
                                               (e) => html`
                                                   <button
                                                       class="chip"
+                                                      data-key=${e._fbKey || ''}
                                                       style="
                                                           --event-color:${e._fbColour};
                                                           --event-text:${getReadableTextColour(e._fbColour)};
@@ -574,6 +575,7 @@ export class FbScheduleView extends LitElement {
                                                 return html`
                                                     <button
                                                         class="event"
+                                                        data-key=${ev._fbKey || ''}
                                                         style="
                                                             --event-color:${ev._fbColour};
                                                             --event-text:${getReadableTextColour(

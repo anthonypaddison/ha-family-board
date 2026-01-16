@@ -594,23 +594,40 @@ class FamilyBoardCard extends LitElement {
         return entityIds.some((entityId) => Array.isArray(eventsByEntity?.[entityId]));
     }
 
-    _namespacedEventId(entityId, event, idx) {
-        const baseId = event?.uid || event?.id || event?.event_id || '';
+    _hashSummary(value) {
+        let hash = 0;
+        for (let i = 0; i < value.length; i++) {
+            hash = (hash * 31 + value.charCodeAt(i)) | 0;
+        }
+        return `h${(hash >>> 0).toString(36)}`;
+    }
+
+    _calendarEventKey(entityId, event, idx) {
+        // Event ids can collide or be missing across calendars; a per-entity key keeps layout stable.
+        const originalId = event?.uid || event?.id || event?.event_id || '';
         const start = event?._start ? event._start.toISOString() : '';
-        const fallback = baseId || event?.summary || start || String(idx);
-        return `${entityId}:${fallback}`;
+        const summaryHash = event?.summary ? this._hashSummary(event.summary) : '';
+        const fallback = originalId || start || summaryHash || String(idx);
+        return `${entityId}::${fallback}`;
     }
 
     _mergeCalendarEvents(eventsByEntity) {
         const merged = [];
         const entries = Object.entries(eventsByEntity || {});
+        const seenKeys = new Set();
         for (const [entityId, items] of entries) {
             if (!Array.isArray(items)) continue;
             items.forEach((event, idx) => {
+                const key = event?._fbKey || this._calendarEventKey(entityId, event, idx);
+                if (seenKeys.has(key)) {
+                    this._logCalendarState('key-collision', { entityId, key });
+                } else {
+                    seenKeys.add(key);
+                }
                 merged.push({
                     ...event,
                     _fbEntityId: entityId,
-                    _fbEventId: this._namespacedEventId(entityId, event, idx),
+                    _fbKey: key,
                 });
             });
         }
@@ -734,7 +751,13 @@ class FamilyBoardCard extends LitElement {
             for (const result of results) {
                 if (result.status === 'fulfilled') {
                     const [entityId, items] = result.value;
-                    next[entityId] = items;
+                    next[entityId] = Array.isArray(items)
+                        ? items.map((event, idx) => ({
+                              ...event,
+                              _fbEntityId: entityId,
+                              _fbKey: this._calendarEventKey(entityId, event, idx),
+                          }))
+                        : [];
                     hadSuccess = true;
                 } else {
                     hadFailure = true;

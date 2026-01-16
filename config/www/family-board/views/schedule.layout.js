@@ -3,7 +3,12 @@
  */
 
 function groupByOverlap(events) {
-    const sorted = [...events].sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
+    const sorted = [...events].sort(
+        (a, b) =>
+            a.startMin - b.startMin ||
+            a.endMin - b.endMin ||
+            String(a._fbKey || '').localeCompare(String(b._fbKey || ''))
+    );
     const groups = [];
     let active = [];
     let groupStart = null;
@@ -34,7 +39,12 @@ function groupByOverlap(events) {
 }
 
 function assignLanes(events) {
-    const sorted = [...events].sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
+    const sorted = [...events].sort(
+        (a, b) =>
+            a.startMin - b.startMin ||
+            a.endMin - b.endMin ||
+            String(a._fbKey || '').localeCompare(String(b._fbKey || ''))
+    );
     const active = [];
     const lanes = [];
 

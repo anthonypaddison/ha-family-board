@@ -355,6 +355,7 @@ export class FbDayView extends LitElement {
                                           (e) => html`
                                               <button
                                                   class="chip"
+                                                  data-key=${e._fbKey || ''}
                                                   style="border-left-color:${e._fbColour}"
                                                   @click=${() => card._openMoreInfo(e._fbEntityId)}
                                                   title=${e.summary}
@@ -398,6 +399,7 @@ export class FbDayView extends LitElement {
                                         return html`
                                             <button
                                                 class="event"
+                                                data-key=${ev._fbKey || ''}
                                                 style="top:${top}px;height:${height}px;left:${leftPct}%;width:${widthPct}%;border-left-color:${ev._fbColour};"
                                                 @click=${() => card._openMoreInfo(ev._fbEntityId)}
                                                 title=${ev.summary}
