@@ -10,6 +10,7 @@ export class FbManageSources extends LitElement {
         config: { type: Object },
         hass: { type: Object },
         _draft: { state: true },
+        _saveError: { state: true },
     };
 
     static styles = css`
@@ -57,7 +58,7 @@ export class FbManageSources extends LitElement {
             align-items: center;
         }
         .row.people {
-            grid-template-columns: 1fr 1fr 1fr 110px auto;
+            grid-template-columns: 1fr 1fr 1fr 120px 110px auto;
         }
         .row.calendars {
             grid-template-columns: 1fr 1fr 1fr auto auto;
@@ -94,6 +95,8 @@ export class FbManageSources extends LitElement {
             cursor: pointer;
             font-size: 14px;
             color: var(--fb-text);
+            min-height: var(--fb-touch);
+            min-width: var(--fb-touch);
         }
         .btn.primary {
             background: var(--fb-accent);
@@ -106,6 +109,21 @@ export class FbManageSources extends LitElement {
         }
     `;
 
+    static PEOPLE_COLOURS = [
+        { name: 'Mint', color: '#36B37E', text: '#FFFFFF' },
+        { name: 'Violet', color: '#7E57C2', text: '#FFFFFF' },
+        { name: 'Amber', color: '#F4B400', text: '#1A1A1A' },
+        { name: 'Rose', color: '#EC407A', text: '#FFFFFF' },
+        { name: 'Sky', color: '#42A5F5', text: '#FFFFFF' },
+        { name: 'Lime', color: '#B2FD7F', text: '#1A1A1A' },
+        { name: 'Teal', color: '#00897B', text: '#FFFFFF' },
+        { name: 'Indigo', color: '#5E35B1', text: '#FFFFFF' },
+        { name: 'Tangerine', color: '#FB8C00', text: '#1A1A1A' },
+        { name: 'Magenta', color: '#D81B60', text: '#FFFFFF' },
+        { name: 'Azure', color: '#1E88E5', text: '#FFFFFF' },
+        { name: 'Leaf', color: '#8BC34A', text: '#1A1A1A' },
+    ];
+
     willUpdate(changedProps) {
         if (changedProps.has('open') && this.open) {
             this._draft = JSON.parse(JSON.stringify(this.config || {}));
@@ -114,11 +132,40 @@ export class FbManageSources extends LitElement {
 
     close() {
         this.open = false;
+        this._saveError = '';
         this.requestUpdate();
         this.dispatchEvent(new CustomEvent('fb-sources-close', { bubbles: true, composed: true }));
     }
 
     _emitSave() {
+        const cfg = this._draft || {};
+        const people = Array.isArray(cfg.people) ? cfg.people : [];
+        const calendars = Array.isArray(cfg.calendars) ? cfg.calendars : [];
+        const todos = Array.isArray(cfg.todos) ? cfg.todos : [];
+        const stateIds = Object.keys(this.hass?.states || {});
+        const stateSet = new Set(stateIds);
+        for (const c of calendars) {
+            if (c?.entity && !stateSet.has(c.entity)) {
+                this._saveError = `Calendar entity not found: ${c.entity}`;
+                return;
+            }
+        }
+        for (const t of todos) {
+            if (t?.entity && !stateSet.has(t.entity)) {
+                this._saveError = `Todo entity not found: ${t.entity}`;
+                return;
+            }
+        }
+        for (const p of people) {
+            if (!p?.id) continue;
+            const hasCalendar = calendars.some((c) => c?.person_id === p.id);
+            const hasTodo = todos.some((t) => t?.person_id === p.id);
+            if (!hasCalendar && !hasTodo) {
+                this._saveError = `Person "${p.name || p.id}" needs a calendar or todo list.`;
+                return;
+            }
+        }
+        this._saveError = '';
         this.dispatchEvent(
             new CustomEvent('fb-sources-save', {
                 detail: { config: this._draft },
@@ -159,8 +206,21 @@ export class FbManageSources extends LitElement {
                 push(`  - id: ${p.id}`);
                 if (p.name) push(`    name: ${p.name}`);
                 if (p.color) push(`    color: '${p.color}'`);
+                if (p.text_color) push(`    text_color: '${p.text_color}'`);
+                if (p.role) push(`    role: ${p.role}`);
                 if (p.header_row) push(`    header_row: ${p.header_row}`);
             }
+        }
+        const peopleDisplay = Array.isArray(cfg.people_display) ? cfg.people_display : [];
+        if (peopleDisplay.length) {
+            push(`people_display:`);
+            for (const id of peopleDisplay) {
+                push(`  - ${id}`);
+            }
+        }
+
+        if (cfg.admin_pin !== undefined) {
+            push(`admin_pin: '${cfg.admin_pin}'`);
         }
 
         const calendars = Array.isArray(cfg.calendars) ? cfg.calendars : [];
@@ -196,6 +256,15 @@ export class FbManageSources extends LitElement {
         if (!this._draft[path]) this._draft[path] = [];
     }
 
+    _entityOptions(list, current) {
+        const options = Array.isArray(list) ? [...list] : [];
+        const value = String(current || '').trim();
+        if (value && !options.includes(value)) {
+            options.unshift(value);
+        }
+        return options;
+    }
+
     render() {
         if (!this.open) return html``;
         const cfg = this._draft || {};
@@ -209,24 +278,26 @@ export class FbManageSources extends LitElement {
         return html`
             <div class="backdrop" @click=${(e) => e.target === e.currentTarget && this.close()}>
                 <div class="dlg">
-                    <datalist id="fb-cal-entities">
-                        ${calendarEntities.map((id) => html`<option value=${id}></option>`)}
-                    </datalist>
-                    <datalist id="fb-todo-entities">
-                        ${todoEntities.map((id) => html`<option value=${id}></option>`)}
-                    </datalist>
                     <div class="h">
                         <div>Manage sources</div>
                         <button class="btn" @click=${this.close}>Close</button>
                     </div>
+                    ${this._saveError
+                        ? html`<div class="note" style="color:var(--urgent)">
+                              ${this._saveError}
+                          </div>`
+                        : html``}
 
                     <div class="section">
                         <div style="font-weight:700">People</div>
                         <div class="note">
                             Add a person id, display name, colour, and which header row they appear in.
                         </div>
-                        ${people.map(
-                            (p, idx) => html`
+                        ${people.map((p, idx) => {
+                            const selected = FbManageSources.PEOPLE_COLOURS.find(
+                                (c) => c.color === p.color
+                            );
+                            return html`
                                 <div class="row people">
                                     <input
                                         placeholder="id"
@@ -238,11 +309,33 @@ export class FbManageSources extends LitElement {
                                         .value=${p.name || ''}
                                         @input=${(e) => (p.name = e.target.value)}
                                     />
-                                    <input
-                                        placeholder="colour"
+                                    <select
                                         .value=${p.color || ''}
-                                        @input=${(e) => (p.color = e.target.value)}
-                                    />
+                                        @change=${(e) => {
+                                            const choice = FbManageSources.PEOPLE_COLOURS.find(
+                                                (c) => c.color === e.target.value
+                                            );
+                                            p.color = choice?.color || '';
+                                            p.text_color = choice?.text || '';
+                                            this.requestUpdate();
+                                        }}
+                                    >
+                                        <option value="">Select colour</option>
+                                        ${FbManageSources.PEOPLE_COLOURS.map(
+                                            (c) =>
+                                                html`<option value=${c.color}>
+                                                    ${c.name}
+                                                </option>`
+                                        )}
+                                    </select>
+                                    <select
+                                        .value=${p.role || ''}
+                                        @change=${(e) => (p.role = e.target.value)}
+                                    >
+                                        <option value="">Role</option>
+                                        <option value="kid">Kid</option>
+                                        <option value="grownup">Grownup</option>
+                                    </select>
                                     <select
                                         .value=${p.header_row || 1}
                                         @change=${(e) => (p.header_row = Number(e.target.value))}
@@ -260,8 +353,8 @@ export class FbManageSources extends LitElement {
                                         Remove
                                     </button>
                                 </div>
-                            `
-                        )}
+                            `;
+                        })}
                         <div class="row small">
                             <button
                                 class="btn"
@@ -279,22 +372,34 @@ export class FbManageSources extends LitElement {
                     <div class="section">
                         <div style="font-weight:700">Calendars</div>
                         <div class="note">
-                            Use calendar.entity ids, map to person_id, and set role (family or routine).
+                            Select existing calendar entities and map them to people.
                         </div>
                         ${calendars.map(
                             (c, idx) => html`
                                 <div class="row calendars">
-                                    <input
-                                        placeholder="calendar.entity"
+                                    <select
                                         .value=${c.entity || ''}
-                                        list="fb-cal-entities"
-                                        @input=${(e) => (c.entity = e.target.value)}
-                                    />
-                                    <input
-                                        placeholder="person_id"
+                                        @change=${(e) => (c.entity = e.target.value)}
+                                    >
+                                        <option value="">Select calendar</option>
+                                        ${this._entityOptions(calendarEntities, c.entity).map(
+                                            (id) =>
+                                                html`<option value=${id}>
+                                                    ${id}
+                                                </option>`
+                                        )}
+                                    </select>
+                                    <select
                                         .value=${c.person_id || ''}
-                                        @input=${(e) => (c.person_id = e.target.value)}
-                                    />
+                                        @change=${(e) => (c.person_id = e.target.value)}
+                                    >
+                                        <option value="">Select person</option>
+                                        ${people.map(
+                                            (p) =>
+                                                html`<option value=${p.id}>${p.name ||
+                                                    p.id}</option>`
+                                        )}
+                                    </select>
                                     <select
                                         .value=${c.role || ''}
                                         @change=${(e) => (c.role = e.target.value)}
@@ -331,26 +436,40 @@ export class FbManageSources extends LitElement {
 
                     <div class="section">
                         <div style="font-weight:700">Todo lists</div>
-                        <div class="note">Use todo.entity ids and map each list to a person_id.</div>
+                        <div class="note">
+                            Select existing todo lists and map them to people.
+                        </div>
                         ${todos.map(
                             (t, idx) => html`
                                 <div class="row">
-                                    <input
-                                        placeholder="todo.entity"
+                                    <select
                                         .value=${t.entity || ''}
-                                        list="fb-todo-entities"
-                                        @input=${(e) => (t.entity = e.target.value)}
-                                    />
+                                        @change=${(e) => (t.entity = e.target.value)}
+                                    >
+                                        <option value="">Select todo list</option>
+                                        ${this._entityOptions(todoEntities, t.entity).map(
+                                            (id) =>
+                                                html`<option value=${id}>
+                                                    ${id}
+                                                </option>`
+                                        )}
+                                    </select>
                                     <input
                                         placeholder="name"
                                         .value=${t.name || ''}
                                         @input=${(e) => (t.name = e.target.value)}
                                     />
-                                    <input
-                                        placeholder="person_id"
+                                    <select
                                         .value=${t.person_id || ''}
-                                        @input=${(e) => (t.person_id = e.target.value)}
-                                    />
+                                        @change=${(e) => (t.person_id = e.target.value)}
+                                    >
+                                        <option value="">Select person</option>
+                                        ${people.map(
+                                            (p) =>
+                                                html`<option value=${p.id}>${p.name ||
+                                                    p.id}</option>`
+                                        )}
+                                    </select>
                                     <button
                                         class="btn"
                                         @click=${() => {
@@ -379,17 +498,23 @@ export class FbManageSources extends LitElement {
 
                     <div class="section">
                         <div style="font-weight:700">Shopping</div>
-                        <div class="note">Set the shopping list todo entity (todo.shopping_list_2).</div>
+                        <div class="note">Pick the todo list entity used for shopping.</div>
                         <div class="row small">
-                            <input
-                                placeholder="todo.shopping_list_2"
+                            <select
                                 .value=${cfg.shopping?.entity || ''}
-                                list="fb-todo-entities"
-                                @input=${(e) => {
+                                @change=${(e) => {
                                     if (!cfg.shopping) cfg.shopping = {};
                                     cfg.shopping.entity = e.target.value;
                                 }}
-                            />
+                            >
+                                <option value="">Select shopping list</option>
+                                ${this._entityOptions(todoEntities, cfg.shopping?.entity).map(
+                                    (id) =>
+                                        html`<option value=${id}>
+                                            ${id}
+                                        </option>`
+                                )}
+                            </select>
                         </div>
                     </div>
 
@@ -398,7 +523,6 @@ export class FbManageSources extends LitElement {
                         <textarea readonly .value=${this._toYaml(cfg)}></textarea>
                         <div class="row small">
                             <button class="btn" @click=${this._copyConfig}>Copy config</button>
-                            <button class="btn" @click=${this._emitOpenEditor}>Open editor</button>
                             <button class="btn primary" @click=${this._emitSave}>Save</button>
                         </div>
                         <div class="note">

@@ -17,7 +17,7 @@ export function fbStyles() {
             --pastel-cyan: #8eecf5;
             --pastel-sky: #90dbf4;
             --pastel-bluegrey: #a3c4f3;
-            --pastel-lilac: #cfbaf0;
+            --pastel-lilac: #e39b5f;
             --pastel-rose: #ffcfd2;
             --pastel-vanilla: #fbf8cc;
 
@@ -31,7 +31,7 @@ export function fbStyles() {
             --palette-vanilla: var(--pastel-vanilla);
 
             --fb-accent-teal: var(--family);
-            --bg: color-mix(in srgb, var(--fb-accent-teal) 16%, #ffffff);
+            --bg: var(--fb-accent-teal);
             --surface: #ffffff;
             --surface-2: #f4fbfa;
             --surface-3: #edf7f6;
@@ -56,7 +56,7 @@ export function fbStyles() {
             --shadow-md: 0 14px 28px rgba(15, 23, 42, 0.12);
             --shadow-lg: 0 18px 36px rgba(15, 23, 42, 0.22);
             --overlay: rgba(15, 23, 42, 0.35);
-            --text-on-accent: #111827;
+            --text-on-accent: #1f2933;
 
             --fb-bg: var(--bg);
             --fb-surface: var(--surface);
@@ -73,6 +73,8 @@ export function fbStyles() {
             --fb-radius: var(--radius-md);
             --fb-shadow: var(--shadow-md);
             --fb-border: var(--border);
+            --fb-touch: 56px;
+            --fb-gutter: 10px;
 
             --fb-icon: var(--text);
 

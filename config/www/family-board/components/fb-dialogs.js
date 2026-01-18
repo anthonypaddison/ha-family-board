@@ -12,7 +12,7 @@ export class FbDialogs extends LitElement {
     static properties = {
         card: { type: Object },
         open: { type: Boolean },
-        mode: { type: String }, // calendar | todo | shopping
+        mode: { type: String }, // calendar | todo | shopping | home-control
         title: { type: String },
         entityId: { type: String },
         item: { type: Object },
@@ -21,7 +21,10 @@ export class FbDialogs extends LitElement {
         calendars: { type: Array },
         todos: { type: Array },
         shopping: { type: Object },
+        canAddHomeControl: { type: Boolean },
         _selectedCalendar: { state: true },
+        _selectedEntity: { state: true },
+        _todoEntityValue: { state: true },
         _emoji: { state: true },
         _emojiOpen: { state: true },
         _textValue: { state: true },
@@ -81,6 +84,8 @@ export class FbDialogs extends LitElement {
             cursor: pointer;
             background: var(--fb-accent);
             color: var(--fb-text);
+            min-height: var(--fb-touch);
+            min-width: var(--fb-touch);
         }
         button.secondary {
             background: transparent;
@@ -102,13 +107,34 @@ export class FbDialogs extends LitElement {
         this._emojiOpen = false;
         this._emoji = '';
         this._textValue = '';
+        this._selectedEntity = '';
+        this._todoEntityValue = '';
         this.requestUpdate();
         this.dispatchEvent(new CustomEvent('fb-dialog-close', { bubbles: true, composed: true }));
+    }
+
+    updated(changed) {
+        if (changed.has('entityId') || changed.has('mode')) {
+            if (this.mode === 'todo' || this.mode === 'todo-edit') {
+                this._todoEntityValue = this.entityId || '';
+            }
+        }
+        if (changed.has('open') && !this.open) {
+            this._todoEntityValue = '';
+            this._textValue = '';
+            this._emoji = '';
+        }
     }
 
     _emit(type, detail) {
         this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
         this.close();
+    }
+
+    _notifyModeChange(mode) {
+        this.dispatchEvent(
+            new CustomEvent('fb-dialog-mode', { detail: { mode }, bubbles: true, composed: true })
+        );
     }
 
     _todayLocalDateTimeInputValue() {
@@ -153,8 +179,12 @@ export class FbDialogs extends LitElement {
         const mode = this.mode;
         const calendars = Array.isArray(this.calendars) ? this.calendars : [];
         const todos = Array.isArray(this.todos) ? this.todos : [];
+        const entityIds = Object.keys(this.card?._hass?.states || {}).sort();
         if (!this._selectedCalendar && calendars.length) {
             this._selectedCalendar = calendars[0].entity;
+        }
+        if (!this._selectedEntity && entityIds.length) {
+            this._selectedEntity = entityIds[0];
         }
         const calendarCounts = new Map();
         calendars.forEach((c) => {
@@ -199,6 +229,15 @@ export class FbDialogs extends LitElement {
 
         const startValue = this.startValue || this._todayLocalDateTimeInputValue();
         const endValue = this.endValue || this._defaultEndValue(startValue);
+        const isAddMode = ['calendar', 'todo', 'shopping', 'home-control'].includes(mode);
+        const addOptions = [
+            { value: 'calendar', label: 'Event' },
+            { value: 'todo', label: 'Chore' },
+            { value: 'shopping', label: 'Shopping' },
+        ];
+        if (this.canAddHomeControl) {
+            addOptions.push({ value: 'home-control', label: 'Home control' });
+        }
 
         return html`
             <div class="backdrop" @click=${(e) => e.target === e.currentTarget && this.close()}>
@@ -207,6 +246,24 @@ export class FbDialogs extends LitElement {
                         <div>${this.title || 'Add'}</div>
                         <button class="secondary" @click=${this.close}>Close</button>
                     </div>
+                    ${isAddMode
+                        ? html`
+                              <div class="row">
+                                  <label>Add type</label>
+                                  <select
+                                      .value=${mode}
+                                      @change=${(e) => this._notifyModeChange(e.target.value)}
+                                  >
+                                      ${addOptions.map(
+                                          (opt) =>
+                                              html`<option value=${opt.value}>
+                                                  ${opt.label}
+                                              </option>`
+                                      )}
+                                  </select>
+                              </div>
+                          `
+                        : html``}
 
                     ${mode === 'calendar'
                         ? html`
@@ -282,12 +339,46 @@ export class FbDialogs extends LitElement {
                                   : html``}
                           `
                         : html``}
+                    ${mode === 'home-control'
+                        ? html`
+                              <div class="row">
+                                  <label>Entity</label>
+                                  <select
+                                      id="home-entity"
+                                      @change=${(e) => (this._selectedEntity = e.target.value)}
+                                  >
+                                      ${entityIds.map(
+                                          (id) => html`<option value=${id}>${id}</option>`
+                                      )}
+                                  </select>
+                              </div>
+
+                              <div class="actions">
+                                  <button class="secondary" @click=${this.close}>Cancel</button>
+                                  <button
+                                      ?disabled=${!entityIds.length}
+                                      @click=${() => {
+                                          const entityId =
+                                              this.renderRoot.querySelector('#home-entity')?.value;
+                                          if (!entityId) return;
+                                          this._emit('fb-add-home-control', { entityId });
+                                      }}
+                                  >
+                                      Add
+                                  </button>
+                              </div>
+                          `
+                        : html``}
                     ${mode === 'todo' || mode === 'todo-edit'
                         ? html`
                               <div class="row">
                                   <label>Person</label>
-                                  <select id="todoEntity" .value=${this.entityId || ''}>
-                                      ${!this.entityId
+                                  <select
+                                      id="todoEntity"
+                                      .value=${this._todoEntityValue || ''}
+                                      @change=${(e) => (this._todoEntityValue = e.target.value)}
+                                  >
+                                      ${!this._todoEntityValue
                                           ? html`<option value="">Select a list</option>`
                                           : html``}
                                       ${todos.map(
@@ -330,6 +421,7 @@ export class FbDialogs extends LitElement {
                                   <button
                                       @click=${() => {
                                           const entityId =
+                                              this._todoEntityValue ||
                                               this.renderRoot.querySelector('#todoEntity')?.value;
                                           const text = this._composeText(this._textValue);
                                           if (!text) return;

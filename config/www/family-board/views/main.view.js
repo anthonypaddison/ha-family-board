@@ -21,7 +21,9 @@ export function renderMainView(card) {
     // - visible calendars change
     // - events data changes (async fetch completes)
     const personFilterSig = Array.from(card._personFilterSet || []).sort().join(',');
-    const calendarFilterSig = Array.from(card._calendarVisibleSet || []).sort().join(',');
+    const calendarFilterSig = card._calendarVisibilityEnabled
+        ? Array.from(card._calendarVisibleSet || []).sort().join(',')
+        : '';
     const dayKey = typeof card._selectedDayValue === 'function' ? card._selectedDayValue() : '';
     const monthKey =
         typeof card._selectedMonthDay === 'function'

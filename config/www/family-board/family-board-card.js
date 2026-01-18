@@ -15,7 +15,7 @@ import {
     formatDayTitle,
 } from './family-board.util.js';
 import { NEUTRAL_COLOUR, getPersonColour } from './util/colour.util.js';
-import { loadPrefs, updatePrefs, getDeviceKind } from './util/prefs.util.js';
+import { loadPrefs, updatePrefs, savePrefs, getDeviceKind } from './util/prefs.util.js';
 
 import { CalendarService, CALENDAR_FEATURES } from './services/calendar.service.js';
 import { TodoService } from './services/todo.service.js';
@@ -23,7 +23,6 @@ import { ShoppingService } from './services/shopping.service.js';
 
 import './components/fb-sidebar.js';
 import './components/fb-topbar.js';
-import './components/fb-fab.js';
 import './components/fb-dialogs.js';
 import './components/fb-manage-sources.js';
 import './components/fb-event-dialog.js';
@@ -35,6 +34,7 @@ import './views/chores.view.js';
 import './views/shopping.view.js';
 import './views/settings.view.js';
 import './views/setup.view.js';
+import './views/important.view.js';
 import { renderMainView } from './views/main.view.js';
 
 const DEFAULT_COMMON_ITEMS = [
@@ -105,7 +105,7 @@ class FamilyBoardCard extends LitElement {
             title: 'Family Board',
             days_to_show: 5,
             day_start_hour: 6,
-            day_end_hour: 22,
+            day_end_hour: 24,
             slot_minutes: 30,
             px_per_hour: 120,
             refresh_interval_ms: 300000,
@@ -118,9 +118,9 @@ class FamilyBoardCard extends LitElement {
         css`
             :host {
                 display: block;
-                height: 100%;
+                height: var(--fb-viewport-height, 100vh);
                 width: 100%;
-                max-height: 100%;
+                max-height: var(--fb-viewport-height, 100vh);
                 min-height: 0;
                 overflow: hidden;
             }
@@ -133,6 +133,7 @@ class FamilyBoardCard extends LitElement {
                 width: 100%;
                 display: grid;
                 grid-template-columns: 260px 1fr;
+                column-gap: var(--fb-gutter);
                 background: var(--fb-bg);
                 color: var(--fb-text);
                 overflow: hidden;
@@ -150,10 +151,12 @@ class FamilyBoardCard extends LitElement {
             .main {
                 display: grid;
                 grid-template-rows: auto 1fr;
+                padding-right: var(--fb-gutter);
                 min-width: 0;
                 min-height: 0;
                 background: var(--fb-bg);
                 overflow: hidden;
+                position: relative;
             }
             .content {
                 position: relative;
@@ -164,8 +167,9 @@ class FamilyBoardCard extends LitElement {
             }
             .toast {
                 position: absolute;
-                right: 16px;
-                bottom: 16px;
+                right: var(--fb-gutter);
+                top: var(--fb-gutter);
+                bottom: auto;
                 background: var(--fb-surface);
                 color: var(--fb-text);
                 border: 1px solid var(--fb-border);
@@ -173,7 +177,7 @@ class FamilyBoardCard extends LitElement {
                 padding: 8px 12px;
                 box-shadow: var(--fb-shadow);
                 font-size: 14px;
-                z-index: 5;
+                z-index: 20;
             }
             .toastDetail {
                 color: var(--fb-muted);
@@ -203,6 +207,8 @@ class FamilyBoardCard extends LitElement {
         this._personFilterSet = new Set();
         this._eventsByEntity = {};
         this._todoItems = {};
+        this._todoRenderTick = 0;
+        this._todoStatusRetryTimers = new Map();
         this._shoppingItems = [];
         this._dialogOpen = false;
         this._dialogMode = '';
@@ -231,6 +237,7 @@ class FamilyBoardCard extends LitElement {
         this._storageLoaded = false;
         this._storageLoadPromise = null;
         this._storedConfig = null;
+        this._sharedConfig = null;
         this._yamlConfig = null;
         this._persistMode = 'none';
         this._toastMessage = '';
@@ -246,6 +253,23 @@ class FamilyBoardCard extends LitElement {
         this._calendarFetchPromise = null;
         this._calendarRequestSeq = 0;
         this._calendarEventsMerged = [];
+        this._errorToastTs = new Map();
+        this._todoErrorEntities = new Set();
+        this._resizeHandler = null;
+        this._calendarVisibilityEnabled = false;
+        this._deviceDayStartHour = null;
+        this._deviceDayEndHour = null;
+        this._devicePxPerHour = null;
+        this._deviceRefreshMs = null;
+        this._deviceAccentTeal = null;
+        this._deviceAccentLilac = null;
+        this._deviceBackgroundTheme = null;
+        this._deviceDebug = null;
+        this._devicePeopleDisplay = null;
+        this._adminUnlocked = false;
+        this._defaultView = 'schedule';
+        this._initialViewSet = false;
+        this._baselineTopbarHeight = null;
     }
 
     setConfig(config) {
@@ -272,6 +296,12 @@ class FamilyBoardCard extends LitElement {
         super.connectedCallback();
         this._resetRefreshTimer();
         this._queueRefresh();
+        this._updateViewportHeight();
+        setTimeout(() => this._updateViewportHeight(), 0);
+        if (!this._resizeHandler) {
+            this._resizeHandler = () => this._updateViewportHeight();
+            window.addEventListener('resize', this._resizeHandler);
+        }
     }
 
     disconnectedCallback() {
@@ -280,6 +310,33 @@ class FamilyBoardCard extends LitElement {
             clearInterval(this._refreshTimer);
             this._refreshTimer = null;
         }
+        if (this._resizeHandler) {
+            window.removeEventListener('resize', this._resizeHandler);
+            this._resizeHandler = null;
+        }
+    }
+
+    _updateViewportHeight() {
+        if (!this.isConnected) return;
+        const rect = this.getBoundingClientRect();
+        const top = Number.isFinite(rect.top) ? rect.top : 0;
+        const height = Math.max(0, window.innerHeight - top);
+        this.style.setProperty('--fb-viewport-height', `${height}px`);
+        this._updateTopbarHeight();
+    }
+
+    _updateTopbarHeight() {
+        if (!this.renderRoot) return;
+        const topbar = this.renderRoot.querySelector('.topbar');
+        if (!topbar) return;
+        const height = topbar.getBoundingClientRect().height;
+        if (!Number.isFinite(height)) return;
+        const screen = this._screen || 'schedule';
+        if (this._baselineTopbarHeight === null && screen === 'schedule') {
+            this._baselineTopbarHeight = height;
+        }
+        const applied = this._baselineTopbarHeight ?? height;
+        this.style.setProperty('--fb-topbar-height', `${applied}px`);
     }
 
     _resetRefreshTimer() {
@@ -301,6 +358,10 @@ class FamilyBoardCard extends LitElement {
         return this._hass;
     }
 
+    updated() {
+        this._updateTopbarHeight();
+    }
+
     _loadPrefs() {
         if (this._prefsLoaded) return;
         const userId = this._hass?.user?.id;
@@ -311,6 +372,19 @@ class FamilyBoardCard extends LitElement {
         this._useMobileView =
             prefs.useMobileView !== undefined ? prefs.useMobileView : getDeviceKind() === 'mobile';
         this._sidebarCollapsed = Boolean(prefs.sidebarCollapsed);
+        this._adminUnlocked = Boolean(prefs.adminUnlocked);
+        this._defaultView = prefs.defaultView || 'schedule';
+        if (Number.isFinite(prefs.dayStartHour)) this._deviceDayStartHour = prefs.dayStartHour;
+        if (Number.isFinite(prefs.dayEndHour)) this._deviceDayEndHour = prefs.dayEndHour;
+        if (Number.isFinite(prefs.pxPerHour)) this._devicePxPerHour = prefs.pxPerHour;
+        if (Number.isFinite(prefs.refreshIntervalMs))
+            this._deviceRefreshMs = prefs.refreshIntervalMs;
+        if (typeof prefs.accentTeal === 'string') this._deviceAccentTeal = prefs.accentTeal;
+        if (typeof prefs.accentLilac === 'string') this._deviceAccentLilac = prefs.accentLilac;
+        if (typeof prefs.backgroundTheme === 'string')
+            this._deviceBackgroundTheme = prefs.backgroundTheme;
+        if (typeof prefs.debug === 'boolean') this._deviceDebug = prefs.debug;
+        if (Array.isArray(prefs.peopleDisplay)) this._devicePeopleDisplay = prefs.peopleDisplay;
         if (prefs.slotMinutes === 30 || prefs.slotMinutes === 60) {
             this._slotMinutes = prefs.slotMinutes;
         }
@@ -326,6 +400,16 @@ class FamilyBoardCard extends LitElement {
             ? prefs.shoppingFavourites
             : [];
         this._prefsLoaded = true;
+
+        if (!this._initialViewSet) {
+            const view = ['schedule', 'important', 'chores', 'shopping', 'home', 'settings'].includes(
+                this._defaultView
+            )
+                ? this._defaultView
+                : 'schedule';
+            this._screen = view;
+            this._initialViewSet = true;
+        }
     }
 
     render() {
@@ -333,10 +417,40 @@ class FamilyBoardCard extends LitElement {
 
         const screen = this._screen || 'schedule';
         const mainMode = this._mainMode || 'schedule';
-        const isAdmin = Boolean(this._hass?.user?.is_admin);
+        const isAdmin = this._hasAdminAccess();
+        const hasPin = Boolean(this._config?.admin_pin);
+        const showSettings = isAdmin || hasPin;
         const needsSetup = !Array.isArray(this._config?.people) || this._config.people.length === 0;
+        const personFilterSig = Array.from(this._personFilterSet || []).sort().join(',');
+        const shoppingFavSig = Array.isArray(this._shoppingFavourites)
+            ? this._shoppingFavourites.join('|')
+            : '';
+        const shoppingCommonSig = Array.isArray(this._shoppingCommon)
+            ? this._shoppingCommon.join('|')
+            : '';
+        const shoppingItemsSig = Array.isArray(this._shoppingItems)
+            ? this._shoppingItems.map((item) => this._shoppingItemText(item)).join('|')
+            : '';
+        const shoppingCount = this._shoppingQuantityCount(this._shoppingItems || []);
+        const binIndicators = this._binIndicators();
+        const todoItemsSig = Object.entries(this._todoItems || {})
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([entityId, items]) => {
+                if (!Array.isArray(items)) return `${entityId}:`;
+                const itemsSig = items
+                    .map((it) => {
+                        const key =
+                            it?.uid || it?.id || it?.summary || it?.name || it?.item || '';
+                        const status = String(it?.status || '');
+                        const completed = it?.completed ? '1' : '0';
+                        return `${key}:${status}:${completed}`;
+                    })
+                    .join(',');
+                return `${entityId}:${itemsSig}`;
+            })
+            .join('|');
 
-        const sidebarWidth = this._sidebarCollapsed ? '76px' : '260px';
+        const sidebarWidth = '76px';
 
         return html`
             <div class="app" style="grid-template-columns:${sidebarWidth} 1fr;">
@@ -344,20 +458,29 @@ class FamilyBoardCard extends LitElement {
                     <fb-sidebar
                         .active=${screen}
                         .counts=${this._sidebarCounts()}
-                        .isAdmin=${isAdmin}
-                        .collapsed=${this._sidebarCollapsed}
+                        .isAdmin=${showSettings}
+                        .collapsed=${true}
                         @fb-nav=${this._onNav}
-                        @fb-sidebar-toggle=${this._toggleSidebarCollapsed}
                     ></fb-sidebar>
                 </div>
 
                 <div class="main">
+                    ${this._toastMessage
+                        ? html`<div class="toast">
+                              <div>${this._toastMessage}</div>
+                              ${this._toastDetail
+                                  ? html`<div class="toastDetail">${this._toastDetail}</div>`
+                                  : html``}
+                          </div>`
+                        : html``}
                     <div class="topbar">
                         <fb-topbar
                             .title=${this._config.title || 'Family Board'}
                             .screen=${screen}
                             .mainMode=${mainMode}
                             .summary=${this._summaryCounts()}
+                            .shoppingCount=${shoppingCount}
+                            .binIndicators=${binIndicators}
                             .dateLabel=${this._dateLabel()}
                             .dateValue=${this._selectedDayValue()}
                             .activeFilters=${Array.from(this._personFilterSet || [])}
@@ -374,6 +497,7 @@ class FamilyBoardCard extends LitElement {
                             @fb-calendar-try-again=${this._onCalendarTryAgain}
                             @fb-person-toggle=${this._onPersonToggle}
                             @fb-open-sources=${() => this._openManageSources()}
+                            @fb-add=${this._onFab}
                         ></fb-topbar>
                     </div>
 
@@ -382,23 +506,24 @@ class FamilyBoardCard extends LitElement {
                             ? html`<fb-setup-view .card=${this}></fb-setup-view>`
                             : screen === 'schedule'
                             ? renderMainView(this)
+                            : screen === 'important'
+                            ? html`<fb-important-view
+                                  .card=${this}
+                                  .renderKey=${`${personFilterSig}|${this._eventsVersion}|${todoItemsSig}`}
+                              ></fb-important-view>`
                             : screen === 'chores'
-                            ? html`<fb-chores-view .card=${this}></fb-chores-view>`
+                            ? html`<fb-chores-view
+                                  .card=${this}
+                                  .renderKey=${`${personFilterSig}|${todoItemsSig}|${this._todoRenderTick}`}
+                              ></fb-chores-view>`
                             : screen === 'shopping'
-                            ? html`<fb-shopping-view .card=${this}></fb-shopping-view>`
+                            ? html`<fb-shopping-view
+                                  .card=${this}
+                                  .renderKey=${`${shoppingFavSig}|${shoppingCommonSig}|${shoppingItemsSig}`}
+                              ></fb-shopping-view>`
                             : screen === 'settings'
-                            ? isAdmin
-                                ? html`<fb-settings-view .card=${this}></fb-settings-view>`
-                                : html`<div style="padding:16px;color:var(--fb-muted)">
-                                      Ask an admin to view settings.
-                                  </div>`
+                            ? html`<fb-settings-view .card=${this}></fb-settings-view>`
                             : html`<fb-home-view .card=${this}></fb-home-view>`}
-
-                        <fb-fab
-                            .hidden=${screen === 'home' || screen === 'settings'}
-                            .label=${this._fabLabel()}
-                            @fb-fab=${this._onFab}
-                        ></fb-fab>
 
                         <fb-dialogs
                             .card=${this}
@@ -412,10 +537,13 @@ class FamilyBoardCard extends LitElement {
                             .calendars=${this._config?.calendars || []}
                             .todos=${this._config?.todos || []}
                             .shopping=${this._config?.shopping || {}}
+                            .canAddHomeControl=${Boolean(this._hass?.user?.is_admin)}
+                            @fb-dialog-mode=${this._onDialogModeChange}
                             @fb-dialog-close=${this._onDialogClose}
                             @fb-add-calendar=${this._onAddCalendar}
                             @fb-add-todo=${this._onAddTodo}
                             @fb-add-shopping=${this._onAddShopping}
+                            @fb-add-home-control=${this._onAddHomeControl}
                             @fb-edit-todo=${this._onEditTodo}
                             @fb-edit-shopping=${this._onEditShopping}
                         ></fb-dialogs>
@@ -468,14 +596,6 @@ class FamilyBoardCard extends LitElement {
                             @fb-editor-guide-close=${this._onEditorGuideClose}
                             @fb-editor-guide-open=${this._onOpenEditor}
                         ></fb-editor-guide-dialog>
-                        ${this._toastMessage
-                            ? html`<div class="toast">
-                                  <div>${this._toastMessage}</div>
-                                  ${this._toastDetail
-                                      ? html`<div class="toastDetail">${this._toastDetail}</div>`
-                                      : html``}
-                              </div>`
-                            : html``}
                     </div>
                 </div>
             </div>
@@ -525,6 +645,8 @@ class FamilyBoardCard extends LitElement {
                 id: p.id,
                 name: p.name || p.id,
                 color: p.color || NEUTRAL_COLOUR,
+                text_color: p.text_color || '',
+                role: p.role || '',
                 header_row: p.header_row || 1,
             });
         }
@@ -540,6 +662,8 @@ class FamilyBoardCard extends LitElement {
                 id: personId || c.entity,
                 name,
                 color,
+                text_color: mapped?.text_color || '',
+                role: mapped?.role || '',
                 header_row: mapped?.header_row || 1,
             });
         }
@@ -666,6 +790,10 @@ class FamilyBoardCard extends LitElement {
         });
     }
 
+    _sleep(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
     async _refreshCalendarsWithEntityUpdate() {
         if (!this._hass) return;
         const entityIds = this._visibleCalendarEntities();
@@ -681,6 +809,7 @@ class FamilyBoardCard extends LitElement {
                 // Proceed to fetch even if the update times out or fails.
             }
         }
+        await this._sleep(750);
         await this._refreshCalendarRange({ force: true });
     }
 
@@ -695,8 +824,29 @@ class FamilyBoardCard extends LitElement {
 
     async _refreshCalendarRange({ force = false } = {}) {
         const calendars = Array.isArray(this._config?.calendars) ? this._config.calendars : [];
-        if (!calendars.length) return;
+        if (!calendars.length) {
+            this._calendarStale = false;
+            this._calendarError = false;
+            this.requestUpdate();
+            return;
+        }
         if (this._calendarFetchInFlight) return this._calendarFetchPromise || undefined;
+
+        const hassStates = this._hass?.states || {};
+        const calendarsToFetch = calendars.filter((c) => hassStates?.[c.entity]);
+        const missingCalendars = calendars.filter((c) => !hassStates?.[c.entity]);
+        if (!calendarsToFetch.length) {
+            for (const c of missingCalendars) {
+                const key = `calendar-missing:${c.entity}`;
+                if (this._shouldNotifyError(key, 120_000)) {
+                    this._showErrorToast('Calendar missing', c.entity);
+                }
+            }
+            this._calendarStale = false;
+            this._calendarError = false;
+            this.requestUpdate();
+            return;
+        }
 
         const effectiveForce = Boolean(force || this._calendarForceNext);
         this._calendarForceNext = false;
@@ -711,6 +861,8 @@ class FamilyBoardCard extends LitElement {
             force: effectiveForce,
         });
         this._calendarFetchInFlight = true;
+        this._calendarStale = false;
+        this._calendarError = false;
         this.requestUpdate();
 
         const fetchPromise = (async () => {
@@ -720,7 +872,7 @@ class FamilyBoardCard extends LitElement {
             const next = { ...previous };
 
             const results = await Promise.allSettled(
-                calendars.map(async (c) => {
+                calendarsToFetch.map(async (c) => {
                     const entityId = c.entity;
                     this._logCalendarState('request-start', { entityId, requestId });
                     try {
@@ -814,28 +966,45 @@ class FamilyBoardCard extends LitElement {
     async _refreshTodos() {
         const todos = Array.isArray(this._config?.todos) ? this._config.todos : [];
         if (!todos.length) return;
-        try {
-            const results = await Promise.all(
-                todos.map(async (t) => {
-                    const items = await this._todoService.fetchItems(this._hass, t.entity);
-                    return [t.entity, items];
-                })
-            );
-            const next = {};
-            for (const [entityId, items] of results) next[entityId] = items;
-            this._todoItems = next;
-        } catch {
-            // Ignore todo fetch errors in UI.
+        const next = {};
+        for (const t of todos) {
+            if (!t?.entity) continue;
+            if (!this._hass?.states?.[t.entity]) {
+                if (this._todoErrorEntities.has(t.entity)) {
+                    this._todoErrorEntities.delete(t.entity);
+                }
+                continue;
+            }
+            try {
+                const items = await this._todoService.fetchItems(this._hass, t.entity);
+                next[t.entity] = items;
+                if (this._todoErrorEntities.has(t.entity)) {
+                    this._todoErrorEntities.delete(t.entity);
+                }
+            } catch {
+                if (!this._todoErrorEntities.has(t.entity)) {
+                    this._showErrorToast('Refresh chores');
+                    this._todoErrorEntities.add(t.entity);
+                }
+            }
         }
+        this._todoItems = next;
     }
 
     async _refreshTodoEntity(entityId) {
         if (!entityId) return;
+        if (!this._hass?.states?.[entityId]) return;
         try {
             const items = await this._todoService.fetchItems(this._hass, entityId);
             this._todoItems = { ...(this._todoItems || {}), [entityId]: items };
+            if (this._todoErrorEntities.has(entityId)) {
+                this._todoErrorEntities.delete(entityId);
+            }
         } catch {
-            // Ignore todo fetch errors in UI.
+            if (!this._todoErrorEntities.has(entityId)) {
+                this._showErrorToast('Refresh chores');
+                this._todoErrorEntities.add(entityId);
+            }
         }
     }
 
@@ -845,7 +1014,9 @@ class FamilyBoardCard extends LitElement {
         try {
             this._shoppingItems = await this._shoppingService.fetchItems(this._hass, shopping);
         } catch {
-            // Ignore shopping fetch errors in UI.
+            if (this._shouldNotifyError('shopping-refresh')) {
+                this._showErrorToast('Refresh shopping');
+            }
         }
     }
 
@@ -853,6 +1024,12 @@ class FamilyBoardCard extends LitElement {
         const today = startOfDay(new Date());
         const screen = this._screen || 'schedule';
         const mainMode = this._mainMode || 'schedule';
+
+        if (screen === 'important') {
+            const day = addDays(today, this._dayOffset || 0);
+            const tomorrow = addDays(day, 1);
+            return { start: startOfDay(day), end: endOfDay(tomorrow) };
+        }
 
         if (screen !== 'schedule') {
             const day = addDays(today, this._dayOffset || 0);
@@ -906,16 +1083,32 @@ class FamilyBoardCard extends LitElement {
         return this._personByEntity?.get(entityId) || null;
     }
 
+    _personIdFromName(name) {
+        if (!name) return '';
+        const target = this._normalisePersonId(name);
+        if (!target) return '';
+        for (const person of this._peopleById?.values?.() || []) {
+            const pid = this._normalisePersonId(person?.id);
+            const pname = this._normalisePersonId(person?.name);
+            if (pid && pid === target) return person.id;
+            if (pname && pname === target) return person.id;
+        }
+        return '';
+    }
+
     _personIdForConfig(entry, entityId) {
         const person = entityId ? this._personForEntity(entityId) : null;
-        return (
-            person?.id ||
-            entry?.person_id ||
-            entry?.personId ||
-            entry?.person ||
-            entityId ||
-            ''
-        );
+        const direct =
+            person?.id || entry?.person_id || entry?.personId || entry?.person || '';
+        if (direct) return direct;
+        if (entityId && entityId.startsWith('todo.')) {
+            const nameMatch = this._personIdFromName(entry?.name);
+            if (nameMatch) return nameMatch;
+            const tail = entityId.slice('todo.'.length);
+            const tailMatch = this._personIdFromName(tail);
+            if (tailMatch) return tailMatch;
+        }
+        return entityId || '';
     }
 
     _isPersonAllowed(personId) {
@@ -963,27 +1156,57 @@ class FamilyBoardCard extends LitElement {
     }
 
     _summaryCounts() {
-        const calendars = Array.isArray(this._config?.calendars) ? this._config.calendars : [];
-        const todos = Array.isArray(this._config?.todos) ? this._config.todos : [];
+        const people = Array.isArray(this._config?.people) ? this._config.people : [];
 
-        const people = this._peopleById?.size
-            ? Array.from(this._peopleById.values())
-            : calendars.map((c) => this._personForEntity(c.entity));
-
-        const summaryById = new Map();
-        for (const person of people) {
-            if (!person) continue;
-            summaryById.set(person.id, {
+        if (!people.length && this._peopleById?.size) {
+            const fallback = Array.from(this._peopleById.values());
+            return fallback.map((person) => ({
                 id: person.id,
                 name: person.name || person.id,
                 color: getPersonColour(person),
+                text_color: person.text_color || '',
+                role: person.role || '',
                 header_row: person.header_row || 1,
                 eventsLeft: this._countEventsTodayForPerson(person.id),
                 todosLeft: this._countTodosTodayForPerson(person.id),
-            });
+            }));
         }
 
-        return Array.from(summaryById.values());
+        const orderedIds = this._peopleDisplayIds(people);
+        const summary = orderedIds
+            .map((id) => this._peopleById?.get(id) || people.find((p) => p.id === id))
+            .filter(Boolean)
+            .map((person) => ({
+                id: person.id,
+                name: person.name || person.id,
+                color: getPersonColour(person),
+                text_color: person.text_color || '',
+                role: person.role || '',
+                header_row: person.header_row || 1,
+                eventsLeft: this._countEventsTodayForPerson(person.id),
+                todosLeft: this._countTodosTodayForPerson(person.id),
+            }));
+
+        return summary;
+    }
+
+    _peopleDisplayIds(people) {
+        const hasDevice = Array.isArray(this._devicePeopleDisplay);
+        const hasConfigured = Array.isArray(this._config?.people_display);
+        const configured = hasDevice
+            ? this._devicePeopleDisplay
+            : hasConfigured
+            ? this._config.people_display
+            : [];
+        const validIds = new Set(people.map((p) => p.id).filter(Boolean));
+        const ordered = configured.filter((id) => validIds.has(id));
+        const fallback = people.map((p) => p.id).filter(Boolean);
+        const merged = hasDevice || hasConfigured ? ordered : fallback;
+        const unique = [];
+        for (const id of merged) {
+            if (!unique.includes(id)) unique.push(id);
+        }
+        return unique.slice(0, 8);
     }
 
     _getTodayRange() {
@@ -1045,7 +1268,8 @@ class FamilyBoardCard extends LitElement {
         const screen = this._screen || 'schedule';
         if (screen === 'chores') return 'Add chore';
         if (screen === 'shopping') return 'Add shopping item';
-        if (screen === 'home' || screen === 'settings') return '';
+        if (screen === 'home') return 'Add home control';
+        if (screen === 'settings') return 'No action';
         return 'Add event';
     }
 
@@ -1053,6 +1277,7 @@ class FamilyBoardCard extends LitElement {
         if (!this._calendarVisibleSet) this._calendarVisibleSet = new Set();
         if (this._calendarVisibleSet.has(entityId)) this._calendarVisibleSet.delete(entityId);
         else this._calendarVisibleSet.add(entityId);
+        this._calendarVisibilityEnabled = true;
         this.requestUpdate();
     }
 
@@ -1123,7 +1348,12 @@ class FamilyBoardCard extends LitElement {
         this._syncingCalendars = true;
         this.requestUpdate();
         try {
-            await this._refreshCalendarsWithEntityUpdate();
+            this._calendarService?.clearCache?.();
+            await Promise.all([
+                this._refreshCalendarsWithEntityUpdate(),
+                this._refreshTodos(),
+                this._refreshShopping(),
+            ]);
             if (!this._calendarStale) this._showToast('Calendars synced');
         } finally {
             this._syncingCalendars = false;
@@ -1135,7 +1365,12 @@ class FamilyBoardCard extends LitElement {
         if (this._syncingCalendars || this._calendarFetchInFlight) return;
         this._syncingCalendars = true;
         this.requestUpdate();
-        this._refreshCalendarsWithEntityUpdate().finally(() => {
+        this._calendarService?.clearCache?.();
+        Promise.all([
+            this._refreshCalendarsWithEntityUpdate(),
+            this._refreshTodos(),
+            this._refreshShopping(),
+        ]).finally(() => {
             this._syncingCalendars = false;
             this.requestUpdate();
         });
@@ -1148,29 +1383,63 @@ class FamilyBoardCard extends LitElement {
         this._setScheduleStart(target);
     };
 
+    _setAddDialogMode(mode) {
+        this._dialogMode = mode;
+        this._dialogItem = null;
+        this._dialogEntity = '';
+        this._dialogStartValue = '';
+        this._dialogEndValue = '';
+        if (mode === 'home-control') {
+            this._dialogTitle = 'Add home control';
+        } else if (mode === 'todo') {
+            this._dialogTitle = 'Add chore';
+        } else if (mode === 'shopping') {
+            this._dialogTitle = 'Add shopping item';
+        } else {
+            this._dialogTitle = 'Add event';
+            const start = new Date();
+            const minutes = Number(this._defaultEventMinutes || 30);
+            const end = new Date(start.getTime() + minutes * 60 * 1000);
+            this._dialogStartValue = this._toLocalDateTimeValue(start);
+            this._dialogEndValue = this._toLocalDateTimeValue(end);
+        }
+    }
+
+    _openAddDialogForScreen(screen) {
+        if (screen === 'home') {
+            if (!this._hass?.user?.is_admin) {
+                this._showToast('Admin only');
+                return;
+            }
+            this._setAddDialogMode('home-control');
+            return;
+        }
+        if (screen === 'chores') {
+            this._setAddDialogMode('todo');
+            return;
+        }
+        if (screen === 'shopping') {
+            this._setAddDialogMode('shopping');
+            return;
+        }
+        this._setAddDialogMode('calendar');
+    }
+
+    _onDialogModeChange = (ev) => {
+        const mode = ev?.detail?.mode;
+        if (!mode) return;
+        if (mode === 'home-control' && !this._hass?.user?.is_admin) {
+            this._showToast('Admin only');
+            return;
+        }
+        this._setAddDialogMode(mode);
+    };
+
     _onFab = () => {
-        const screen = this._screen || 'schedule';
-        if (screen === 'home' || screen === 'settings') return;
         this._closeAllDialogs();
         this._dialogOpen = true;
-        if (screen === 'chores') {
-            this._dialogMode = 'todo';
-            this._dialogTitle = 'Add chore';
-            this._dialogItem = null;
-            this._dialogEntity = '';
-        } else if (screen === 'shopping') {
-            this._dialogMode = 'shopping';
-            this._dialogTitle = 'Add shopping item';
-            this._dialogItem = null;
-            this._dialogEntity = '';
-        } else {
-            this._dialogMode = 'calendar';
-            this._dialogTitle = 'Add event';
-            this._dialogItem = null;
-            this._dialogEntity = '';
-            this._dialogStartValue = '';
-            this._dialogEndValue = '';
-        }
+        const screen = this._screen || 'schedule';
+        this._openAddDialogForScreen(screen === 'settings' ? 'schedule' : screen);
     };
 
     _toLocalDateTimeValue(date) {
@@ -1198,22 +1467,43 @@ class FamilyBoardCard extends LitElement {
     }
 
     _openTodoAddForEntity(entityId) {
-        if (!entityId) return;
         this._closeAllDialogs();
         this._dialogOpen = true;
         this._dialogMode = 'todo';
         this._dialogTitle = 'Add chore';
         this._dialogItem = null;
-        this._dialogEntity = entityId;
+        this._dialogEntity = entityId || '';
+    }
+
+    _openTodoAddForPerson(personId, fallbackEntityId) {
+        const todos = Array.isArray(this._config?.todos) ? this._config.todos : [];
+        const target = this._normalisePersonId(personId);
+        let entityId = fallbackEntityId || '';
+        if (target) {
+            const match = todos.find((t) => {
+                const mappedId = this._normalisePersonId(this._personIdForConfig(t, t.entity));
+                return mappedId && mappedId === target;
+            });
+            if (match?.entity) entityId = match.entity;
+        }
+        this._openTodoAddForEntity(entityId);
     }
 
     _onAddCalendar = async (ev) => {
         const { entityId, summary, start, end } = ev?.detail || {};
         if (!entityId || !summary || !start || !end) return;
         if (!this._calendarSupports(entityId, CALENDAR_FEATURES.CREATE)) return;
-        this._optimisticCalendarAdd(entityId, { summary, start, end, allDay: false });
+        const optimistic = this._optimisticCalendarAdd(entityId, {
+            summary,
+            start,
+            end,
+            allDay: false,
+        });
         try {
             await this._calendarService.createEvent(this._hass, entityId, { summary, start, end });
+        } catch (error) {
+            this._optimisticCalendarRemove(entityId, optimistic);
+            this._showErrorToast('Add event');
         } finally {
             this._queueRefresh();
         }
@@ -1225,7 +1515,21 @@ class FamilyBoardCard extends LitElement {
             name: text,
             item: text,
             status: 'needs_action',
+            _fbKey: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         };
+    }
+
+    _todoItemKey(item) {
+        if (!item || typeof item !== 'object') return '';
+        return (
+            item.id ||
+            item.uid ||
+            item._fbKey ||
+            item.item ||
+            item.summary ||
+            item.name ||
+            ''
+        );
     }
 
     _optimisticTodoAdd(entityId, text) {
@@ -1235,6 +1539,7 @@ class FamilyBoardCard extends LitElement {
         const next = this._buildTodoItem(text);
         list.push(next);
         this._todoItems = { ...(this._todoItems || {}), [entityId]: list };
+        this._todoRenderTick += 1;
         this.requestUpdate();
         return next;
     }
@@ -1243,8 +1548,18 @@ class FamilyBoardCard extends LitElement {
         const list = Array.isArray(this._todoItems?.[entityId])
             ? [...this._todoItems[entityId]]
             : [];
+        const targetKey = this._todoItemKey(item);
         const nextList = list.map((entry) => {
-            if (entry !== item) return entry;
+            if (entry === item) {
+                return {
+                    ...entry,
+                    summary: text,
+                    name: text,
+                    item: text,
+                };
+            }
+            if (!targetKey) return entry;
+            if (this._todoItemKey(entry) !== targetKey) return entry;
             return {
                 ...entry,
                 summary: text,
@@ -1253,6 +1568,7 @@ class FamilyBoardCard extends LitElement {
             };
         });
         this._todoItems = { ...(this._todoItems || {}), [entityId]: nextList };
+        this._todoRenderTick += 1;
         this.requestUpdate();
     }
 
@@ -1260,8 +1576,14 @@ class FamilyBoardCard extends LitElement {
         const list = Array.isArray(this._todoItems?.[entityId])
             ? this._todoItems[entityId]
             : [];
-        const nextList = list.filter((entry) => entry !== item);
+        const targetKey = this._todoItemKey(item);
+        const nextList = list.filter((entry) => {
+            if (entry === item) return false;
+            if (!targetKey) return true;
+            return this._todoItemKey(entry) !== targetKey;
+        });
         this._todoItems = { ...(this._todoItems || {}), [entityId]: nextList };
+        this._todoRenderTick += 1;
         this.requestUpdate();
     }
 
@@ -1269,22 +1591,29 @@ class FamilyBoardCard extends LitElement {
         const list = Array.isArray(this._todoItems?.[entityId])
             ? [...this._todoItems[entityId]]
             : [];
+        const targetKey = this._todoItemKey(item);
         const nextList = list.map((entry) => {
-            if (entry !== item) return entry;
+            if (entry === item) {
+                return { ...entry, status: completed ? 'completed' : 'needs_action' };
+            }
+            if (!targetKey) return entry;
+            if (this._todoItemKey(entry) !== targetKey) return entry;
             return { ...entry, status: completed ? 'completed' : 'needs_action' };
         });
         this._todoItems = { ...(this._todoItems || {}), [entityId]: nextList };
+        this._todoRenderTick += 1;
         this.requestUpdate();
     }
 
     _onAddTodo = async (ev) => {
         const { entityId, text } = ev?.detail || {};
         if (!entityId || !text) return;
-        this._optimisticTodoAdd(entityId, text);
+        const optimistic = this._optimisticTodoAdd(entityId, text);
         try {
             await this._todoService.addItem(this._hass, entityId, text);
-        } finally {
-            await this._refreshTodoEntity(entityId);
+        } catch (error) {
+            this._optimisticTodoRemove(entityId, optimistic);
+            this._showErrorToast('Add chore');
         }
     };
 
@@ -1294,12 +1623,38 @@ class FamilyBoardCard extends LitElement {
         await this._addShoppingItem(text);
     };
 
+    _onAddHomeControl = async (ev) => {
+        const entityId = ev?.detail?.entityId;
+        if (!entityId) return;
+        if (!this._hasAdminAccess()) return;
+        const controls = Array.isArray(this._config?.home_controls)
+            ? this._config.home_controls
+            : [];
+        if (controls.includes(entityId)) {
+            this._showToast('Already added');
+            return;
+        }
+        await this._updateConfigPartial({ home_controls: [...controls, entityId] });
+    };
+
     _onEditTodo = async (ev) => {
         const { entityId, item, text } = ev?.detail || {};
         if (!entityId || !item || !text) return;
+        const previous = {
+            summary: item.summary,
+            name: item.name,
+            item: item.item,
+        };
         this._optimisticTodoUpdate(entityId, item, text);
         try {
             await this._todoService.renameItem(this._hass, entityId, item, text);
+        } catch (error) {
+            this._optimisticTodoUpdate(
+                entityId,
+                item,
+                previous.summary ?? previous.name ?? previous.item ?? ''
+            );
+            this._showErrorToast('Edit chore');
         } finally {
             await this._refreshTodoEntity(entityId);
         }
@@ -1315,7 +1670,7 @@ class FamilyBoardCard extends LitElement {
     };
 
     _openManageSources() {
-        if (!this._hass?.user?.is_admin) return;
+        if (!this._hasAdminAccess()) return;
         this._closeAllDialogs();
         this._sourcesOpen = true;
     }
@@ -1323,9 +1678,12 @@ class FamilyBoardCard extends LitElement {
     _onSourcesSave = async (ev) => {
         const next = ev?.detail?.config;
         if (!next) return;
-        this._applyConfigImmediate({ ...this._config, ...next }, { useDefaults: false });
+        const sharedBase = this._sharedConfig || this._config || {};
+        const nextShared = { ...sharedBase, ...next };
+        this._sharedConfig = nextShared;
+        this._applyConfigImmediate(nextShared, { useDefaults: false });
         await this._refreshAll();
-        const result = await this._persistConfig({ ...this._config, ...next });
+        const result = await this._persistConfig(nextShared);
         if (result?.mode === 'local') {
             this._showToast('Saved', 'Saved on this device');
         } else {
@@ -1336,14 +1694,62 @@ class FamilyBoardCard extends LitElement {
 
     async _updateConfigPartial(patch) {
         if (!patch) return;
-        const next = { ...this._config, ...patch };
-        this._applyConfigImmediate(next, { useDefaults: false });
+        const deviceKeys = new Set([
+            'day_start_hour',
+            'day_end_hour',
+            'px_per_hour',
+            'refresh_interval_ms',
+            'accent_teal',
+            'accent_lilac',
+            'background_theme',
+            'debug',
+            'people_display',
+        ]);
+        const devicePatch = {};
+        const sharedPatch = {};
+        for (const [key, value] of Object.entries(patch)) {
+            if (deviceKeys.has(key)) devicePatch[key] = value;
+            else sharedPatch[key] = value;
+        }
+
+        if (Object.keys(devicePatch).length) {
+            if (devicePatch.day_start_hour !== undefined)
+                this._deviceDayStartHour = Number(devicePatch.day_start_hour);
+            if (devicePatch.day_end_hour !== undefined)
+                this._deviceDayEndHour = Number(devicePatch.day_end_hour);
+            if (devicePatch.px_per_hour !== undefined)
+                this._devicePxPerHour = Number(devicePatch.px_per_hour);
+            if (devicePatch.refresh_interval_ms !== undefined)
+                this._deviceRefreshMs = Number(devicePatch.refresh_interval_ms);
+            if (devicePatch.accent_teal !== undefined)
+                this._deviceAccentTeal = devicePatch.accent_teal || '';
+            if (devicePatch.accent_lilac !== undefined)
+                this._deviceAccentLilac = devicePatch.accent_lilac || '';
+            if (devicePatch.background_theme !== undefined)
+                this._deviceBackgroundTheme = devicePatch.background_theme || '';
+            if (devicePatch.debug !== undefined)
+                this._deviceDebug = Boolean(devicePatch.debug);
+            if (devicePatch.people_display !== undefined)
+                this._devicePeopleDisplay = Array.isArray(devicePatch.people_display)
+                    ? devicePatch.people_display
+                    : [];
+            this._savePrefs();
+        }
+
+        const sharedBase = this._sharedConfig || this._config || {};
+        const nextShared = { ...sharedBase, ...sharedPatch };
+        this._sharedConfig = nextShared;
+        this._applyConfigImmediate(nextShared, { useDefaults: false });
         await this._refreshAll();
-        const result = await this._persistConfig(next);
-        if (result?.mode === 'local') {
-            this._showToast('Saved', 'Saved on this device');
+        if (Object.keys(sharedPatch).length) {
+            const result = await this._persistConfig(nextShared);
+            if (result?.mode === 'local') {
+                this._showToast('Saved', 'Saved on this device');
+            } else {
+                this._showToast('Saved');
+            }
         } else {
-            this._showToast('Saved');
+            this._showToast('Saved', 'Saved on this device');
         }
         this.requestUpdate();
     }
@@ -1385,17 +1791,65 @@ class FamilyBoardCard extends LitElement {
     };
 
     _onOpenEditor = () => {
-        if (!this._hass?.user?.is_admin) return;
+        if (!this._hasAdminAccess()) return;
         fireEvent(this, 'll-edit-card', { card: this });
     };
 
     async _toggleTodoItem(entityId, item, completed) {
         if (!entityId || !item) return;
+        const previous = item.status;
+        const previousDone =
+            ['completed', 'done'].includes(String(previous || '').toLowerCase()) ||
+            Boolean(item.completed);
+        const hasStableId = Boolean(item.id || item.uid);
+        let shouldRefresh = false;
         this._optimisticTodoStatus(entityId, item, completed);
         try {
             await this._todoService.setStatus(this._hass, entityId, item, completed);
+        } catch (error) {
+            if (!hasStableId) {
+                try {
+                    const items = await this._todoService.fetchItems(this._hass, entityId);
+                    const targetKey = this._todoItemKey(item);
+                    const targetText = String(item.summary || item.name || item.item || '').trim();
+                    const match = items.find((entry) => {
+                        if (targetKey && this._todoItemKey(entry) === targetKey) return true;
+                        if (!targetText) return false;
+                        const text = String(
+                            entry.summary || entry.name || entry.item || ''
+                        ).trim();
+                        return text && text.toLowerCase() === targetText.toLowerCase();
+                    });
+                    if (match) {
+                        await this._todoService.setStatus(this._hass, entityId, match, completed);
+                        return;
+                    }
+                } catch {
+                    // fall through to revert + error
+                }
+            }
+            const text = String(item.summary || item.name || item.item || '').trim();
+            if (this._isMissingTodoItemError(error)) {
+                if (!completed && text) {
+                    try {
+                        await this._todoService.addItem(this._hass, entityId, text);
+                        return;
+                    } catch {
+                        // fall through to revert + error
+                    }
+                }
+                if (completed && !hasStableId) {
+                    this._queueTodoStatusRetry(entityId, item, completed, previousDone);
+                    return;
+                }
+            }
+            this._optimisticTodoStatus(entityId, item, previousDone);
+            this._showErrorToast('Update chore');
+            shouldRefresh = true;
         } finally {
-            await this._refreshTodoEntity(entityId);
+            if (shouldRefresh) {
+                await this._refreshTodoEntity(entityId);
+            }
         }
     }
 
@@ -1411,18 +1865,72 @@ class FamilyBoardCard extends LitElement {
 
     async _deleteTodoItem(entityId, item) {
         if (!entityId || !item) return;
+        const previousList = Array.isArray(this._todoItems?.[entityId])
+            ? [...this._todoItems[entityId]]
+            : [];
         this._optimisticTodoRemove(entityId, item);
         try {
             await this._todoService.removeItem(this._hass, entityId, item);
+        } catch (error) {
+            this._restoreTodoList(entityId, previousList);
+            this._showErrorToast('Delete chore');
         } finally {
             await this._refreshTodoEntity(entityId);
         }
     }
 
+    _queueTodoStatusRetry(entityId, item, completed, previousDone) {
+        if (!entityId || !item) return;
+        if (!this._todoStatusRetryTimers) this._todoStatusRetryTimers = new Map();
+        const key = `${entityId}:${this._todoItemKey(item)}`;
+        if (this._todoStatusRetryTimers.has(key)) return;
+        const text = String(item.summary || item.name || item.item || '').trim();
+        const timer = setTimeout(async () => {
+            this._todoStatusRetryTimers.delete(key);
+            try {
+                const items = await this._todoService.fetchItems(this._hass, entityId);
+                const targetKey = this._todoItemKey(item);
+                const targetText = text;
+                const match = items.find((entry) => {
+                    if (targetKey && this._todoItemKey(entry) === targetKey) return true;
+                    if (!targetText) return false;
+                    const entryText = String(
+                        entry.summary || entry.name || entry.item || ''
+                    ).trim();
+                    return entryText && entryText.toLowerCase() === targetText.toLowerCase();
+                });
+                if (match) {
+                    await this._todoService.setStatus(
+                        this._hass,
+                        entityId,
+                        match,
+                        completed
+                    );
+                    return;
+                }
+                if (!completed && targetText) {
+                    await this._todoService.addItem(this._hass, entityId, targetText);
+                    return;
+                }
+                throw new Error('Unable to find to-do list item');
+            } catch {
+                this._optimisticTodoStatus(entityId, item, previousDone);
+                this._showErrorToast('Update chore');
+                await this._refreshTodoEntity(entityId);
+            }
+        }, 600);
+        this._todoStatusRetryTimers.set(key, timer);
+    }
+
     async _clearCompletedTodos(entityId) {
         if (!entityId) return;
-        await this._todoService.clearCompleted(this._hass, entityId);
-        this._queueRefresh();
+        try {
+            await this._todoService.clearCompleted(this._hass, entityId);
+        } catch (error) {
+            this._showErrorToast('Clear completed chores');
+        } finally {
+            this._queueRefresh();
+        }
     }
 
     async _addShoppingItem(text) {
@@ -1433,22 +1941,66 @@ class FamilyBoardCard extends LitElement {
         if (existing) {
             const nextQty = existing.parsed.qty + parsed.qty;
             const nextText = this._formatShoppingText(existing.parsed.base, nextQty);
-            this._trackShoppingCommon(existing.parsed.base);
             await this._updateShoppingItemText(existing.item, nextText);
             return;
         }
         const formatted = this._formatShoppingText(base, parsed.qty);
-        this._optimisticShoppingAdd(formatted);
-        this._trackShoppingCommon(base);
+        const optimistic = this._optimisticShoppingAdd(formatted);
         try {
             await this._shoppingService.addItem(this._hass, this._config?.shopping, formatted);
+        } catch (error) {
+            this._optimisticShoppingRemove(optimistic);
+            this._showErrorToast('Add shopping item');
         } finally {
             await this._refreshShopping();
         }
     }
 
+    async _addShoppingFavourites() {
+        const favs = Array.isArray(this._shoppingFavourites) ? this._shoppingFavourites : [];
+        const common = Array.isArray(this._shoppingCommon) ? this._shoppingCommon : [];
+        const items = [];
+        const seen = new Set();
+        for (const item of [...favs, ...common]) {
+            const text = String(item || '').trim();
+            if (!text) continue;
+            const key = text.toLowerCase();
+            if (seen.has(key)) continue;
+            seen.add(key);
+            items.push(text);
+        }
+        for (const item of items) {
+            await this._addShoppingItem(item);
+        }
+    }
+
+    async _clearShoppingList() {
+        const list = Array.isArray(this._shoppingItems) ? [...this._shoppingItems] : [];
+        if (!list.length) return;
+        this._shoppingItems = [];
+        this.requestUpdate();
+        const results = await Promise.allSettled(
+            list.map((item) =>
+                this._shoppingService.removeItem(this._hass, this._config?.shopping, item)
+            )
+        );
+        const failed = [];
+        results.forEach((result, idx) => {
+            if (result.status !== 'rejected') return;
+            if (this._isMissingTodoItemError(result.reason)) return;
+            failed.push(list[idx]);
+        });
+        if (failed.length) {
+            this._shoppingItems = failed;
+            this._showErrorToast('Clear shopping list');
+        }
+        await this._refreshShopping();
+    }
+
     async _toggleShoppingItem(item, completed) {
         if (!item) return;
+        const previousStatus = item.status;
+        let ok = false;
         this._optimisticShoppingStatus(item, completed);
         if (!completed) {
             this._clearShoppingRemoval(item);
@@ -1460,8 +2012,16 @@ class FamilyBoardCard extends LitElement {
                 item,
                 completed
             );
+            ok = true;
+        } catch (error) {
+            const wasComplete = ['completed', 'done'].includes(
+                String(previousStatus || '').toLowerCase()
+            );
+            this._optimisticShoppingStatus(item, wasComplete);
+            this._clearShoppingRemoval(item);
+            this._showErrorToast('Update shopping item');
         } finally {
-            if (completed) {
+            if (ok && completed) {
                 this._scheduleShoppingRemoval(item);
             } else {
                 await this._refreshShopping();
@@ -1481,10 +2041,16 @@ class FamilyBoardCard extends LitElement {
 
     async _deleteShoppingItem(item) {
         if (!item) return;
+        const previousList = Array.isArray(this._shoppingItems) ? [...this._shoppingItems] : [];
         this._clearShoppingRemoval(item);
         this._optimisticShoppingRemove(item);
         try {
             await this._shoppingService.removeItem(this._hass, this._config?.shopping, item);
+        } catch (error) {
+            if (!this._isMissingTodoItemError(error)) {
+                this._restoreShoppingList(previousList);
+                this._showErrorToast('Delete shopping item');
+            }
         } finally {
             await this._refreshShopping();
         }
@@ -1528,7 +2094,94 @@ class FamilyBoardCard extends LitElement {
             defaultEventMinutes: this._defaultEventMinutes,
             shoppingCommon: this._shoppingCommon,
             shoppingFavourites: this._shoppingFavourites,
+            adminUnlocked: Boolean(this._adminUnlocked),
+            defaultView: this._defaultView || 'schedule',
+            dayStartHour: this._deviceDayStartHour ?? null,
+            dayEndHour: this._deviceDayEndHour ?? null,
+            pxPerHour: this._devicePxPerHour ?? null,
+            refreshIntervalMs: this._deviceRefreshMs ?? null,
+            accentTeal: this._deviceAccentTeal ?? null,
+            accentLilac: this._deviceAccentLilac ?? null,
+            backgroundTheme: this._deviceBackgroundTheme ?? null,
+            debug: this._deviceDebug ?? null,
+            peopleDisplay: Array.isArray(this._devicePeopleDisplay)
+                ? this._devicePeopleDisplay
+                : null,
         });
+    }
+
+    _resetPrefsToDefaults() {
+        const userId = this._hass?.user?.id;
+        if (!userId) return;
+        savePrefs(userId, {});
+        this._prefsLoaded = false;
+        this._personFilterSet = new Set();
+        this._useMobileView = getDeviceKind() === 'mobile';
+        this._sidebarCollapsed = false;
+        this._adminUnlocked = false;
+        this._defaultView = 'schedule';
+        this._deviceDayStartHour = null;
+        this._deviceDayEndHour = null;
+        this._devicePxPerHour = null;
+        this._deviceRefreshMs = null;
+        this._deviceAccentTeal = null;
+        this._deviceAccentLilac = null;
+        this._deviceBackgroundTheme = null;
+        this._deviceDebug = null;
+        this._devicePeopleDisplay = null;
+        this._slotMinutes = 30;
+        this._defaultEventMinutes = 30;
+        this._shoppingCommon = DEFAULT_COMMON_ITEMS.slice();
+        this._shoppingFavourites = [];
+        this._loadPrefs();
+        this._applyConfigImmediate(this._config || {}, { useDefaults: true, refresh: true });
+        this.requestUpdate();
+    }
+
+    _setDefaultViewPref(view) {
+        if (!['schedule', 'important', 'chores', 'shopping', 'home', 'settings'].includes(view))
+            return;
+        this._defaultView = view;
+        this._savePrefs();
+    }
+
+    _setSidebarCollapsedPref(collapsed) {
+        this._sidebarCollapsed = Boolean(collapsed);
+        this._savePrefs();
+        this.requestUpdate();
+    }
+
+    _hasAdminAccess() {
+        return Boolean(this._hass?.user?.is_admin || this._adminUnlocked);
+    }
+
+    _tryAdminUnlock(pin) {
+        const configured = String(this._config?.admin_pin || '');
+        if (!configured) {
+            this._showToast('No admin PIN set');
+            return false;
+        }
+        if (String(pin || '') === configured) {
+            this._adminUnlocked = true;
+            this._savePrefs();
+            this._showToast('Admin access unlocked');
+            this.requestUpdate();
+            return true;
+        }
+        this._showErrorToast('Invalid PIN');
+        return false;
+    }
+
+    _lockAdminAccess() {
+        this._adminUnlocked = false;
+        this._savePrefs();
+        this._showToast('Admin access locked');
+        this.requestUpdate();
+    }
+
+    async _setAdminPin(pin) {
+        const trimmed = String(pin || '').trim();
+        await this._updateConfigPartial({ admin_pin: trimmed || '' });
     }
 
     _setMobileView(enabled) {
@@ -1552,17 +2205,41 @@ class FamilyBoardCard extends LitElement {
         this._savePrefs();
     }
 
+    async _setDayRange({ startHour, endHour }) {
+        const slotMinutes = Number(this._slotMinutes || 30);
+        const minGapHours = slotMinutes / 60;
+        const start = Math.min(24, Math.max(0, Number(startHour)));
+        const end = Math.min(24, Math.max(0, Number(endHour)));
+        if (!Number.isFinite(start) || !Number.isFinite(end)) return;
+        if (end <= start + minGapHours) {
+            this._showErrorToast('Invalid time range');
+            return;
+        }
+        await this._updateConfigPartial({
+            day_start_hour: start,
+            day_end_hour: end,
+        });
+    }
+
     _toggleShoppingFavourite(name) {
         const parsed = this._parseShoppingText(name);
         const text = String(parsed.base || '').trim();
         if (!text) return;
         const key = text.toLowerCase();
-        const list = Array.isArray(this._shoppingFavourites) ? this._shoppingFavourites : [];
-        const exists = list.some((item) => String(item).toLowerCase() === key);
-        this._shoppingFavourites = exists
-            ? list.filter((item) => String(item).toLowerCase() !== key)
-            : [text, ...list];
-        if (!exists) this._trackShoppingCommon(text);
+        const favs = Array.isArray(this._shoppingFavourites) ? this._shoppingFavourites : [];
+        const common = Array.isArray(this._shoppingCommon) ? this._shoppingCommon : [];
+        const exists =
+            favs.some((item) => String(item).toLowerCase() === key) ||
+            common.some((item) => String(item).toLowerCase() === key);
+        if (exists) {
+            this._shoppingFavourites = favs.filter(
+                (item) => String(item).toLowerCase() !== key
+            );
+            this._shoppingCommon = common.filter((item) => String(item).toLowerCase() !== key);
+        } else {
+            this._shoppingFavourites = [text, ...favs];
+            this._trackShoppingCommon(text);
+        }
         this._savePrefs();
         this.requestUpdate();
     }
@@ -1583,6 +2260,20 @@ class FamilyBoardCard extends LitElement {
         const key = text.toLowerCase();
         const list = Array.isArray(this._shoppingCommon) ? this._shoppingCommon : [];
         this._shoppingCommon = list.filter((item) => String(item).toLowerCase() !== key);
+        this._savePrefs();
+        this.requestUpdate();
+    }
+
+    _resetShoppingFavouritesDefaults() {
+        this._shoppingFavourites = [];
+        this._shoppingCommon = DEFAULT_COMMON_ITEMS.slice();
+        this._savePrefs();
+        this.requestUpdate();
+    }
+
+    _clearShoppingFavourites() {
+        this._shoppingFavourites = [];
+        this._shoppingCommon = [];
         this._savePrefs();
         this.requestUpdate();
     }
@@ -1668,17 +2359,34 @@ class FamilyBoardCard extends LitElement {
 
     async _updateShoppingItemText(item, text) {
         if (!item || !text) return;
+        const previousText = this._shoppingItemText(item);
         this._optimisticShoppingUpdate(item, text);
         const supportsUpdate = this._supportsService('todo', 'update_item');
         try {
             if (supportsUpdate) {
-                await this._shoppingService.updateItem(this._hass, this._config?.shopping, item, {
-                    rename: text,
-                });
+                await this._shoppingService.updateItem(
+                    this._hass,
+                    this._config?.shopping,
+                    previousText,
+                    {
+                        rename: text,
+                    }
+                );
             } else {
-                await this._shoppingService.removeItem(this._hass, this._config?.shopping, item);
+                await this._shoppingService.removeItem(
+                    this._hass,
+                    this._config?.shopping,
+                    previousText
+                );
                 await this._shoppingService.addItem(this._hass, this._config?.shopping, text);
             }
+        } catch (error) {
+            if (this._isMissingTodoItemError(error)) {
+                await this._refreshShopping();
+                return;
+            }
+            if (previousText) this._optimisticShoppingUpdate(item, previousText);
+            this._showErrorToast('Edit shopping item');
         } finally {
             await this._refreshShopping();
         }
@@ -1722,6 +2430,7 @@ class FamilyBoardCard extends LitElement {
             item._fbPendingRemove = true;
             item._fbRemoving = false;
         }
+        const previousList = Array.isArray(this._shoppingItems) ? [...this._shoppingItems] : [];
         this.requestUpdate();
         const timer = setTimeout(() => {
             if (typeof item === 'object') {
@@ -1736,12 +2445,17 @@ class FamilyBoardCard extends LitElement {
                         this._config?.shopping,
                         item
                     );
+                } catch (error) {
+                    if (!this._isMissingTodoItemError(error)) {
+                        this._restoreShoppingList(previousList);
+                        this._showErrorToast('Remove shopping item');
+                    }
                 } finally {
                     if (this._shoppingRemoveTimers) this._shoppingRemoveTimers.delete(item);
                     await this._refreshShopping();
                 }
             }, 300);
-        }, 3500);
+        }, 10_000);
         if (this._shoppingRemoveTimers) this._shoppingRemoveTimers.set(item, timer);
     }
 
@@ -1754,6 +2468,61 @@ class FamilyBoardCard extends LitElement {
     _todayRange() {
         const today = startOfDay(new Date());
         return { start: startOfDay(today), end: endOfDay(today) };
+    }
+
+    _binIndicators() {
+        const today = startOfDay(new Date());
+        const tomorrow = addDays(today, 1);
+        const todayBins = this._binsDueOn(today);
+        const tomorrowBins = this._binsDueOn(tomorrow);
+        return { today: todayBins, tomorrow: tomorrowBins };
+    }
+
+    _binsDueOn(date) {
+        const bins = Array.isArray(this._config?.bins) ? this._config.bins : [];
+        const schedule = this._config?.bin_schedule || {};
+        const mode = schedule.mode || 'simple';
+        const activeBins = bins.filter((b) => b && b.enabled !== false);
+        if (!activeBins.length) return [];
+        const day = startOfDay(date);
+
+        if (mode === 'rotation') {
+            const rotation = schedule.rotation || {};
+            const weekday = Number(rotation.weekday);
+            if (!Number.isFinite(weekday)) return [];
+            const anchor = rotation.anchor_date ? new Date(rotation.anchor_date) : null;
+            if (!anchor || Number.isNaN(anchor.getTime())) return [];
+            const weeks = Array.isArray(rotation.weeks) ? rotation.weeks : [];
+            if (!weeks.length) return [];
+            if (day.getDay() !== weekday) return [];
+            const anchorStart = startOfDay(anchor);
+            const diffMs = day.getTime() - anchorStart.getTime();
+            const weeksDiff = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000));
+            if (weeksDiff < 0) return [];
+            const index = weeksDiff % weeks.length;
+            const binsForWeek = Array.isArray(weeks[index]?.bins)
+                ? weeks[index].bins
+                : [];
+            const allowed = new Set(binsForWeek);
+            return activeBins.filter((b) => allowed.has(b.id));
+        }
+
+        const simple = schedule.simple || {};
+        return activeBins.filter((bin) => {
+            const cfg = simple?.[bin.id] || {};
+            const weekday = Number(cfg.weekday);
+            const every = Number(cfg.every) || 1;
+            if (!Number.isFinite(weekday)) return false;
+            if (!cfg.anchor_date) return false;
+            const anchor = new Date(cfg.anchor_date);
+            if (Number.isNaN(anchor.getTime())) return false;
+            if (day.getDay() !== weekday) return false;
+            const anchorStart = startOfDay(anchor);
+            const diffMs = day.getTime() - anchorStart.getTime();
+            const weeksDiff = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000));
+            if (weeksDiff < 0) return false;
+            return weeksDiff % every === 0;
+        });
     }
 
     _openEventDialog(entityId, event) {
@@ -1788,6 +2557,12 @@ class FamilyBoardCard extends LitElement {
         const { entityId, event, summary, start, end, allDay } = ev?.detail || {};
         if (!entityId || !event) return;
         if (!this._calendarSupports(entityId, CALENDAR_FEATURES.UPDATE)) return;
+        const previous = {
+            summary: event.summary,
+            start: event._start,
+            end: event._end,
+            allDay: event.all_day,
+        };
         this._optimisticCalendarUpdate(entityId, event, { summary, start, end, allDay });
         try {
             await this._calendarService.updateEvent(this._hass, entityId, event, {
@@ -1796,6 +2571,14 @@ class FamilyBoardCard extends LitElement {
                 end,
                 allDay,
             });
+        } catch (error) {
+            this._optimisticCalendarUpdate(entityId, event, {
+                summary: previous.summary,
+                start: previous.start,
+                end: previous.end,
+                allDay: previous.allDay,
+            });
+            this._showErrorToast('Edit event');
         } finally {
             this._queueRefresh();
         }
@@ -1808,6 +2591,9 @@ class FamilyBoardCard extends LitElement {
         this._optimisticCalendarRemove(entityId, event);
         try {
             await this._calendarService.deleteEvent(this._hass, entityId, event);
+        } catch (error) {
+            this._restoreCalendarEvent(entityId, event);
+            this._showErrorToast('Delete event');
         } finally {
             this._queueRefresh();
         }
@@ -1909,8 +2695,21 @@ class FamilyBoardCard extends LitElement {
                 push(`  - id: ${p.id}`);
                 if (p.name) push(`    name: ${p.name}`);
                 if (p.color) push(`    color: '${p.color}'`);
+                if (p.text_color) push(`    text_color: '${p.text_color}'`);
+                if (p.role) push(`    role: ${p.role}`);
                 if (p.header_row) push(`    header_row: ${p.header_row}`);
             }
+        }
+        const peopleDisplay = Array.isArray(draft.people_display) ? draft.people_display : [];
+        if (peopleDisplay.length) {
+            push(`people_display:`);
+            for (const id of peopleDisplay) {
+                push(`  - ${id}`);
+            }
+        }
+
+        if (draft.admin_pin !== undefined) {
+            push(`admin_pin: '${draft.admin_pin}'`);
         }
 
         const calendars = Array.isArray(draft.calendars) ? draft.calendars : [];
@@ -1960,6 +2759,7 @@ class FamilyBoardCard extends LitElement {
         if (!this._yamlConfig) return;
         const stored = this._storedConfig;
         const resolved = stored ? this._mergeConfig(this._yamlConfig, stored) : this._yamlConfig;
+        this._sharedConfig = resolved;
         debugLog(this._debug, 'resolveConfig precedence', {
             hasStored: Boolean(stored),
             persist: this._persistMode || 'none',
@@ -2011,6 +2811,9 @@ class FamilyBoardCard extends LitElement {
         if (override.calendars) merged.calendars = override.calendars;
         if (override.todos) merged.todos = override.todos;
         if (override.shopping) merged.shopping = { ...(base.shopping || {}), ...override.shopping };
+        if (override.home_controls) merged.home_controls = override.home_controls;
+        if (override.title !== undefined) merged.title = override.title;
+        if (override.admin_pin !== undefined) merged.admin_pin = override.admin_pin;
         return merged;
     }
 
@@ -2043,6 +2846,7 @@ class FamilyBoardCard extends LitElement {
         if (ok) {
             this._persistMode = 'ws';
             this._storedConfig = config;
+            this._sharedConfig = config;
             this._storageLoaded = true;
             debugLog(this._debug, 'persistConfig', { mode: 'ws' });
             return { ok: true, mode: 'ws' };
@@ -2050,6 +2854,7 @@ class FamilyBoardCard extends LitElement {
         this._persistMode = 'local';
         this._saveLocalConfig(config);
         this._storedConfig = config;
+        this._sharedConfig = config;
         this._storageLoaded = true;
         debugLog(this._debug, 'persistConfig', { mode: 'local' });
         return { ok: true, mode: 'local' };
@@ -2083,6 +2888,48 @@ class FamilyBoardCard extends LitElement {
         }, 2000);
     }
 
+    _showErrorToast(action, detail = '') {
+        const message = action ? `${action} failed` : 'Action failed';
+        this._showToast(message, detail);
+    }
+
+    _isMissingTodoItemError(error) {
+        const msg = String(error?.message || error || '').toLowerCase();
+        return msg.includes('unable to find to-do list item');
+    }
+
+    _shouldNotifyError(key, intervalMs = 30_000) {
+        if (!key) return false;
+        const now = Date.now();
+        const last = this._errorToastTs?.get(key) || 0;
+        if (now - last < intervalMs) return false;
+        if (this._errorToastTs) this._errorToastTs.set(key, now);
+        return true;
+    }
+
+    _restoreCalendarEvent(entityId, event) {
+        if (!entityId || !event) return;
+        const list = Array.isArray(this._eventsByEntity?.[entityId])
+            ? [...this._eventsByEntity[entityId]]
+            : [];
+        if (!list.includes(event)) list.push(event);
+        this._eventsByEntity = { ...(this._eventsByEntity || {}), [entityId]: list };
+        this._eventsVersion = (this._eventsVersion || 0) + 1;
+        this.requestUpdate();
+    }
+
+    _restoreTodoList(entityId, list) {
+        if (!entityId || !Array.isArray(list)) return;
+        this._todoItems = { ...(this._todoItems || {}), [entityId]: list };
+        this.requestUpdate();
+    }
+
+    _restoreShoppingList(list) {
+        if (!Array.isArray(list)) return;
+        this._shoppingItems = list;
+        this.requestUpdate();
+    }
+
     _openEditor() {
         this._closeAllDialogs();
         this._onOpenEditor();
@@ -2097,40 +2944,53 @@ class FamilyBoardCard extends LitElement {
     }
 
     _applyConfigImmediate(config, { useDefaults = false, refresh = false } = {}) {
-        this._config = config;
-        this._debug = Boolean(config.debug);
+        const merged = { ...(config || {}) };
+        if (this._deviceDayStartHour !== null) merged.day_start_hour = this._deviceDayStartHour;
+        if (this._deviceDayEndHour !== null) merged.day_end_hour = this._deviceDayEndHour;
+        if (this._devicePxPerHour !== null) merged.px_per_hour = this._devicePxPerHour;
+        if (this._deviceRefreshMs !== null) merged.refresh_interval_ms = this._deviceRefreshMs;
+        if (this._deviceAccentTeal !== null) merged.accent_teal = this._deviceAccentTeal;
+        if (this._deviceAccentLilac !== null) merged.accent_lilac = this._deviceAccentLilac;
+        if (this._deviceBackgroundTheme !== null)
+            merged.background_theme = this._deviceBackgroundTheme;
+        if (this._deviceDebug !== null) merged.debug = this._deviceDebug;
+        if (Array.isArray(this._devicePeopleDisplay))
+            merged.people_display = this._devicePeopleDisplay;
+
+        this._config = merged;
+        this._debug = Boolean(merged.debug);
 
         const dayStart = useDefaults ? 6 : this._dayStartHour ?? 6;
-        const dayEnd = useDefaults ? 22 : this._dayEndHour ?? 22;
+        const dayEnd = useDefaults ? 24 : this._dayEndHour ?? 24;
         const slotMinutes = useDefaults ? 30 : this._slotMinutes ?? 30;
         const pxPerHour = useDefaults ? 120 : this._pxPerHour ?? 120;
         const refreshMs = useDefaults ? 300_000 : this._refreshIntervalMs ?? 300_000;
 
-        this._dayStartHour = config.day_start_hour ?? dayStart;
-        this._dayEndHour = config.day_end_hour ?? dayEnd;
-        this._slotMinutes = config.slot_minutes ?? slotMinutes;
-        this._pxPerHour = config.px_per_hour ?? pxPerHour;
-        const daysToShow = config.days_to_show ?? 5;
+        this._dayStartHour = merged.day_start_hour ?? dayStart;
+        this._dayEndHour = merged.day_end_hour ?? dayEnd;
+        this._slotMinutes = merged.slot_minutes ?? slotMinutes;
+        this._pxPerHour = merged.px_per_hour ?? pxPerHour;
+        const daysToShow = merged.days_to_show ?? 5;
         this._daysToShow = daysToShow;
         this._scheduleDays = daysToShow;
-        this._refreshIntervalMs = config.refresh_interval_ms ?? refreshMs;
+        this._refreshIntervalMs = merged.refresh_interval_ms ?? refreshMs;
 
         const accentTeal =
-            typeof config.accent_teal === 'string' ? config.accent_teal.trim() : '';
+            typeof merged.accent_teal === 'string' ? merged.accent_teal.trim() : '';
         if (accentTeal) {
             this.style.setProperty('--fb-accent-teal', accentTeal);
         } else {
             this.style.removeProperty('--fb-accent-teal');
         }
         const accentLilac =
-            typeof config.accent_lilac === 'string' ? config.accent_lilac.trim() : '';
+            typeof merged.accent_lilac === 'string' ? merged.accent_lilac.trim() : '';
         if (accentLilac) {
             this.style.setProperty('--fb-accent', accentLilac);
         } else {
             this.style.removeProperty('--fb-accent');
         }
         const backgroundTheme =
-            typeof config.background_theme === 'string' ? config.background_theme.trim() : '';
+            typeof merged.background_theme === 'string' ? merged.background_theme.trim() : '';
         const themeMap = {
             mint: '#f2fbf7',
             sand: '#fff5e8',

@@ -15,7 +15,7 @@ export class FbHomeView extends LitElement {
         .wrap {
             height: 100%;
             overflow: auto;
-            padding: 10px;
+            padding: var(--fb-gutter);
             box-sizing: border-box;
         }
         .grid {
@@ -41,6 +41,7 @@ export class FbHomeView extends LitElement {
             gap: 12px;
             justify-content: space-between;
             width: 100%;
+            min-height: var(--fb-touch);
         }
         .name {
             font-weight: 700;
@@ -54,8 +55,8 @@ export class FbHomeView extends LitElement {
         .toggle {
             position: relative;
             display: inline-block;
-            width: 46px;
-            height: 26px;
+            width: var(--fb-touch);
+            height: var(--fb-touch);
         }
         .toggle input {
             opacity: 0;
@@ -74,10 +75,10 @@ export class FbHomeView extends LitElement {
         .slider::before {
             position: absolute;
             content: '';
-            height: 20px;
-            width: 20px;
-            left: 3px;
-            top: 2px;
+            height: 24px;
+            width: 24px;
+            left: 6px;
+            top: 6px;
             background-color: var(--fb-surface);
             border: 1px solid var(--fb-border);
             border-radius: 50%;

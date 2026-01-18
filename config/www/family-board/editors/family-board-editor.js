@@ -86,11 +86,23 @@ export class FamilyBoardEditor extends LitElement {
         return Boolean(this.hass?.states?.[entityId]);
     }
 
+    _entityOptions(list, current) {
+        const options = Array.isArray(list) ? [...list] : [];
+        const value = String(current || '').trim();
+        if (value && !options.includes(value)) {
+            options.unshift(value);
+        }
+        return options;
+    }
+
     render() {
         const cfg = this._config || {};
         const people = Array.isArray(cfg.people) ? cfg.people : [];
         const calendars = Array.isArray(cfg.calendars) ? cfg.calendars : [];
         const todos = Array.isArray(cfg.todos) ? cfg.todos : [];
+        const stateIds = Object.keys(this.hass?.states || {});
+        const calendarEntities = stateIds.filter((id) => id.startsWith('calendar.'));
+        const todoEntities = stateIds.filter((id) => id.startsWith('todo.'));
 
         return html`
             <div class="section">
@@ -145,7 +157,7 @@ export class FamilyBoardEditor extends LitElement {
                     <input
                         type="number"
                         placeholder="Day end hour"
-                        .value=${cfg.day_end_hour ?? 22}
+                        .value=${cfg.day_end_hour ?? 24}
                         @input=${(e) =>
                             this._updateConfig({ day_end_hour: Number(e.target.value) })}
                     />
@@ -229,22 +241,30 @@ export class FamilyBoardEditor extends LitElement {
                 ${calendars.map(
                     (c, idx) => html`
                         <div class="row calendars">
-                            <input
-                                placeholder="calendar.entity"
+                            <select
                                 .value=${c.entity || ''}
-                                @input=${(e) => {
+                                @change=${(e) => {
                                     c.entity = e.target.value;
                                     this._updateConfig({ calendars: [...calendars] });
                                 }}
-                            />
-                            <input
-                                placeholder="person_id"
+                            >
+                                <option value="">Select calendar</option>
+                                ${this._entityOptions(calendarEntities, c.entity).map(
+                                    (id) => html`<option value=${id}>${id}</option>`
+                                )}
+                            </select>
+                            <select
                                 .value=${c.person_id || ''}
-                                @input=${(e) => {
+                                @change=${(e) => {
                                     c.person_id = e.target.value;
                                     this._updateConfig({ calendars: [...calendars] });
                                 }}
-                            />
+                            >
+                                <option value="">Select person</option>
+                                ${people.map(
+                                    (p) => html`<option value=${p.id}>${p.name || p.id}</option>`
+                                )}
+                            </select>
                             <select
                                 .value=${c.role || ''}
                                 @change=${(e) => {
@@ -292,14 +312,18 @@ export class FamilyBoardEditor extends LitElement {
                 ${todos.map(
                     (t, idx) => html`
                         <div class="row">
-                            <input
-                                placeholder="todo.entity"
+                            <select
                                 .value=${t.entity || ''}
-                                @input=${(e) => {
+                                @change=${(e) => {
                                     t.entity = e.target.value;
                                     this._updateConfig({ todos: [...todos] });
                                 }}
-                            />
+                            >
+                                <option value="">Select todo list</option>
+                                ${this._entityOptions(todoEntities, t.entity).map(
+                                    (id) => html`<option value=${id}>${id}</option>`
+                                )}
+                            </select>
                             <input
                                 placeholder="name"
                                 .value=${t.name || ''}
@@ -308,14 +332,18 @@ export class FamilyBoardEditor extends LitElement {
                                     this._updateConfig({ todos: [...todos] });
                                 }}
                             />
-                            <input
-                                placeholder="person_id"
+                            <select
                                 .value=${t.person_id || ''}
-                                @input=${(e) => {
+                                @change=${(e) => {
                                     t.person_id = e.target.value;
                                     this._updateConfig({ todos: [...todos] });
                                 }}
-                            />
+                            >
+                                <option value="">Select person</option>
+                                ${people.map(
+                                    (p) => html`<option value=${p.id}>${p.name || p.id}</option>`
+                                )}
+                            </select>
                             <div class="note">
                                 ${t.entity && !this._entityExists(t.entity)
                                     ? 'Entity not found'
@@ -350,14 +378,18 @@ export class FamilyBoardEditor extends LitElement {
             <div class="section">
                 <div style="font-weight:700">Shopping</div>
                 <div class="row small">
-                    <input
-                        placeholder="todo.shopping_list_2"
+                    <select
                         .value=${cfg.shopping?.entity || ''}
-                        @input=${(e) =>
+                        @change=${(e) =>
                             this._updateConfig({
                                 shopping: { ...(cfg.shopping || {}), entity: e.target.value },
                             })}
-                    />
+                    >
+                        <option value="">Select shopping list</option>
+                        ${this._entityOptions(todoEntities, cfg.shopping?.entity).map(
+                            (id) => html`<option value=${id}>${id}</option>`
+                        )}
+                    </select>
                 </div>
                 ${cfg.shopping?.entity && !this._entityExists(cfg.shopping.entity)
                     ? html`<div class="note">Entity not found</div>`

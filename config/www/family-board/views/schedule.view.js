@@ -81,7 +81,7 @@ export class FbScheduleView extends LitElement {
         .wrap {
             height: 100%;
             overflow: hidden;
-            padding: 16px;
+            padding: var(--fb-gutter);
             background: var(--fb-bg);
             display: flex;
             flex-direction: column;
@@ -143,17 +143,17 @@ export class FbScheduleView extends LitElement {
             border: 1px solid var(--fb-border);
         }
         .gutterHead {
-            height: 56px;
+            height: 44px;
             background: transparent;
             border: 0;
         }
         .gutterAllDay {
-            min-height: 52px;
+            min-height: 42px;
             display: flex;
             align-items: center;
             justify-content: flex-end;
-            padding: 8px;
-            font-size: 14px;
+            padding: 6px;
+            font-size: 12px;
             color: var(--fb-muted);
         }
         .gutterTimes {
@@ -184,15 +184,37 @@ export class FbScheduleView extends LitElement {
             opacity: 0.7;
         }
         .dayHead {
-            height: 56px;
+            min-height: 44px;
             border-radius: 10px;
             border: 1px solid var(--fb-border);
             background: var(--fb-surface);
-            padding: 8px;
+            padding: 6px 8px;
             display: flex;
-            flex-direction: column;
-            justify-content: center;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .dayPips {
+            display: flex;
             gap: 4px;
+            flex-wrap: nowrap;
+            justify-content: flex-end;
+            align-items: center;
+            margin-left: auto;
+        }
+        .dayPip {
+            width: 20px;
+            height: 20px;
+            border-radius: 999px;
+            border: 2px solid transparent;
+            box-sizing: border-box;
+            display: inline-grid;
+            place-items: center;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--fb-text);
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
         }
         .dayHead.highlight {
             background: var(--highlight);
@@ -208,14 +230,12 @@ export class FbScheduleView extends LitElement {
             border-radius: 10px;
             border: 1px solid var(--fb-border);
             background: var(--fb-surface);
-            padding: 6px;
-            min-height: 52px;
+            padding: 4px 6px;
+            min-height: 42px;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
-            gap: 6px;
         }
         .allDay.todayCol {
             background: var(--highlight-soft);
@@ -224,8 +244,8 @@ export class FbScheduleView extends LitElement {
         .chip {
             border-radius: 10px;
             border: 1px solid color-mix(in srgb, var(--event-color) 60%, var(--fb-border));
-            padding: 6px 12px;
-            font-size: 14px;
+            padding: 4px 10px;
+            font-size: 13px;
             cursor: pointer;
             background: var(--event-color);
             color: var(--event-text);
@@ -289,15 +309,13 @@ export class FbScheduleView extends LitElement {
             overflow: hidden;
             box-shadow: var(--shadow-sm);
         }
-        .eventInner {
-            padding: 8px 10px;
-        }
-        .eventSticky {
+        .eventHeader {
             position: sticky;
             top: 0;
             z-index: 1;
-            background: color-mix(in srgb, var(--event-color) 88%, #ffffff);
-            padding-bottom: 4px;
+            padding: 8px 10px 6px;
+            background: color-mix(in srgb, var(--event-color) 82%, #ffffff);
+            border-bottom: 1px solid color-mix(in srgb, var(--event-color) 50%, transparent);
         }
         .eventTime {
             font-size: 14px;
@@ -328,6 +346,24 @@ export class FbScheduleView extends LitElement {
             height: 2px;
             background: color-mix(in srgb, var(--urgent) 70%, transparent);
             z-index: 2;
+        }
+        .nowBadge {
+            position: absolute;
+            left: 10px;
+            transform: translateY(-50%);
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+            max-width: calc(100% - 20px);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            pointer-events: none;
+            z-index: 3;
+            border: 1px solid color-mix(in srgb, var(--now-badge) 70%, var(--fb-border));
+            background: var(--now-badge);
+            color: var(--now-badge-text);
         }
     `;
 
@@ -375,8 +411,9 @@ export class FbScheduleView extends LitElement {
         this._autoScrollEnabled = showNow;
 
         const calendarList = Array.isArray(cfg.calendars) ? cfg.calendars : [];
-        const visibleSet =
-            card._calendarVisibleSet || new Set(calendarList.map((c) => c.entity));
+        const visibleSet = card._calendarVisibilityEnabled
+            ? card._calendarVisibleSet || new Set(calendarList.map((c) => c.entity))
+            : new Set(calendarList.map((c) => c.entity));
         const calendars = calendarList.filter(
             (c) =>
                 visibleSet.has(c.entity) &&
@@ -385,12 +422,14 @@ export class FbScheduleView extends LitElement {
         const calendarById = new Map(calendars.map((c) => [c.entity, c]));
         const visibleEntities = new Set(calendars.map((c) => c.entity));
 
-        const maxAllDayVisible = 2;
+        const maxAllDayVisible = 1;
         const dayData = days.map((day) => {
             const allDay = [];
             const timedRaw = [];
             const dayStart = startOfDay(day);
             const dayEnd = endOfDay(day);
+            const perPerson = new Map();
+            let nowBadge = null;
 
             // Use merged events to avoid one entity overwriting another.
             const mergedEvents = card._mergedEventsForDay(day, visibleEntities);
@@ -400,7 +439,13 @@ export class FbScheduleView extends LitElement {
                 const entry = calendarById.get(entityId);
                 const person = card._personForEntity(entityId);
                 const colour = person?.color || card._neutralColor();
+                const textColor = person?.text_color || getReadableTextColour(colour);
                 const personName = person?.name || entry?.name || entityId;
+                const personId = person?.id || entityId;
+                const current = perPerson.get(personId) || { color: colour, textColor, count: 0 };
+                current.count += 1;
+                if (textColor) current.textColor = textColor;
+                perPerson.set(personId, current);
 
                 const base = { ...e };
                 delete base.lane;
@@ -409,6 +454,7 @@ export class FbScheduleView extends LitElement {
                     allDay.push({
                         ...base,
                         _fbColour: colour,
+                        _fbText: textColor,
                         _fbName: personName,
                         _fbEntityId: entityId,
                     });
@@ -431,14 +477,40 @@ export class FbScheduleView extends LitElement {
                     startMin: clampedStart,
                     endMin: Math.max(clampedStart + 1, clampedEnd),
                     _fbColour: colour,
+                    _fbText: textColor,
                     _fbName: personName,
                     _fbEntityId: entityId,
                 });
             }
 
-            const layout = layoutDayEvents(timedRaw, { maxColumns: 3 });
+            if (showNow && card._isSameDay(day, now)) {
+                const active = mergedEvents.filter((e) => {
+                    if (e.all_day) return false;
+                    if (!e?._start || !e?._end) return false;
+                    return e._start <= now && e._end > now;
+                });
+                if (active.length === 1) {
+                    const only = active[0];
+                    const person = card._personForEntity(only._fbEntityId);
+                    const color = person?.color || card._neutralColor();
+                    nowBadge = {
+                        text: only.summary || '(Event)',
+                        color,
+                        textColor,
+                    };
+                } else if (active.length > 1) {
+                    nowBadge = {
+                        text: `${active.length} events now`,
+                        color: 'var(--fb-surface)',
+                        textColor: 'var(--fb-text)',
+                    };
+                }
+            }
+
+            const layout = layoutDayEvents(timedRaw, { maxColumns: 2 });
             const visibleAllDay = allDay.slice(0, maxAllDayVisible);
             const hiddenAllDay = Math.max(allDay.length - visibleAllDay.length, 0);
+            const pips = Array.from(perPerson.values());
             return {
                 day,
                 allDay: visibleAllDay,
@@ -446,6 +518,8 @@ export class FbScheduleView extends LitElement {
                 allDayHidden: hiddenAllDay,
                 timed: layout.items,
                 overflows: layout.overflows,
+                pips,
+                nowBadge,
             };
         });
 
@@ -460,7 +534,7 @@ export class FbScheduleView extends LitElement {
                     <div class="board">
                     <div class="row headerRow">
                         <div class="gutterHead"></div>
-                        ${days.map((d) => {
+                        ${days.map((d, idx) => {
                             const dayName = d.toLocaleDateString(undefined, { weekday: 'short' });
                             const dayDate = d.toLocaleDateString(undefined, {
                                 day: '2-digit',
@@ -468,53 +542,60 @@ export class FbScheduleView extends LitElement {
                             });
                             const isToday = card._isSameDay(d, now);
                             const dayLabel = `${dayName} ${dayDate}`;
+                            const pips = dayData[idx]?.pips || [];
+                            const dayPips = pips.slice(0, 4);
                             return html`
                                 <div class="dayHead ${isToday ? 'highlight' : ''}">
                                     <div class="dayLabel">${dayLabel}</div>
+                                    ${dayPips.length
+                                        ? html`<div class="dayPips">
+                                              ${dayPips.map(
+                                                  (p) => html`<span
+                                                      class="dayPip"
+                                                      style="background:${p.color};color:${p.textColor || 'var(--fb-text)'}"
+                                                      title="${p.count} events"
+                                                      >${p.count}</span
+                                                  >`
+                                              )}
+                                          </div>`
+                                        : html``}
                                 </div>
                             `;
                         })}
                     </div>
 
                     <div class="row allDayRow">
-                        <div class="gutterAllDay">All day</div>
+                        <div class="gutterAllDay"></div>
                         ${dayData.map((row) => {
                             const allDay = row.allDay;
                             const isToday = card._isSameDay(row.day, now);
+                            const primary = allDay[0];
+                            const more = row.allDayHidden;
                             return html`
                                 <div class="allDay ${isToday ? 'todayCol' : ''}">
-                                    ${allDay.length
-                                        ? allDay.map(
-                                              (e) => html`
-                                                  <button
-                                                      class="chip"
-                                                      data-key=${e._fbKey || ''}
-                                                      style="
-                                                          --event-color:${e._fbColour};
-                                                          --event-text:${getReadableTextColour(e._fbColour)};
-                                                      "
-                                                      @click=${() =>
-                                                          card._openEventDialog(e._fbEntityId, e)}
-                                                      title=${e.summary}
-                                                  >
-                                                      <span class="chipDot"></span>
-                                                      <span>${e.summary}</span>
-                                                  </button>
-                                              `
-                                          )
-                                        : html``}
-                                    ${row.allDayHidden
+                                    ${primary
                                         ? html`<button
                                               class="chip"
-                                              style="--event-color:var(--fb-surface-2);--event-text:var(--fb-muted)"
+                                              data-key=${primary._fbKey || ''}
+                                              style="
+                                                  --event-color:${primary._fbColour};
+                                                  --event-text:${primary._fbText ||
+                                                  getReadableTextColour(primary._fbColour)};
+                                              "
                                               @click=${() =>
-                                                  card._openAllDayDialog(
-                                                      row.day,
-                                                      row.allDayFull
-                                                  )}
+                                                  more
+                                                      ? card._openAllDayDialog(
+                                                            row.day,
+                                                            row.allDayFull
+                                                        )
+                                                      : card._openEventDialog(
+                                                            primary._fbEntityId,
+                                                            primary
+                                                        )}
+                                              title=${primary.summary}
                                           >
                                               <span class="chipDot"></span>
-                                              <span>View ${row.allDayHidden} more...</span>
+                                              <span>${primary.summary}${more ? ` +${more}` : ''}</span>
                                           </button>`
                                         : html``}
                                 </div>
@@ -553,6 +634,18 @@ export class FbScheduleView extends LitElement {
                                             ${showNow && card._isSameDay(row.day, now)
                                                 ? html`<div class="nowLine" style="top:${nowTop}px"></div>`
                                                 : html``}
+                                            ${showNow && card._isSameDay(row.day, now) && row.nowBadge
+                                                ? html`<div
+                                                      class="nowBadge"
+                                                      style="
+                                                          top:${nowTop}px;
+                                                          --now-badge:${row.nowBadge.color};
+                                                          --now-badge-text:${row.nowBadge.textColor};
+                                                      "
+                                                  >
+                                                      ${row.nowBadge.text}
+                                                  </div>`
+                                                : html``}
                                             ${row.timed.map((ev) => {
                                                 const startSlots =
                                                     (ev.startMin - startMin) / slotMinutes;
@@ -578,9 +671,8 @@ export class FbScheduleView extends LitElement {
                                                         data-key=${ev._fbKey || ''}
                                                         style="
                                                             --event-color:${ev._fbColour};
-                                                            --event-text:${getReadableTextColour(
-                                                                ev._fbColour
-                                                            )};
+                                                            --event-text:${ev._fbText ||
+                                                            getReadableTextColour(ev._fbColour)};
                                                             top:${top}px;
                                                             height:${height}px;
                                                             left:calc(${leftPct}% + 4px);
@@ -593,7 +685,7 @@ export class FbScheduleView extends LitElement {
                                                             )}
                                                         title=${ev.summary}
                                                     >
-                                                        <div class="eventInner eventSticky">
+                                                        <div class="eventHeader">
                                                             <div class="eventTime">${timeText}</div>
                                                             <div class="eventTitle">${ev.summary}</div>
                                                         </div>

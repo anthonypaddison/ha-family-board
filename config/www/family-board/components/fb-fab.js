@@ -8,6 +8,7 @@ export class FbFab extends LitElement {
     static properties = {
         hidden: { type: Boolean },
         label: { type: String },
+        disabled: { type: Boolean },
     };
 
     static styles = css`
@@ -20,8 +21,8 @@ export class FbFab extends LitElement {
         }
 
         button {
-            width: 56px;
-            height: 56px;
+            width: var(--fb-touch);
+            height: var(--fb-touch);
             border-radius: 999px;
             border: 0;
             cursor: pointer;
@@ -32,18 +33,28 @@ export class FbFab extends LitElement {
             box-shadow: var(--shadow-lg);
         }
 
+        button[disabled] {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
         button:active {
             transform: translateY(1px);
         }
     `;
 
     _click() {
+        if (this.disabled) return;
         this.dispatchEvent(new CustomEvent('fb-fab', { bubbles: true, composed: true }));
     }
 
     render() {
         if (this.hidden) return html``;
-        return html`<button title=${this.label || 'Add'} @click=${this._click}>+</button>`;
+        return html`
+            <button title=${this.label || 'Add'} ?disabled=${this.disabled} @click=${this._click}>
+                +
+            </button>
+        `;
     }
 }
 

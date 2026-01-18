@@ -131,6 +131,15 @@ export class FbSetupView extends LitElement {
         const people = Array.isArray(draft.people) ? draft.people : [];
         const calendars = Array.isArray(draft.calendars) ? draft.calendars : [];
         const todos = Array.isArray(draft.todos) ? draft.todos : [];
+        const stateIds = Object.keys(card?._hass?.states || {});
+        const calendarEntities = stateIds.filter((id) => id.startsWith('calendar.'));
+        const todoEntities = stateIds.filter((id) => id.startsWith('todo.'));
+        const shoppingOptions = (() => {
+            const options = [...todoEntities];
+            const current = String(draft.shopping?.entity || '').trim();
+            if (current && !options.includes(current)) options.unshift(current);
+            return options;
+        })();
 
         return html`
             <div class="wrap">
@@ -142,6 +151,7 @@ export class FbSetupView extends LitElement {
 
                     <div class="section">
                         <div style="font-weight:700">People</div>
+                        <div class="note">Each person needs at least one calendar or todo list.</div>
                         ${people.map(
                             (p, idx) => html`
                                 <div class="row">
@@ -186,11 +196,16 @@ export class FbSetupView extends LitElement {
                         ${calendars.map(
                             (c, idx) => html`
                                 <div class="row">
-                                    <input
-                                        placeholder="calendar.entity"
+                                    <select
                                         .value=${c.entity || ''}
-                                        @input=${(e) => (c.entity = e.target.value)}
-                                    />
+                                        @change=${(e) => (c.entity = e.target.value)}
+                                    >
+                                        <option value="">Select calendar</option>
+                                        ${calendarEntities.map(
+                                            (id) =>
+                                                html`<option value=${id}>${id}</option>`
+                                        )}
+                                    </select>
                                     <select
                                         .value=${c.person_id || ''}
                                         @change=${(e) => (c.person_id = e.target.value)}
@@ -228,11 +243,16 @@ export class FbSetupView extends LitElement {
                         ${todos.map(
                             (t, idx) => html`
                                 <div class="row">
-                                    <input
-                                        placeholder="todo.entity"
+                                    <select
                                         .value=${t.entity || ''}
-                                        @input=${(e) => (t.entity = e.target.value)}
-                                    />
+                                        @change=${(e) => (t.entity = e.target.value)}
+                                    >
+                                        <option value="">Select todo list</option>
+                                        ${todoEntities.map(
+                                            (id) =>
+                                                html`<option value=${id}>${id}</option>`
+                                        )}
+                                    </select>
                                     <select
                                         .value=${t.person_id || ''}
                                         @change=${(e) => (t.person_id = e.target.value)}
@@ -265,14 +285,18 @@ export class FbSetupView extends LitElement {
                     <div class="section">
                         <div style="font-weight:700">Shopping</div>
                         <div class="row small">
-                            <input
-                                placeholder="todo.shopping_list_2"
+                            <select
                                 .value=${draft.shopping?.entity || ''}
-                                @input=${(e) => {
+                                @change=${(e) => {
                                     if (!draft.shopping) draft.shopping = {};
                                     draft.shopping.entity = e.target.value;
                                 }}
-                            />
+                            >
+                                <option value="">Select shopping list</option>
+                                ${shoppingOptions.map(
+                                    (id) => html`<option value=${id}>${id}</option>`
+                                )}
+                            </select>
                         </div>
                     </div>
 
@@ -281,9 +305,6 @@ export class FbSetupView extends LitElement {
                         <textarea readonly .value=${card._buildYamlConfig(draft)}></textarea>
                         <div class="row small">
                             <button class="btn" @click=${this._copyConfig}>Copy config</button>
-                            <button class="btn" @click=${() => card._openEditor()}>
-                                Open editor
-                            </button>
                             <button
                                 class="btn primary"
                                 @click=${() => card._applySetupDraft(draft)}

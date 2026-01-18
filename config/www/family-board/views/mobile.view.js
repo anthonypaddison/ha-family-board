@@ -5,6 +5,7 @@ import { getHaLit } from '../ha-lit.js';
 const { LitElement, html, css } = getHaLit();
 
 import { addDays, startOfDay, pad2 } from '../family-board.util.js';
+import { getReadableTextColour } from '../util/colour.util.js';
 
 export class FbMobileView extends LitElement {
     static properties = {
@@ -20,7 +21,7 @@ export class FbMobileView extends LitElement {
         .wrap {
             height: 100%;
             overflow: auto;
-            padding: 12px;
+            padding: var(--fb-gutter);
         }
         .day {
             border: 1px solid var(--fb-grid);
@@ -45,10 +46,11 @@ export class FbMobileView extends LitElement {
         }
         .chip {
             border-radius: 12px;
-            border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+            border: 1px solid color-mix(in srgb, var(--event-color) 70%, transparent);
             padding: 8px 10px;
             background: color-mix(in srgb, var(--event-color) 18%, var(--fb-surface));
             margin-bottom: 8px;
+            color: var(--event-text, var(--fb-text));
         }
         .title {
             font-weight: 700;
@@ -79,8 +81,9 @@ export class FbMobileView extends LitElement {
         const base = startOfDay(card._selectedDay());
         const days = Array.from({ length: daysToShow }).map((_, i) => addDays(base, i));
         const calendars = Array.isArray(card._config?.calendars) ? card._config.calendars : [];
-        const visibleSet =
-            card._calendarVisibleSet || new Set(calendars.map((c) => c.entity));
+        const visibleSet = card._calendarVisibilityEnabled
+            ? card._calendarVisibleSet || new Set(calendars.map((c) => c.entity))
+            : new Set(calendars.map((c) => c.entity));
         const activeCalendars = calendars.filter(
             (c) =>
                 visibleSet.has(c.entity) &&
@@ -118,10 +121,24 @@ export class FbMobileView extends LitElement {
                         const events = card._eventsForEntityOnDay(c.entity, d);
                         const person = card._personForEntity(c.entity);
                         const colour = person?.color || card._neutralColor();
+                        const textColor =
+                            person?.text_color || getReadableTextColour(colour);
 
                         for (const e of events) {
-                            if (e.all_day) allDay.push({ ...e, _fbColour: colour, _fbEntityId: c.entity });
-                            else timed.push({ ...e, _fbColour: colour, _fbEntityId: c.entity });
+                            if (e.all_day)
+                                allDay.push({
+                                    ...e,
+                                    _fbColour: colour,
+                                    _fbText: textColor,
+                                    _fbEntityId: c.entity,
+                                });
+                            else
+                                timed.push({
+                                    ...e,
+                                    _fbColour: colour,
+                                    _fbText: textColor,
+                                    _fbEntityId: c.entity,
+                                });
                         }
                     }
 
@@ -143,7 +160,10 @@ export class FbMobileView extends LitElement {
                                               <div
                                                   class="chip"
                                                   data-key=${e._fbKey || ''}
-                                                  style="--event-color:${e._fbColour}"
+                                                  style="
+                                                      --event-color:${e._fbColour};
+                                                      --event-text:${e._fbText || ''};
+                                                  "
                                                   @click=${() => card._openEventDialog(e._fbEntityId, e)}
                                               >
                                                   <div class="title">${e.summary}</div>
@@ -164,7 +184,10 @@ export class FbMobileView extends LitElement {
                                               <div
                                                   class="chip"
                                                   data-key=${e._fbKey || ''}
-                                                  style="--event-color:${e._fbColour}"
+                                                  style="
+                                                      --event-color:${e._fbColour};
+                                                      --event-text:${e._fbText || ''};
+                                                  "
                                                   @click=${() => card._openEventDialog(e._fbEntityId, e)}
                                               >
                                                   <div class="time">${timeText}</div>

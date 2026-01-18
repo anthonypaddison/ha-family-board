@@ -7,9 +7,11 @@ const { LitElement, html, css } = getHaLit();
 export class FbTopbar extends LitElement {
     static properties = {
         title: { type: String },
-        screen: { type: String }, // schedule | chores | shopping | home | settings
+        screen: { type: String }, // schedule | important | chores | shopping | home | settings
         mainMode: { type: String }, // schedule | month
         summary: { type: Array }, // [{name, color, eventsLeft, todosLeft}]
+        shoppingCount: { type: Number },
+        binIndicators: { type: Object },
         dateLabel: { type: String },
         dateValue: { type: String },
         activeFilters: { type: Array },
@@ -19,21 +21,20 @@ export class FbTopbar extends LitElement {
         calendarError: { type: Boolean },
         calendarInFlight: { type: Boolean },
         _timeLabel: { state: true },
+        _menuOpen: { state: true },
     };
 
     static styles = css`
         :host {
             display: block;
-            padding: 14px 14px 10px;
+            padding: var(--fb-gutter);
             background: var(--fb-surface);
-            box-shadow: var(--fb-shadow);
             border-radius: 10px;
         }
 
         .toprow {
-            display: grid;
-            grid-template-columns: 1fr auto 1fr;
-            gap: 12px;
+            display: flex;
+            gap: 10px;
             align-items: center;
             flex-wrap: wrap;
         }
@@ -44,9 +45,31 @@ export class FbTopbar extends LitElement {
             gap: 10px;
             justify-self: start;
         }
+        .binIndicators {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .binIcon {
+            width: 28px;
+            height: 28px;
+            border-radius: 999px;
+            display: grid;
+            place-items: center;
+            border: 2px solid var(--bin-colour);
+            color: var(--bin-colour);
+            background: var(--fb-surface);
+        }
+        .binIcon.tomorrow {
+            opacity: 0.6;
+        }
+        .binIcon ha-icon {
+            width: 16px;
+            height: 16px;
+        }
 
         .time {
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 800;
             color: var(--fb-text);
             font-variant-numeric: tabular-nums;
@@ -60,7 +83,6 @@ export class FbTopbar extends LitElement {
             border-radius: 999px;
             background: var(--fb-surface-2);
             border: 1px solid var(--fb-border);
-            justify-self: center;
         }
 
         .pill {
@@ -68,10 +90,11 @@ export class FbTopbar extends LitElement {
             background: transparent;
             color: var(--fb-text);
             border-radius: 999px;
-            padding: 7px 14px;
+            padding: 6px 12px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
             min-height: 36px;
+            min-width: 36px;
         }
 
         .pill.active {
@@ -83,11 +106,11 @@ export class FbTopbar extends LitElement {
 
         .dateNav {
             display: inline-flex;
-            gap: 0;
+            gap: 10px;
             align-items: center;
             flex-wrap: wrap;
+            margin-left: auto;
             justify-content: flex-end;
-            justify-self: end;
         }
 
         .dateLabel {
@@ -106,15 +129,27 @@ export class FbTopbar extends LitElement {
         }
         .navBtn {
             min-width: 40px;
-            height: 34px;
+            height: 40px;
             border: 0;
             background: transparent;
             color: var(--fb-text);
             cursor: pointer;
-            font-size: 14px;
-            padding: 0 12px;
+            font-size: 16px;
+            padding: 0 10px;
             display: grid;
             place-items: center;
+        }
+        .navBtn.prev {
+            border-top-left-radius: 999px;
+            border-bottom-left-radius: 999px;
+            font-size: 18px;
+            font-weight: 800;
+        }
+        .navBtn.next {
+            border-top-right-radius: 999px;
+            border-bottom-right-radius: 999px;
+            font-size: 18px;
+            font-weight: 800;
         }
         .navBtn + .navBtn {
             border-left: 1px solid var(--fb-border);
@@ -130,18 +165,71 @@ export class FbTopbar extends LitElement {
             background: var(--fb-surface);
             color: var(--fb-text);
             cursor: pointer;
-            height: 36px;
-            padding: 0 10px;
+            height: 40px;
+            padding: 0 8px;
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            font-size: 13px;
         }
-        .syncBtn {
-            margin-left: 8px;
-            min-width: 86px;
+        .menuBtn {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            display: grid;
+            place-items: center;
+            font-size: 18px;
+        }
+        .actionInline {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+        }
+        .addBtn {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border-radius: 999px;
+            background: var(--fb-surface);
+            color: var(--fb-text);
+            font-size: 22px;
+            font-weight: 700;
             justify-content: center;
         }
-        .syncBtn[disabled] {
+        .menuWrap {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+        .menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            min-width: 160px;
+            background: var(--fb-surface);
+            border: 1px solid var(--fb-border);
+            border-radius: 10px;
+            box-shadow: var(--fb-shadow);
+            padding: 6px;
+            z-index: 10;
+            display: grid;
+            gap: 4px;
+        }
+        .menuItem {
+            border: 0;
+            background: transparent;
+            text-align: left;
+            padding: 8px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--fb-text);
+            font-size: 13px;
+        }
+        .menuItem:hover {
+            background: var(--fb-surface-2);
+        }
+        .menuItem[disabled] {
             opacity: 0.6;
             cursor: default;
         }
@@ -157,6 +245,23 @@ export class FbTopbar extends LitElement {
             font-size: 12px;
             margin-left: 8px;
             white-space: nowrap;
+        }
+        .shoppingChip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--fb-border);
+            border-radius: 999px;
+            padding: 0 14px;
+            background: var(--fb-surface-2);
+            color: var(--fb-text);
+            font-weight: 700;
+            height: 40px;
+            min-width: 64px;
+        }
+        .shoppingChip ha-icon {
+            width: 18px;
+            height: 18px;
         }
         .statusBtn {
             border: 0;
@@ -177,34 +282,34 @@ export class FbTopbar extends LitElement {
             gap: 8px;
             padding: 12px 0 0;
         }
+        .summaryRow.compact {
+            padding-top: 4px;
+        }
 
         .summaryBadge {
             display: flex;
             align-items: center;
             gap: 8px;
-            border: 1px solid var(--fb-border);
+            border: 2px solid var(--person-colour);
             border-radius: 12px;
-            padding: 10px 12px;
+            padding: 6px 10px;
             background: var(--fb-surface-3);
-            font-size: 14px;
+            font-size: 13px;
             width: 100%;
             cursor: pointer;
             min-height: 44px;
             color: var(--fb-text);
         }
 
-        .summaryBadge.active {
-            border-color: var(--fb-accent-teal);
-        }
-
         .summaryBadge:not(.active) {
             background: var(--fb-surface-3);
-            opacity: 1;
+            filter: grayscale(1);
+            opacity: 0.7;
         }
 
         .dot {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             border-radius: 999px;
             display: inline-block;
         }
@@ -219,19 +324,33 @@ export class FbTopbar extends LitElement {
             gap: 10px;
             font-variant-numeric: tabular-nums;
         }
+        .roleBadge {
+            border: 1px solid var(--fb-border);
+            border-radius: 999px;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--fb-muted);
+            background: var(--fb-surface);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
 
         .summaryMetric {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             font-weight: 700;
             line-height: 1;
+            min-width: 26px;
         }
 
         .summaryMetric ha-icon {
             width: 16px;
             height: 16px;
             color: var(--fb-muted);
+            display: grid;
+            place-items: center;
         }
 
         @media (max-width: 900px) {
@@ -254,6 +373,14 @@ export class FbTopbar extends LitElement {
         if (!this._timeTimer) {
             this._timeTimer = setInterval(() => this._updateTime(), 60_000);
         }
+        if (!this._docClickHandler) {
+            this._docClickHandler = (e) => {
+                if (!this._menuOpen) return;
+                if (e.composedPath().includes(this)) return;
+                this._menuOpen = false;
+            };
+            document.addEventListener('click', this._docClickHandler);
+        }
     }
 
     disconnectedCallback() {
@@ -261,6 +388,10 @@ export class FbTopbar extends LitElement {
         if (this._timeTimer) {
             clearInterval(this._timeTimer);
             this._timeTimer = null;
+        }
+        if (this._docClickHandler) {
+            document.removeEventListener('click', this._docClickHandler);
+            this._docClickHandler = null;
         }
     }
 
@@ -311,6 +442,10 @@ export class FbTopbar extends LitElement {
         );
     }
 
+    _addAction() {
+        this.dispatchEvent(new CustomEvent('fb-add', { bubbles: true, composed: true }));
+    }
+
     _tryAgain() {
         this.dispatchEvent(
             new CustomEvent('fb-calendar-try-again', {
@@ -358,6 +493,15 @@ export class FbTopbar extends LitElement {
         }
     }
 
+    _toggleMenu(e) {
+        e?.stopPropagation?.();
+        this._menuOpen = !this._menuOpen;
+    }
+
+    _closeMenu() {
+        this._menuOpen = false;
+    }
+
     _blockDateInput(e) {
         e.preventDefault();
     }
@@ -367,11 +511,84 @@ export class FbTopbar extends LitElement {
         const mainMode = this.mainMode || 'schedule';
         const summary = Array.isArray(this.summary) ? this.summary : [];
         const activeFilters = Array.isArray(this.activeFilters) ? this.activeFilters : [];
+        const addButton = html`
+            <button class="settingsBtn addBtn" title="Add" @click=${this._addAction}>+</button>
+        `;
+        const shoppingCount = Number.isFinite(this.shoppingCount)
+            ? this.shoppingCount
+            : Number(this.shoppingCount || 0);
+        const shoppingChip = html`
+            <div class="shoppingChip" title="Shopping items">
+                <ha-icon icon="mdi:cart-outline"></ha-icon>
+                <span>${shoppingCount}</span>
+            </div>
+        `;
+        const binIndicators = this.binIndicators || {};
+        const todayBins = Array.isArray(binIndicators.today) ? binIndicators.today : [];
+        const tomorrowBins = Array.isArray(binIndicators.tomorrow)
+            ? binIndicators.tomorrow
+            : [];
+        const binIcons = todayBins.length || tomorrowBins.length
+            ? html`
+                  <div class="binIndicators">
+                      ${todayBins.map(
+                          (bin) => html`
+                              <span
+                                  class="binIcon"
+                                  style="--bin-colour:${bin.colour || '#999999'}"
+                                  title="${bin.name || 'Bin'} - Today"
+                              >
+                                  <ha-icon icon=${bin.icon || 'mdi:trash-can'}></ha-icon>
+                              </span>
+                          `
+                      )}
+                      ${tomorrowBins.map(
+                          (bin) => html`
+                              <span
+                                  class="binIcon tomorrow"
+                                  style="--bin-colour:${bin.colour || '#999999'}"
+                                  title="${bin.name || 'Bin'} - Tomorrow"
+                              >
+                                  <ha-icon icon=${bin.icon || 'mdi:trash-can'}></ha-icon>
+                              </span>
+                          `
+                      )}
+                  </div>
+              `
+            : html``;
+        const menu = html`
+            <div class="menuWrap" @click=${(e) => e.stopPropagation()}>
+                <button
+                    class="settingsBtn menuBtn"
+                    title="Menu"
+                    @click=${this._toggleMenu}
+                >
+                    <ha-icon icon="mdi:dots-vertical"></ha-icon>
+                </button>
+                ${this._menuOpen
+                    ? html`
+                          <div class="menu" @click=${(e) => e.stopPropagation()}>
+                              <button
+                                  class="menuItem"
+                                  ?disabled=${this.syncing}
+                                  @click=${() => {
+                                      this._closeMenu();
+                                      this._syncCalendars();
+                                  }}
+                              >
+                                  ${this.syncing ? 'Syncing…' : 'Sync'}
+                              </button>
+                          </div>
+                      `
+                    : html``}
+            </div>
+        `;
         // Retry is only shown for hard failures without usable cached data.
         return html`
             <div class="toprow">
                 <div class="titleWrap">
                     <div class="time">${this._timeLabel || ''}</div>
+                    ${binIcons}
                 </div>
 
                 ${screen === 'schedule'
@@ -397,7 +614,7 @@ export class FbTopbar extends LitElement {
                           <div class="dateNav" aria-label="Date navigation">
                               <div class="navGroup" role="group" aria-label="Date navigation">
                                   <button
-                                      class="navBtn"
+                                      class="navBtn prev"
                                       title="Previous"
                                       @click=${() => this._nav(-1)}
                                   >
@@ -407,20 +624,15 @@ export class FbTopbar extends LitElement {
                                       Today
                                   </button>
                                   <button
-                                      class="navBtn"
+                                      class="navBtn next"
                                       title="Next"
                                       @click=${() => this._nav(1)}
                                   >
                                       >
                                   </button>
                               </div>
-                              <button
-                                  class="settingsBtn syncBtn"
-                                  ?disabled=${this.syncing}
-                                  @click=${this._syncCalendars}
-                              >
-                                  ${this.syncing ? 'Syncing…' : 'Sync'}
-                              </button>
+                              ${addButton}
+                              ${menu}
                               ${this.calendarStale || this.calendarError
                                   ? html`
                                         <div class="statusChip">
@@ -445,18 +657,20 @@ export class FbTopbar extends LitElement {
                                   : html``}
                           </div>
                       `
-                    : html``}
+                    : screen === 'important'
+                    ? html`<div class="actionInline">${shoppingChip}${addButton}</div>`
+                    : html`<div class="actionInline">${addButton}</div>`}
             </div>
 
-            ${['schedule', 'chores'].includes(screen) && summary.length
+            ${['schedule', 'important', 'chores'].includes(screen) && summary.length
                 ? (() => {
-                      const row1 = summary.filter((p) => (p.header_row || 1) === 1).slice(0, 5);
-                      const row2 = summary.filter((p) => (p.header_row || 1) === 2).slice(0, 5);
+                      const row1 = summary.filter((p) => (p.header_row || 1) === 1).slice(0, 4);
+                      const row2 = summary.filter((p) => (p.header_row || 1) === 2).slice(0, 4);
                       const rows = [row1, row2].filter((r) => r.length);
                       return html`
                           ${rows.map(
                               (row) => html`
-                                  <div class="summaryRow">
+                                  <div class="summaryRow ${screen === 'important' ? 'compact' : ''}">
                                       ${row.map(
                                           (p) => html`
                                           <button
@@ -469,6 +683,9 @@ export class FbTopbar extends LitElement {
                                       >
                                           <span class="dot" style="background:${p.color}"></span>
                                           <span class="summaryName" style="flex:1">${p.name}</span>
+                                          ${p.role
+                                              ? html`<span class="roleBadge">${p.role}</span>`
+                                              : html``}
                                           <span class="summaryCounts">
                                               <span class="summaryMetric">
                                                   <ha-icon icon="mdi:calendar-month-outline"></ha-icon>

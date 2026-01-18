@@ -17,6 +17,10 @@ export class CalendarService {
         this._cacheMs = 300_000;
     }
 
+    clearCache() {
+        this._cache.clear();
+    }
+
     _calendarDebugEnabled() {
         return localStorage.getItem('FB_DEBUG_CALENDAR') === '1';
     }
@@ -51,10 +55,11 @@ export class CalendarService {
             this._cache.delete(key);
         }
 
+        const cacheBust = force ? `&_fb=${Date.now()}` : '';
         const path = `calendars/${encodeURIComponent(entityId)}?start=${encodeURIComponent(
             startISO
-        )}&end=${encodeURIComponent(endISO)}`;
-        const url = `api/${path}`;
+        )}&end=${encodeURIComponent(endISO)}${cacheBust}`;
+        const url = `/api/${path}`;
         this._debugLog('calendar fetch', { entityId, url });
 
         const fetchOnce = async (retryOn400) => {

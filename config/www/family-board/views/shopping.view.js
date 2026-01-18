@@ -7,6 +7,7 @@ const { LitElement, html, css } = getHaLit();
 export class FbShoppingView extends LitElement {
     static properties = {
         card: { type: Object },
+        renderKey: { type: String },
     };
 
     _addCommonItem(item) {
@@ -23,7 +24,7 @@ export class FbShoppingView extends LitElement {
         .wrap {
             height: 100%;
             overflow: hidden;
-            padding: 14px;
+            padding: var(--fb-gutter);
             min-height: 0;
             box-sizing: border-box;
         }
@@ -54,6 +55,25 @@ export class FbShoppingView extends LitElement {
             justify-content: space-between;
             gap: 8px;
         }
+        .headerMeta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .headerBtn {
+            border: 1px solid var(--fb-grid);
+            background: var(--fb-surface-2);
+            border-radius: 10px;
+            padding: 4px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            color: var(--fb-text);
+            min-height: 0;
+        }
+        .headerBtn:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
         .h.commonHeader {
             cursor: pointer;
         }
@@ -79,12 +99,14 @@ export class FbShoppingView extends LitElement {
             border-radius: 10px;
             padding: 8px 12px;
             cursor: pointer;
+            min-height: var(--fb-touch);
+            min-width: var(--fb-touch);
         }
         .items {
             padding: 10px 12px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
             overflow: auto;
             min-height: 0;
             flex: 1 1 auto;
@@ -93,10 +115,10 @@ export class FbShoppingView extends LitElement {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 10px;
+            gap: 4px;
             border: 1px solid var(--fb-grid);
             border-radius: 12px;
-            padding: 10px 12px;
+            padding: 2px 6px;
             transition: opacity 0.3s ease;
         }
         .item.pendingRemove {
@@ -107,6 +129,7 @@ export class FbShoppingView extends LitElement {
         }
         .itemTitle {
             font-weight: 700;
+            font-size: 14px;
         }
         .itemTitle.completed {
             text-decoration: line-through;
@@ -118,19 +141,20 @@ export class FbShoppingView extends LitElement {
         }
         .actions {
             display: inline-flex;
-            gap: 6px;
+            gap: 10px;
+            padding-left: 8px;
         }
         .itemMain {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 4px;
             min-width: 0;
             flex: 1;
         }
         .itemLabel {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 6px;
             min-width: 0;
             flex: 1;
         }
@@ -145,7 +169,7 @@ export class FbShoppingView extends LitElement {
             gap: 6px;
             border: 1px solid var(--fb-grid);
             border-radius: 999px;
-            padding: 2px 6px;
+            padding: 0 4px;
             background: var(--fb-surface-2);
             flex: 0 0 auto;
         }
@@ -153,13 +177,15 @@ export class FbShoppingView extends LitElement {
             border: 0;
             background: transparent;
             cursor: pointer;
-            width: 20px;
-            height: 20px;
+            width: 28px;
+            height: 28px;
             border-radius: 999px;
             display: grid;
             place-items: center;
             font-weight: 700;
             color: var(--fb-text);
+            font-size: 18px;
+            line-height: 1;
         }
         .qtyValue {
             min-width: 18px;
@@ -174,14 +200,16 @@ export class FbShoppingView extends LitElement {
             font-size: 14px;
             cursor: pointer;
             color: var(--fb-text);
+            min-height: var(--fb-touch);
+            min-width: var(--fb-touch);
         }
         .iconBtn {
             border: 1px solid var(--fb-grid);
             background: var(--fb-surface);
             border-radius: 10px;
             padding: 4px;
-            width: 28px;
-            height: 28px;
+            width: var(--fb-touch);
+            height: var(--fb-touch);
             display: grid;
             place-items: center;
             cursor: pointer;
@@ -191,11 +219,30 @@ export class FbShoppingView extends LitElement {
         .starBtn ha-icon {
             width: 16px;
             height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            font-size: 16px;
+        }
+        .itemStar ha-icon {
+            width: 24px;
+            height: 24px;
+            font-size: 24px;
+        }
+        .starBtn ha-svg-icon,
+        .starBtn ha-svg-icon svg {
+            width: 16px;
+            height: 16px;
             display: block;
+            margin: 0 auto;
         }
         .iconBtn.active {
             color: var(--fb-accent);
             border-color: var(--fb-accent);
+        }
+        .completeBtn {
+            color: var(--fb-text);
         }
         .commonList {
             padding: 10px 12px;
@@ -252,7 +299,6 @@ export class FbShoppingView extends LitElement {
             border: 1px solid var(--fb-grid);
             background: var(--fb-surface);
             border-radius: 10px;
-            padding: 4px;
             width: 28px;
             height: 28px;
             display: grid;
@@ -260,6 +306,10 @@ export class FbShoppingView extends LitElement {
             cursor: pointer;
             color: var(--fb-muted);
             flex: 0 0 auto;
+            padding: 0;
+            line-height: 1;
+            box-sizing: border-box;
+            font-size: 0;
         }
         .starBtn.active {
             color: var(--warning);
@@ -283,17 +333,36 @@ export class FbShoppingView extends LitElement {
             : [];
         const common = Array.isArray(card._shoppingCommon) ? card._shoppingCommon : [];
         const favList = favourites.map((item) => String(item));
-        const favKeys = new Set(favList.map((item) => item.toLowerCase()));
-        const defaultList = common
-            .map((item) => String(item))
-            .filter((item) => !favKeys.has(item.toLowerCase()));
-        const commonList = [...favList, ...defaultList];
+        const favKeys = new Set(
+            [...favourites, ...common].map((item) => String(item).toLowerCase())
+        );
+        const commonList = [];
+        const seen = new Set();
+        for (const item of [...favList, ...common]) {
+            const key = String(item).toLowerCase();
+            if (seen.has(key)) continue;
+            seen.add(key);
+            commonList.push(String(item));
+        }
 
         return html`
             <div class="wrap">
                 <div class="layout">
                     <div class="card">
-                        <div class="h">${name} <span class="muted">${items.length}</span></div>
+                        <div class="h">
+                            <span>${name}</span>
+                            <span class="headerMeta">
+                                <span class="muted">${items.length}</span>
+                                ${items.length
+                                    ? html`<button
+                                          class="headerBtn"
+                                          @click=${() => card._clearShoppingList?.()}
+                                      >
+                                          Clear list
+                                      </button>`
+                                    : html``}
+                            </span>
+                        </div>
                         <div class="inputRow">
                             <input
                                 id="shopInput"
@@ -328,10 +397,8 @@ export class FbShoppingView extends LitElement {
                                           : { base: rawName, qty: 1 };
                                       const itemName = parsed.base || rawName;
                                       const qty = parsed.qty || 1;
-                                      const fav = favourites.some(
-                                          (f) =>
-                                              String(f).toLowerCase() ===
-                                              String(itemName).toLowerCase()
+                                      const fav = favKeys.has(
+                                          String(itemName).toLowerCase()
                                       );
                                       const isDone = ['completed', 'done'].includes(
                                           String(it.status || '').toLowerCase()
@@ -343,22 +410,13 @@ export class FbShoppingView extends LitElement {
                                               class="item ${pendingRemove ? 'pendingRemove' : ''} ${removing ? 'removing' : ''}"
                                           >
                                               <div class="itemMain">
-                                                  <label class="itemLabel">
-                                                      <input
-                                                          type="checkbox"
-                                                          .checked=${isDone}
-                                                          @change=${(e) =>
-                                                              card._toggleShoppingItem(
-                                                                  it,
-                                                                  e.target.checked
-                                                              )}
-                                                      />
+                                                  <div class="itemLabel">
                                                       <div
                                                           class="itemTitle ${isDone ? 'completed' : ''} itemName"
                                                       >
                                                           ${itemName}
                                                       </div>
-                                                  </label>
+                                                  </div>
                                                   <div class="qty">
                                                       <button
                                                           class="qtyBtn"
@@ -381,7 +439,7 @@ export class FbShoppingView extends LitElement {
                                               </div>
                                               <div class="actions">
                                                   <button
-                                                      class="iconBtn ${fav ? 'active' : ''}"
+                                                      class="iconBtn itemStar ${fav ? 'active' : ''}"
                                                       title=${fav ? 'Unfavourite' : 'Favourite'}
                                                       @click=${() =>
                                                           card._toggleShoppingFavourite(itemName)}
@@ -392,15 +450,27 @@ export class FbShoppingView extends LitElement {
                                                   </button>
                                                   <button
                                                       class="btn"
+                                                      @click=${() => card._deleteShoppingItem(it)}
+                                                  >
+                                                      Delete
+                                                  </button>
+                                                  <button
+                                                      class="btn"
                                                       @click=${() => card._editShoppingItem(it)}
                                                   >
                                                       Edit
                                                   </button>
                                                   <button
-                                                      class="btn"
-                                                      @click=${() => card._deleteShoppingItem(it)}
+                                                      class="btn icon completeBtn"
+                                                      title=${isDone
+                                                          ? 'Mark as incomplete'
+                                                          : 'Mark as complete'}
+                                                      @click=${() =>
+                                                          card._toggleShoppingItem(it, !isDone)}
                                                   >
-                                                      Delete
+                                                      <ha-icon
+                                                          icon=${isDone ? 'mdi:close' : 'mdi:check'}
+                                                      ></ha-icon>
                                                   </button>
                                               </div>
                                           </div>
@@ -422,15 +492,29 @@ export class FbShoppingView extends LitElement {
                     <div class="card">
                         <div class="h commonHeader">
                             <span>Favourites</span>
-                            <span class="muted">${commonList.length}</span>
+                            <span class="headerMeta">
+                                <span class="muted">${commonList.length}</span>
+                                ${commonList.length
+                                    ? html`<button
+                                              class="headerBtn"
+                                              @click=${() => card._addShoppingFavourites?.()}
+                                          >
+                                              Add all
+                                          </button>
+                                          <button
+                                              class="headerBtn"
+                                              @click=${() => card._clearShoppingFavourites?.()}
+                                          >
+                                              Clear all
+                                          </button>`
+                                    : html``}
+                            </span>
                         </div>
                         <div class="commonList">
                             ${commonList.length
                                 ? commonList.map((item) => {
                                       const key = String(item).toLowerCase();
-                                      const fav = favourites.some(
-                                          (f) => String(f).toLowerCase() === key
-                                      );
+                                      const fav = favKeys.has(key);
                                           return html`
                                           <div class="commonRow">
                                               <button
@@ -440,17 +524,14 @@ export class FbShoppingView extends LitElement {
                                                   <span class="commonText">${item}</span>
                                                   <span class="commonPlus" aria-hidden="true">+</span>
                                               </button>
-                                              <button
-                                                  class="starBtn ${fav ? 'active' : ''}"
-                                                  title=${fav ? 'Unfavourite' : 'Favourite'}
-                                                  @click=${() => card._toggleShoppingFavourite(item)}
-                                              >
-                                                  <ha-icon
-                                                      icon=${fav
-                                                          ? 'mdi:star'
-                                                          : 'mdi:star-outline'}
-                                                  ></ha-icon>
-                                              </button>
+                                                  <button
+                                                      class="starBtn active"
+                                                      title="Unfavourite"
+                                                      @click=${() =>
+                                                          card._toggleShoppingFavourite(item)}
+                                                  >
+                                                      <ha-icon icon="mdi:star"></ha-icon>
+                                                  </button>
                                           </div>
                                       `;
                                   })

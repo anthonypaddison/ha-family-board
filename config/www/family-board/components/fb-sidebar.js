@@ -24,6 +24,7 @@ export class FbSidebar extends LitElement {
             flex-direction: column;
             gap: 16px;
             height: 100%;
+            padding-top: 0;
         }
 
         .nav {
@@ -33,6 +34,10 @@ export class FbSidebar extends LitElement {
             width: 100%;
             flex: 1;
             overflow: auto;
+            padding-top: max(
+                0px,
+                calc(var(--fb-topbar-height, 0px) + (var(--fb-gutter) * 2) + 24px - 64px)
+            );
         }
 
         .navbtn {
@@ -49,7 +54,7 @@ export class FbSidebar extends LitElement {
             color: var(--fb-text);
             text-align: left;
             position: relative;
-            min-height: 44px;
+            min-height: var(--fb-touch);
             transition: box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease;
         }
 
@@ -69,6 +74,9 @@ export class FbSidebar extends LitElement {
         .navbtn.active .navmeta {
             color: #ffffff;
             background: color-mix(in srgb, #ffffff 20%, transparent);
+        }
+        .navbtn.settings {
+            margin-top: auto;
         }
 
         .navicon {
@@ -109,33 +117,6 @@ export class FbSidebar extends LitElement {
             align-items: center;
         }
 
-        .footer {
-            margin-top: auto;
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            padding: 10px 12px 12px;
-        }
-
-        .footerBtn {
-            border: 0;
-            background: transparent;
-            padding: 0;
-            cursor: pointer;
-            color: var(--fb-text);
-            display: grid;
-            place-items: center;
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            transition: box-shadow 0.15s ease, background 0.15s ease;
-        }
-
-        .footerBtn:hover {
-            background: color-mix(in srgb, var(--fb-accent-teal) 15%, transparent);
-            box-shadow: var(--shadow-sm);
-        }
-
         .rail.collapsed .navbtn {
             grid-template-columns: 1fr;
             padding: 12px 0;
@@ -150,9 +131,6 @@ export class FbSidebar extends LitElement {
         .rail.collapsed .brand {
             visibility: hidden;
         }
-        .rail.collapsed .footer {
-            flex-direction: column;
-        }
     `;
 
     _click(target) {
@@ -165,18 +143,12 @@ export class FbSidebar extends LitElement {
         );
     }
 
-    _toggleCollapse() {
-        this.dispatchEvent(
-            new CustomEvent('fb-sidebar-toggle', { bubbles: true, composed: true })
-        );
-    }
-
     render() {
         const active = this.active || 'schedule';
         const counts = this.counts || {};
         const meta = (k) => (counts?.[k] ? counts[k] : null);
         const isAdmin = Boolean(this.isAdmin);
-        const collapsed = Boolean(this.collapsed);
+        const collapsed = true;
 
         const item = (key, label, icon) => html`
             <button
@@ -196,29 +168,21 @@ export class FbSidebar extends LitElement {
                 <div class="brand">${collapsed ? 'FB' : 'Family Board'}</div>
                 <div class="nav">
                     ${item('schedule', 'Schedule', 'mdi:calendar-multiselect')}
+                    ${item('important', 'Important', 'mdi:alert-circle-outline')}
                     ${item('chores', 'Chores', 'mdi:check-circle-outline')}
                     ${item('shopping', 'Shopping', 'mdi:cart-outline')}
                     ${item('home', 'Home', 'mdi:home-automation')}
-                </div>
-                <div class="footer">
                     ${isAdmin
                         ? html`<button
-                              class="footerBtn"
-                              title="Settings"
+                              class="navbtn settings ${active === 'settings' ? 'active' : ''}"
                               @click=${() => this._click('settings')}
                           >
-                              <ha-icon icon="mdi:cog-outline"></ha-icon>
+                              <span class="navicon">
+                                  <ha-icon icon="mdi:cog-outline"></ha-icon>
+                              </span>
+                              <span class="navlabel">Settings</span>
                           </button>`
                         : html``}
-                    <button
-                        class="footerBtn"
-                        title=${collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                        @click=${this._toggleCollapse}
-                    >
-                        <ha-icon
-                            icon=${collapsed ? 'mdi:chevron-right' : 'mdi:chevron-left'}
-                        ></ha-icon>
-                    </button>
                 </div>
             </div>
         `;

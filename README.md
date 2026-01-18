@@ -3,10 +3,10 @@
 Family Board is a custom Lovelace card for Home Assistant that combines a multi-day calendar, chores, shopping, and home controls into one dashboard.
 
 ## What this is
-- Schedule view (day/week/month) built from `calendar.*` entities.
+- Schedule view (day/month) built from `calendar.*` entities.
 - Chores and shopping built from `todo.*` entities.
 - Admin-first setup helpers and an in-card editor guide.
-- Per-user/device preferences (filters, sidebar collapse, time slots).
+- Per-user/device preferences (filters, sidebar collapse, time slots, landing view).
 
 ## Installation
 
@@ -40,7 +40,7 @@ title: Family Board
 debug: false
 
 day_start_hour: 6
-day_end_hour: 22
+day_end_hour: 24
 slot_minutes: 30
 px_per_hour: 120
 refresh_interval_ms: 300000
@@ -49,14 +49,20 @@ people:
   - id: person_one
     name: Person One
     color: '#36B37E'
+    text_color: '#FFFFFF'
+    role: grownup
     header_row: 1
   - id: person_two
     name: Person Two
     color: '#7E57C2'
+    text_color: '#FFFFFF'
+    role: grownup
     header_row: 1
   - id: person_three
     name: Person Three
     color: '#F4B400'
+    text_color: '#1A1A1A'
+    role: kid
     header_row: 2
 
 calendars:
@@ -83,9 +89,15 @@ shopping:
   entity: todo.shopping_list_2
   name: Shopping
 
+people_display:
+  - person_one
+  - person_two
+  - person_three
+
 accent_teal: '#00CED1'
 accent_lilac: '#CFBAF0'
 background_theme: 'mint'
+admin_pin: '1234'
 ```
 
 ## Configuration reference
@@ -94,7 +106,10 @@ background_theme: 'mint'
   - `id` (string): Unique person key.
   - `name` (string): Display name.
   - `color` (string): CSS color for this person.
+  - `text_color` (string, optional): Text color used for events and pips.
+  - `role` (string, optional): `kid` or `grownup` (shown as a badge in header/chores).
   - `header_row` (1 or 2): Which header row the tile appears in.
+- `people_display` (list, optional): Ordered list of up to 8 people ids to show in the header.
 - `calendars`: List of calendar entities.
   - `entity` (string): `calendar.*` entity id.
   - `person_id` (string): Links the calendar to a person.
@@ -112,16 +127,62 @@ background_theme: 'mint'
 - `background_theme` (string, optional): `mint` | `sand` | `slate` to tint the board background.
 - `home_controls` (list, optional): Entity ids to show on the Home controls view.
 - `slot_minutes`: 30 or 60 (per-device preference available in Settings).
+- `day_start_hour`: Earliest hour shown in the schedule (0-24).
+- `day_end_hour`: Latest hour shown in the schedule (0-24, must be after start).
 - `px_per_hour`: Height scaling for the schedule grid.
 - `refresh_interval_ms`: Polling interval for refreshes.
+- `admin_pin` (string, optional): Admin PIN for unlocking Settings on non-admin devices.
 
 Header row behavior:
 - Row 1 renders first, then row 2.
-- Max 10 tiles are visible (5 per row); extra tiles are omitted in config order.
+- Max 8 tiles are visible (4 per row); extra tiles are omitted in config order.
 
 Mobile layout:
 - Toggle "Mobile layout (this device)" in Settings -> Preferences.
 - When enabled on a mobile device, the schedule renders with the mobile layout.
+
+Add button:
+- The add button lives in the top header next to Sync and opens the add modal for the current view.
+- Use the add modal selector to switch between event, chore, shopping, and home control.
+
+## Settings (per device)
+
+These settings are stored per user/device:
+- Visible hours (earliest/latest).
+- Default landing view (Schedule, Important, Chores, Shopping, Home).
+- Sidebar collapsed state.
+- Mobile layout toggle.
+- Time slot minutes.
+- Default event duration.
+- Theme selection (currently "Bright light").
+- Reset all defaults (double-confirmation).
+
+Sources and admin controls live in the left column. Preferences (including reset defaults) live
+in the right column.
+
+Admin access:
+- HA admins can always open Settings.
+- Non-admins can unlock Settings on a device using `admin_pin`.
+
+Sources rules:
+- Calendars and todo lists must be real entities in Home Assistant.
+- Each person should be linked to at least one calendar or todo list.
+
+## Bin collections
+
+Configure `bins` (up to 10) and `bin_schedule` in Settings to show upcoming collections:
+- Each bin: `name`, `colour` (hex), `icon` (mdi), `enabled`.
+- `bin_schedule.mode`: `simple` or `rotation`.
+- Simple repeat (per bin):
+  - `weekday` (0-6, Sunday-Saturday)
+  - `every` (weeks interval)
+  - `anchor_date` (YYYY-MM-DD, last collection)
+- Rotation (global):
+  - `weekday` (0-6)
+  - `anchor_date` (week 1)
+  - `weeks`: array of `{ bins: [binId, ...] }`
+
+When a bin is due today or tomorrow, its icon appears next to the time in the header.
 
 ## Persistence modes
 
@@ -132,6 +193,8 @@ This card supports multiple persistence modes for config:
 - Local storage fallback per user/device when WS storage is unavailable.
 
 YAML is only the base config. Stored config overrides YAML once available.
+Per-device settings (visible hours, landing view, sidebar state, accents, and debug) are stored in
+localStorage and always override shared config on that device.
 
 ## Integrations
 
@@ -142,7 +205,7 @@ YAML is only the base config. Stored config overrides YAML once available.
 
 - Config keeps reverting: storage is unavailable. Install the integration or rely on localStorage.
 - `todo/remove_item` expects a string: update Home Assistant and this card to latest; older HA versions may require item IDs only.
-- FAB not working: clear cache and bump the resource query string.
+- Add button missing: clear cache and bump the resource query string.
 - Module 404 / resource not loading: check the `/local/family-board/` path and resource URL.
 
 ## Screenshots
