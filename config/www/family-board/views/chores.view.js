@@ -74,6 +74,11 @@ export class FbChoresView extends LitElement {
         .itemTitle {
             font-weight: 700;
         }
+        .itemMeta {
+            color: var(--fb-muted);
+            font-size: 12px;
+            margin-top: 2px;
+        }
         .item.completed {
             background: var(--fb-surface);
             opacity: 0.6;
@@ -216,6 +221,38 @@ export class FbChoresView extends LitElement {
                                                           <div class="itemTitle">
                                                               ${it.summary ?? it.name ?? it.item ?? '(Todo)'}
                                                           </div>
+                                                          ${it.due || it.due_date || it.due_datetime
+                                                              ? html`<div class="itemMeta">
+                                                                    Due:
+                                                                    ${(() => {
+                                                                        const due =
+                                                                            it.due ||
+                                                                            it.due_date ||
+                                                                            it.due_datetime;
+                                                                        const dueValue =
+                                                                            due?.date ||
+                                                                            due?.dateTime ||
+                                                                            due;
+                                                                        const date = new Date(
+                                                                            dueValue
+                                                                        );
+                                                                        if (
+                                                                            Number.isNaN(
+                                                                                date.getTime()
+                                                                            )
+                                                                        )
+                                                                            return 'Unknown';
+                                                                        return date.toLocaleDateString(
+                                                                            undefined,
+                                                                            {
+                                                                                weekday: 'short',
+                                                                                day: '2-digit',
+                                                                                month: 'short',
+                                                                            }
+                                                                        );
+                                                                    })()}
+                                                                </div>`
+                                                              : html``}
                                                       </div>
                                                       <div class="actions">
                                                           <button

@@ -374,6 +374,7 @@ class FamilyBoardCard extends LitElement {
         this._sidebarCollapsed = Boolean(prefs.sidebarCollapsed);
         this._adminUnlocked = Boolean(prefs.adminUnlocked);
         this._defaultView = prefs.defaultView || 'schedule';
+        this._lastView = prefs.lastView || '';
         if (Number.isFinite(prefs.dayStartHour)) this._deviceDayStartHour = prefs.dayStartHour;
         if (Number.isFinite(prefs.dayEndHour)) this._deviceDayEndHour = prefs.dayEndHour;
         if (Number.isFinite(prefs.pxPerHour)) this._devicePxPerHour = prefs.pxPerHour;
@@ -402,9 +403,10 @@ class FamilyBoardCard extends LitElement {
         this._prefsLoaded = true;
 
         if (!this._initialViewSet) {
-            const view = ['schedule', 'important', 'chores', 'shopping', 'home', 'settings'].includes(
-                this._defaultView
-            )
+            const allowedViews = ['schedule', 'important', 'chores', 'shopping', 'home', 'settings'];
+            const view = allowedViews.includes(this._lastView)
+                ? this._lastView
+                : allowedViews.includes(this._defaultView)
                 ? this._defaultView
                 : 'schedule';
             this._screen = view;
@@ -1313,6 +1315,7 @@ class FamilyBoardCard extends LitElement {
         const target = ev?.detail?.target;
         if (!target) return;
         this._screen = target;
+        this._savePrefs();
         this._queueRefresh();
     };
 
@@ -1519,6 +1522,77 @@ class FamilyBoardCard extends LitElement {
         };
     }
 
+    _buildTodoItemWithDue(text, dueDate) {
+        const item = this._buildTodoItem(text);
+        if (dueDate) {
+            item.due = { date: dueDate };
+            item.due_date = dueDate;
+        }
+        return item;
+    }
+
+    _todoRepeatKeyFromText(text) {
+        return String(text || '').trim().toLowerCase();
+    }
+
+    _todoRepeatsForEntity(entityId) {
+        const allRepeats = this._config?.todo_repeats || {};
+        return allRepeats?.[entityId] || {};
+    }
+
+    _getTodoRepeat(entityId, item) {
+        if (!entityId || !item) return '';
+        const key = this._todoRepeatKeyFromText(
+            item.summary || item.name || item.item || ''
+        );
+        const repeats = this._todoRepeatsForEntity(entityId);
+        return repeats?.[key]?.cadence || '';
+    }
+
+    _setTodoRepeat(entityId, text, cadence) {
+        if (!entityId || !text) return;
+        const key = this._todoRepeatKeyFromText(text);
+        const current = this._config?.todo_repeats || {};
+        const entityRepeats = { ...(current[entityId] || {}) };
+        entityRepeats[key] = { cadence };
+        const next = { ...current, [entityId]: entityRepeats };
+        this._updateConfigPartial({ todo_repeats: next });
+    }
+
+    _clearTodoRepeat(entityId, text) {
+        if (!entityId || !text) return;
+        const key = this._todoRepeatKeyFromText(text);
+        const current = this._config?.todo_repeats || {};
+        if (!current[entityId]?.[key]) return;
+        const entityRepeats = { ...(current[entityId] || {}) };
+        delete entityRepeats[key];
+        const next = { ...current, [entityId]: entityRepeats };
+        this._updateConfigPartial({ todo_repeats: next });
+    }
+
+    _nextRepeatDate(date, cadence) {
+        if (!date || Number.isNaN(date.getTime())) return null;
+        const next = new Date(date);
+        if (cadence === 'daily') return addDays(next, 1);
+        if (cadence === 'weekly') return addDays(next, 7);
+        if (cadence === 'biweekly') return addDays(next, 14);
+        if (cadence === 'monthly') {
+            const month = next.getMonth();
+            next.setMonth(month + 1);
+            return next;
+        }
+        return null;
+    }
+
+    _repeatForTodo(entityId, item) {
+        if (!entityId || !item) return null;
+        const key = this._todoRepeatKeyFromText(
+            item.summary || item.name || item.item || ''
+        );
+        const repeats = this._todoRepeatsForEntity(entityId);
+        return repeats?.[key] || null;
+    }
+
     _todoItemKey(item) {
         if (!item || typeof item !== 'object') return '';
         return (
@@ -1532,11 +1606,11 @@ class FamilyBoardCard extends LitElement {
         );
     }
 
-    _optimisticTodoAdd(entityId, text) {
+    _optimisticTodoAdd(entityId, text, dueDate) {
         const list = Array.isArray(this._todoItems?.[entityId])
             ? [...this._todoItems[entityId]]
             : [];
-        const next = this._buildTodoItem(text);
+        const next = dueDate ? this._buildTodoItemWithDue(text, dueDate) : this._buildTodoItem(text);
         list.push(next);
         this._todoItems = { ...(this._todoItems || {}), [entityId]: list };
         this._todoRenderTick += 1;
@@ -1544,28 +1618,38 @@ class FamilyBoardCard extends LitElement {
         return next;
     }
 
-    _optimisticTodoUpdate(entityId, item, text) {
+    _optimisticTodoUpdate(entityId, item, text, dueDate) {
         const list = Array.isArray(this._todoItems?.[entityId])
             ? [...this._todoItems[entityId]]
             : [];
         const targetKey = this._todoItemKey(item);
         const nextList = list.map((entry) => {
             if (entry === item) {
-                return {
+                const next = {
                     ...entry,
                     summary: text,
                     name: text,
                     item: text,
                 };
+                if (dueDate) {
+                    next.due = { date: dueDate };
+                    next.due_date = dueDate;
+                }
+                return next;
             }
             if (!targetKey) return entry;
             if (this._todoItemKey(entry) !== targetKey) return entry;
-            return {
+            const next = {
                 ...entry,
                 summary: text,
                 name: text,
                 item: text,
             };
+            if (dueDate) {
+                next.due = { date: dueDate };
+                next.due_date = dueDate;
+            }
+            return next;
         });
         this._todoItems = { ...(this._todoItems || {}), [entityId]: nextList };
         this._todoRenderTick += 1;
@@ -1606,11 +1690,18 @@ class FamilyBoardCard extends LitElement {
     }
 
     _onAddTodo = async (ev) => {
-        const { entityId, text } = ev?.detail || {};
+        const { entityId, text, dueDate, repeat } = ev?.detail || {};
         if (!entityId || !text) return;
-        const optimistic = this._optimisticTodoAdd(entityId, text);
+        const optimistic = this._optimisticTodoAdd(entityId, text, dueDate);
         try {
-            await this._todoService.addItem(this._hass, entityId, text);
+            await this._todoService.addItem(this._hass, entityId, text, {
+                dueDate: dueDate || '',
+            });
+            if (repeat) {
+                this._setTodoRepeat(entityId, text, repeat);
+            } else {
+                this._clearTodoRepeat(entityId, text);
+            }
         } catch (error) {
             this._optimisticTodoRemove(entityId, optimistic);
             this._showErrorToast('Add chore');
@@ -1638,21 +1729,30 @@ class FamilyBoardCard extends LitElement {
     };
 
     _onEditTodo = async (ev) => {
-        const { entityId, item, text } = ev?.detail || {};
+        const { entityId, item, text, dueDate, repeat } = ev?.detail || {};
         if (!entityId || !item || !text) return;
         const previous = {
             summary: item.summary,
             name: item.name,
             item: item.item,
         };
-        this._optimisticTodoUpdate(entityId, item, text);
+        const previousText = previous.summary ?? previous.name ?? previous.item ?? '';
+        this._optimisticTodoUpdate(entityId, item, text, dueDate);
         try {
-            await this._todoService.renameItem(this._hass, entityId, item, text);
+            await this._todoService.renameItem(this._hass, entityId, item, text, {
+                dueDate: dueDate || '',
+            });
+            if (previousText && previousText !== text) {
+                this._clearTodoRepeat(entityId, previousText);
+            }
+            if (repeat) this._setTodoRepeat(entityId, text, repeat);
+            else this._clearTodoRepeat(entityId, text);
         } catch (error) {
             this._optimisticTodoUpdate(
                 entityId,
                 item,
-                previous.summary ?? previous.name ?? previous.item ?? ''
+                previousText,
+                dueDate
             );
             this._showErrorToast('Edit chore');
         } finally {
@@ -1806,6 +1906,29 @@ class FamilyBoardCard extends LitElement {
         this._optimisticTodoStatus(entityId, item, completed);
         try {
             await this._todoService.setStatus(this._hass, entityId, item, completed);
+            if (completed) {
+                const repeat = this._repeatForTodo(entityId, item);
+                if (repeat?.cadence) {
+                    const due = item.due || item.due_date || item.due_datetime;
+                    const dueValue = due?.date || due?.dateTime || due;
+                    const dueDate = dueValue ? new Date(dueValue) : null;
+                    if (dueDate && !Number.isNaN(dueDate.getTime())) {
+                        const nextDate = this._nextRepeatDate(dueDate, repeat.cadence);
+                        if (nextDate) {
+                            const yyyy = nextDate.getFullYear();
+                            const mm = String(nextDate.getMonth() + 1).padStart(2, '0');
+                            const dd = String(nextDate.getDate()).padStart(2, '0');
+                            const dueDateStr = `${yyyy}-${mm}-${dd}`;
+                            const text =
+                                item.summary || item.name || item.item || '(Todo)';
+                            await this._todoService.addItem(this._hass, entityId, text, {
+                                dueDate: dueDateStr,
+                            });
+                            this._optimisticTodoAdd(entityId, text, dueDateStr);
+                        }
+                    }
+                }
+            }
         } catch (error) {
             if (!hasStableId) {
                 try {
@@ -2096,6 +2219,7 @@ class FamilyBoardCard extends LitElement {
             shoppingFavourites: this._shoppingFavourites,
             adminUnlocked: Boolean(this._adminUnlocked),
             defaultView: this._defaultView || 'schedule',
+            lastView: this._screen || this._defaultView || 'schedule',
             dayStartHour: this._deviceDayStartHour ?? null,
             dayEndHour: this._deviceDayEndHour ?? null,
             pxPerHour: this._devicePxPerHour ?? null,

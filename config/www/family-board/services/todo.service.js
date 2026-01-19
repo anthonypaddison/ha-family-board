@@ -55,13 +55,17 @@ export class TodoService {
         return [];
     }
 
-    async addItem(hass, entityId, text) {
+    async addItem(hass, entityId, text, options = {}) {
         if (!hass) throw new Error('Missing hass');
         if (!entityId) throw new Error('Missing todo entityId');
         if (!text) throw new Error('Missing todo text');
 
         // add_item usually does not require return_response
-        await hass.callService('todo', 'add_item', { entity_id: entityId, item: text });
+        const payload = { entity_id: entityId, item: text };
+        if (options.dueDate) payload.due_date = options.dueDate;
+        if (options.dueDateTime) payload.due_datetime = options.dueDateTime;
+        if (options.dueString) payload.due_string = options.dueString;
+        await hass.callService('todo', 'add_item', payload);
     }
 
     async updateItem(hass, entityId, item, updates = {}) {
@@ -74,6 +78,9 @@ export class TodoService {
         const rename = updates?.rename ?? updates?.name ?? updates?.summary;
         if (rename) payload.rename = rename;
         if (updates?.status) payload.status = updates.status;
+        if (updates?.dueDate) payload.due_date = updates.dueDate;
+        if (updates?.dueDateTime) payload.due_datetime = updates.dueDateTime;
+        if (updates?.dueString) payload.due_string = updates.dueString;
         debugLog(this.debug, 'Todo update_item', {
             entityId,
             ref,
@@ -107,13 +114,13 @@ export class TodoService {
         });
     }
 
-    async renameItem(hass, entityId, item, text) {
+    async renameItem(hass, entityId, item, text, options = {}) {
         if (!hass) throw new Error('Missing hass');
         if (!entityId) throw new Error('Missing todo entityId');
         if (!item) throw new Error('Missing item');
         if (!text) throw new Error('Missing text');
 
-        await this.updateItem(hass, entityId, item, { rename: text });
+        await this.updateItem(hass, entityId, item, { rename: text, ...options });
     }
 
     async clearCompleted(hass, entityId) {

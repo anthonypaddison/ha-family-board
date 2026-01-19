@@ -29,6 +29,7 @@ Home Assistant Custom Dashboard (SPA Card)
             HA persistent state
             localStorage
             Defaults
+        Last view persists per device
     2.3 Settings Scope
         All settings are per device
         Person definitions are shared household state
@@ -173,6 +174,9 @@ Home Assistant Custom Dashboard (SPA Card)
         Completion:
             Immediate strikethrough
             Cleared on refresh or manual clear
+        Repeat:
+            Optional repeat cadence (daily, weekly, biweekly, monthly)
+            Requires due date
     5.4 Shopping View
         Single shared household list
         No due dates

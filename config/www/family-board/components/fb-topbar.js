@@ -59,6 +59,7 @@ export class FbTopbar extends LitElement {
             border: 2px solid var(--bin-colour);
             color: var(--bin-colour);
             background: var(--fb-surface);
+            line-height: 0;
         }
         .binIcon.tomorrow {
             opacity: 0.6;
@@ -66,6 +67,17 @@ export class FbTopbar extends LitElement {
         .binIcon ha-icon {
             width: 16px;
             height: 16px;
+            display: grid;
+            place-items: center;
+            margin: 0;
+            --mdc-icon-size: 16px;
+        }
+        .binIcon ha-svg-icon,
+        .binIcon ha-svg-icon svg {
+            width: 16px;
+            height: 16px;
+            display: block;
+            margin: 0 auto;
         }
 
         .time {
@@ -257,7 +269,7 @@ export class FbTopbar extends LitElement {
             color: var(--fb-text);
             font-weight: 700;
             height: 40px;
-            min-width: 64px;
+            min-width: 76px;
         }
         .shoppingChip ha-icon {
             width: 18px;

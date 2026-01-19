@@ -304,6 +304,7 @@ export class FbSettingsView extends LitElement {
                 bins: nextBins,
                 bin_schedule: nextSchedule,
             });
+            this.requestUpdate();
         };
         const makeBinId = () =>
             `bin_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
@@ -771,19 +772,25 @@ export class FbSettingsView extends LitElement {
                                                               cfg.weekday ?? ''
                                                           )}
                                                           @change=${(e) => {
+                                                              const raw = e.target.value;
+                                                              const nextWeekday =
+                                                                  raw === '' ? null : Number(raw);
                                                               const nextSimple = {
                                                                   ...binSimple,
                                                                   [bin.id]: {
                                                                       ...cfg,
-                                                                      weekday: Number(
-                                                                          e.target.value
-                                                                      ),
+                                                                      weekday: nextWeekday,
                                                                   },
                                                               };
                                                               updateBinConfig(bins, {
                                                                   ...binSchedule,
                                                                   simple: nextSimple,
                                                               });
+                                                          }}
+                                                          @input=${(e) => {
+                                                              e.target.dispatchEvent(
+                                                                  new Event('change')
+                                                              );
                                                           }}
                                                       >
                                                           <option value="">Weekday</option>
@@ -852,14 +859,21 @@ export class FbSettingsView extends LitElement {
                                               <select
                                                   class="input"
                                                   .value=${String(binRotation.weekday ?? '')}
-                                                  @change=${(e) =>
+                                                  @change=${(e) => {
+                                                      const raw = e.target.value;
+                                                      const nextWeekday =
+                                                          raw === '' ? null : Number(raw);
                                                       updateBinConfig(bins, {
                                                           ...binSchedule,
                                                           rotation: {
                                                               ...binRotation,
-                                                              weekday: Number(e.target.value),
+                                                              weekday: nextWeekday,
                                                           },
-                                                      })}
+                                                      });
+                                                  }}
+                                                  @input=${(e) => {
+                                                      e.target.dispatchEvent(new Event('change'));
+                                                  }}
                                               >
                                                   <option value="">Weekday</option>
                                                   ${weekdayOptions.map(

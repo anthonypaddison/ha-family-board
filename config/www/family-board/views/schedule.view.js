@@ -493,6 +493,8 @@ export class FbScheduleView extends LitElement {
                     const only = active[0];
                     const person = card._personForEntity(only._fbEntityId);
                     const color = person?.color || card._neutralColor();
+                    const textColor =
+                        person?.text_color || getReadableTextColour(color);
                     nowBadge = {
                         text: only.summary || '(Event)',
                         color,

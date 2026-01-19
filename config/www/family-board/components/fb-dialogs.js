@@ -28,6 +28,8 @@ export class FbDialogs extends LitElement {
         _emoji: { state: true },
         _emojiOpen: { state: true },
         _textValue: { state: true },
+        _todoDueValue: { state: true },
+        _todoRepeatValue: { state: true },
     };
 
     static styles = css`
@@ -56,6 +58,11 @@ export class FbDialogs extends LitElement {
             display: grid;
             gap: 8px;
             margin-top: 10px;
+        }
+        .inlineRow {
+            display: flex;
+            gap: 8px;
+            align-items: center;
         }
         label {
             font-size: 14px;
@@ -92,6 +99,16 @@ export class FbDialogs extends LitElement {
             border: 1px solid var(--fb-grid);
             color: var(--fb-text);
         }
+        .iconBtn {
+            border: 1px solid var(--fb-grid);
+            background: var(--fb-surface);
+            width: var(--fb-touch);
+            height: var(--fb-touch);
+            display: grid;
+            place-items: center;
+            border-radius: 10px;
+            cursor: pointer;
+        }
         .h {
             display: flex;
             align-items: center;
@@ -123,6 +140,8 @@ export class FbDialogs extends LitElement {
             this._todoEntityValue = '';
             this._textValue = '';
             this._emoji = '';
+            this._todoDueValue = '';
+            this._todoRepeatValue = '';
         }
     }
 
@@ -173,6 +192,16 @@ export class FbDialogs extends LitElement {
         return `${this._emoji} ${trimmed}`.trim();
     }
 
+    _formatDateValue(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '';
+        const yyyy = date.getFullYear();
+        const mm = pad2(date.getMonth() + 1);
+        const dd = pad2(date.getDate());
+        return `${yyyy}-${mm}-${dd}`;
+    }
+
     render() {
         if (!this.open) return html``;
 
@@ -218,6 +247,15 @@ export class FbDialogs extends LitElement {
             const parsed = this._extractEmoji(current);
             if (this._textValue === undefined) this._textValue = parsed.text;
             if (this._emoji === undefined) this._emoji = parsed.emoji;
+            if (this._todoDueValue === undefined) {
+                const due = this.item.due || this.item.due_date || this.item.due_datetime;
+                const dueValue = due?.date || due?.dateTime || due || '';
+                this._todoDueValue = this._formatDateValue(dueValue);
+            }
+            if (this._todoRepeatValue === undefined) {
+                const repeat = this.card?._getTodoRepeat?.(this.entityId, this.item) || '';
+                this._todoRepeatValue = repeat;
+            }
         }
 
         if (mode === 'shopping-edit' && this.item) {
@@ -370,7 +408,12 @@ export class FbDialogs extends LitElement {
                           `
                         : html``}
                     ${mode === 'todo' || mode === 'todo-edit'
-                        ? html`
+                        ? (() => {
+                              const dueValue = this._todoDueValue || '';
+                              const repeatValue = this._todoRepeatValue || '';
+                              const canSubmit = (textValue) =>
+                                  Boolean(textValue) && (!repeatValue || dueValue);
+                              return html`
                               <div class="row">
                                   <label>Person</label>
                                   <select
@@ -415,31 +458,97 @@ export class FbDialogs extends LitElement {
                                       ></fb-icon-picker>
                                   </div>
                               </div>
+                              <div class="row">
+                                  <label>Due date</label>
+                                  <div class="inlineRow">
+                                      <input
+                                          id="todoDue"
+                                          type="date"
+                                          .value=${this._todoDueValue || ''}
+                                          inputmode="none"
+                                          @change=${(e) =>
+                                              (this._todoDueValue = e.target.value)}
+                                          @beforeinput=${(e) => e.preventDefault()}
+                                          @input=${(e) => {
+                                              e.preventDefault();
+                                              e.target.value = this._todoDueValue || '';
+                                          }}
+                                          @keydown=${(e) => e.preventDefault()}
+                                          @click=${(e) => {
+                                              const input = e.currentTarget;
+                                              if (input?.showPicker) input.showPicker();
+                                          }}
+                                      />
+                                      <button
+                                          class="iconBtn"
+                                          title="Pick date"
+                                          @click=${() => {
+                                              const input =
+                                                  this.renderRoot.querySelector('#todoDue');
+                                              if (input?.showPicker) input.showPicker();
+                                          }}
+                                      >
+                                          <ha-icon icon="mdi:calendar-month-outline"></ha-icon>
+                                      </button>
+                                  </div>
+                              </div>
+                              <div class="row">
+                                  <label>Repeat</label>
+                                  <select
+                                      id="todoRepeat"
+                                      .value=${this._todoRepeatValue || ''}
+                                      @change=${(e) => (this._todoRepeatValue = e.target.value)}
+                                  >
+                                      <option value="">No repeat</option>
+                                      <option value="daily">Daily</option>
+                                      <option value="weekly">Weekly</option>
+                                      <option value="biweekly">Every 2 weeks</option>
+                                      <option value="monthly">Monthly</option>
+                                  </select>
+                              </div>
 
                               <div class="actions">
                                   <button class="secondary" @click=${this.close}>Cancel</button>
                                   <button
+                                      ?disabled=${!canSubmit(this._textValue)}
                                       @click=${() => {
                                           const entityId =
                                               this._todoEntityValue ||
                                               this.renderRoot.querySelector('#todoEntity')?.value;
                                           const text = this._composeText(this._textValue);
+                                          const dueDate =
+                                              this._todoDueValue ||
+                                              this.renderRoot.querySelector('#todoDue')?.value ||
+                                              '';
+                                          const repeat =
+                                              this._todoRepeatValue ||
+                                              this.renderRoot.querySelector('#todoRepeat')?.value ||
+                                              '';
                                           if (!text) return;
+                                          if (repeat && !dueDate) return;
                                           if (mode === 'todo-edit') {
                                               this._emit('fb-edit-todo', {
                                                   entityId,
                                                   item: this.item,
                                                   text,
+                                                  dueDate,
+                                                  repeat,
                                               });
                                           } else {
-                                              this._emit('fb-add-todo', { entityId, text });
+                                              this._emit('fb-add-todo', {
+                                                  entityId,
+                                                  text,
+                                                  dueDate,
+                                                  repeat,
+                                              });
                                           }
                                       }}
                                   >
                                       ${mode === 'todo-edit' ? 'Save' : 'Add'}
                                   </button>
                               </div>
-                          `
+                          `;
+                          })()
                         : html``}
                     ${mode === 'shopping' || mode === 'shopping-edit'
                         ? html`

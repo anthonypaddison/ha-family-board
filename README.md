@@ -6,7 +6,7 @@ Family Board is a custom Lovelace card for Home Assistant that combines a multi-
 - Schedule view (day/month) built from `calendar.*` entities.
 - Chores and shopping built from `todo.*` entities.
 - Admin-first setup helpers and an in-card editor guide.
-- Per-user/device preferences (filters, sidebar collapse, time slots, landing view).
+- Per-user/device preferences (filters, time slots, landing view).
 
 ## Installation
 
@@ -150,7 +150,6 @@ Add button:
 These settings are stored per user/device:
 - Visible hours (earliest/latest).
 - Default landing view (Schedule, Important, Chores, Shopping, Home).
-- Sidebar collapsed state.
 - Mobile layout toggle.
 - Time slot minutes.
 - Default event duration.
@@ -184,6 +183,8 @@ Configure `bins` (up to 10) and `bin_schedule` in Settings to show upcoming coll
 
 When a bin is due today or tomorrow, its icon appears next to the time in the header.
 
+Chore repeat cadence options: daily, weekly, biweekly, monthly (requires due date).
+
 ## Persistence modes
 
 This card supports multiple persistence modes for config:
@@ -216,3 +217,5 @@ Add screenshots here (no personal data).
 
 - Edit ES modules under `config/www/family-board/`.
 - After JS edits, update the resource version in `configuration.yaml` (or via the UI).
+Last view:
+- The dashboard restores the last view you were on after refresh (per device).
