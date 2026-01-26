@@ -1208,6 +1208,11 @@ class FamilyBoardCard extends LitElement {
         for (const id of merged) {
             if (!unique.includes(id)) unique.push(id);
         }
+        if (hasDevice || hasConfigured) {
+            for (const id of fallback) {
+                if (!unique.includes(id)) unique.push(id);
+            }
+        }
         return unique.slice(0, 8);
     }
 

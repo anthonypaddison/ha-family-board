@@ -695,9 +695,6 @@ export class FbTopbar extends LitElement {
                                       >
                                           <span class="dot" style="background:${p.color}"></span>
                                           <span class="summaryName" style="flex:1">${p.name}</span>
-                                          ${p.role
-                                              ? html`<span class="roleBadge">${p.role}</span>`
-                                              : html``}
                                           <span class="summaryCounts">
                                               <span class="summaryMetric">
                                                   <ha-icon icon="mdi:calendar-month-outline"></ha-icon>
