@@ -11,7 +11,6 @@ export class FbManageSources extends LitElement {
         hass: { type: Object },
         _draft: { state: true },
         _saveError: { state: true },
-        _draftDirty: { state: true },
     };
 
     static styles = css`
@@ -161,17 +160,10 @@ export class FbManageSources extends LitElement {
 
     willUpdate(changedProps) {
         const opened = changedProps.has('open') && this.open;
-        const configChangedWhileOpen = this.open && changedProps.has('config') && !this._draftDirty;
-        const shouldReseedEmptyDraft =
-            this.open && this._configHasData(this.config) && !this._configHasData(this._draft);
-        if (opened || configChangedWhileOpen || shouldReseedEmptyDraft) {
+        const configChangedWhileOpen = this.open && changedProps.has('config');
+        if (opened || configChangedWhileOpen) {
             this._draft = JSON.parse(JSON.stringify(this.config || {}));
-            this._draftDirty = false;
         }
-    }
-
-    _markDirty() {
-        if (!this._draftDirty) this._draftDirty = true;
     }
 
     _configHasData(config) {
@@ -339,7 +331,7 @@ export class FbManageSources extends LitElement {
 
         return html`
             <div class="backdrop" @click=${(e) => e.target === e.currentTarget && this.close()}>
-                <div class="dlg" @input=${this._markDirty} @change=${this._markDirty}>
+                <div class="dlg">
                     <div class="h">
                         <div>Manage sources</div>
                         <button class="btn" @click=${this.close}>Close</button>
