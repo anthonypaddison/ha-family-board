@@ -33,14 +33,14 @@ export class FbSettingsView extends LitElement {
         .layout {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            gap: 10px;
             height: 100%;
             min-height: 0;
         }
         .column {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             overflow: hidden;
             min-height: 0;
         }
@@ -48,7 +48,7 @@ export class FbSettingsView extends LitElement {
             border: 1px solid var(--fb-grid);
             background: var(--fb-surface);
             border-radius: 12px;
-            padding: 12px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
             min-height: 0;
@@ -64,13 +64,25 @@ export class FbSettingsView extends LitElement {
         .row {
             display: flex;
             justify-content: space-between;
-            gap: 12px;
-            padding: 8px 0;
+            gap: 10px;
+            padding: 6px 0;
             border-bottom: 1px dashed var(--fb-grid);
+            align-items: center;
+        }
+        .row.binRow {
+            display: grid;
+            grid-template-columns: 18px 34px 1fr 140px 160px auto;
             align-items: center;
         }
         .row label {
             color: var(--fb-text);
+        }
+        .rowDot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: var(--row-dot, var(--fb-muted));
+            border: 1px solid var(--fb-border);
         }
         .row:last-child {
             border-bottom: 0;
@@ -79,7 +91,7 @@ export class FbSettingsView extends LitElement {
             font-weight: 700;
             margin-bottom: 6px;
             color: var(--fb-text);
-            font-size: 20px;
+            font-size: 18px;
         }
         .titleRow {
             display: flex;
@@ -128,26 +140,27 @@ export class FbSettingsView extends LitElement {
         }
         .muted {
             color: var(--fb-muted);
-            font-size: 16px;
+            font-size: 14px;
         }
         .btn {
             border: 1px solid var(--fb-grid);
             border-radius: 8px;
             background: var(--fb-accent);
-            padding: 8px 10px;
+            padding: 6px 8px;
             cursor: pointer;
             color: var(--fb-text);
-            min-height: var(--fb-touch);
-            min-width: var(--fb-touch);
+            font-size: 13px;
+            min-height: 34px;
+            min-width: 34px;
         }
         .input {
             border: 1px solid var(--fb-grid);
             border-radius: 8px;
-            padding: 6px 8px;
-            font-size: 16px;
+            padding: 5px 8px;
+            font-size: 14px;
             background: var(--fb-surface);
             color: var(--fb-text);
-            min-height: var(--fb-touch);
+            min-height: 34px;
         }
         .unitRow {
             display: flex;
@@ -156,7 +169,7 @@ export class FbSettingsView extends LitElement {
         }
         .unit {
             color: var(--fb-muted);
-            font-size: 14px;
+            font-size: 12px;
         }
         .status {
             font-weight: 700;
@@ -171,7 +184,7 @@ export class FbSettingsView extends LitElement {
             margin: 6px 0 0;
             padding-left: 18px;
             color: var(--fb-muted);
-            font-size: 16px;
+            font-size: 14px;
         }
         .actions {
             display: flex;
@@ -181,7 +194,7 @@ export class FbSettingsView extends LitElement {
         .subTitle {
             font-weight: 700;
             margin-top: 12px;
-            font-size: 16px;
+            font-size: 14px;
         }
         .subTitle:first-of-type {
             margin-top: 0;
@@ -200,11 +213,11 @@ export class FbSettingsView extends LitElement {
             background: transparent;
             color: var(--fb-text);
             border-radius: 999px;
-            padding: 6px 12px;
+            padding: 4px 10px;
             cursor: pointer;
-            font-size: 14px;
-            min-height: var(--fb-touch);
-            min-width: var(--fb-touch);
+            font-size: 13px;
+            min-height: 32px;
+            min-width: 32px;
         }
         .toggleBtn.active {
             background: var(--fb-surface);
@@ -220,11 +233,12 @@ export class FbSettingsView extends LitElement {
         .dragItem {
             border: 1px solid var(--fb-grid);
             border-radius: 10px;
-            padding: 6px 10px;
+            padding: 5px 8px;
             background: var(--fb-surface-2);
             cursor: grab;
             text-align: center;
             font-weight: 600;
+            font-size: 13px;
         }
         .dragItem.dragging {
             opacity: 0.5;
@@ -252,6 +266,12 @@ export class FbSettingsView extends LitElement {
         @media (max-width: 900px) {
             .layout {
                 grid-template-columns: 1fr;
+            }
+            .row.binRow {
+                grid-template-columns: 1fr;
+            }
+            .rowDot {
+                display: none;
             }
         }
     `;
@@ -303,6 +323,16 @@ export class FbSettingsView extends LitElement {
             { value: 4, label: 'Thursday' },
             { value: 5, label: 'Friday' },
             { value: 6, label: 'Saturday' },
+        ];
+        const binColourOptions = [
+            { label: 'Dark Grey', colour: '#1e1e1e' },
+            { label: 'Blue', colour: '#0000FF' },
+            { label: 'Green', colour: '#008000' },
+            { label: 'Brown', colour: '#421f01' },
+            { label: 'Red', colour: '#FF0000' },
+            { label: 'Yellow', colour: '#FFFF00' },
+            { label: 'Orange', colour: '#FFA500' },
+            { label: 'Purple', colour: '#4e0e63' },
         ];
         const updateBinConfig = (nextBins, nextSchedule) => {
             card._updateConfigPartial({
@@ -618,7 +648,11 @@ export class FbSettingsView extends LitElement {
                                 ${bins.length
                                     ? bins.map(
                                           (bin, idx) => html`
-                                              <div class="row">
+                                              <div class="row binRow">
+                                                  <span
+                                                      class="rowDot"
+                                                      style="--row-dot:${bin.colour || '#1e1e1e'}"
+                                                  ></span>
                                                   <div class="unitRow">
                                                       <input
                                                           type="checkbox"
@@ -651,11 +685,9 @@ export class FbSettingsView extends LitElement {
                                                           updateBinConfig(next, binSchedule);
                                                       }}
                                                   />
-                                                  <input
+                                                  <select
                                                       class="input"
-                                                      style="width:120px"
-                                                      placeholder="#RRGGBB"
-                                                      .value=${bin.colour || ''}
+                                                      .value=${bin.colour || '#1e1e1e'}
                                                       @change=${(e) => {
                                                           const next = bins.map((b, i) =>
                                                               i === idx
@@ -667,7 +699,17 @@ export class FbSettingsView extends LitElement {
                                                           );
                                                           updateBinConfig(next, binSchedule);
                                                       }}
-                                                  />
+                                                  >
+                                                      ${binColourOptions.map(
+                                                          (opt) => html`
+                                                              <option
+                                                                  value=${opt.colour}
+                                                              >
+                                                                  ${opt.label}
+                                                              </option>
+                                                          `
+                                                      )}
+                                                  </select>
                                                   <input
                                                       class="input"
                                                       style="width:160px"
