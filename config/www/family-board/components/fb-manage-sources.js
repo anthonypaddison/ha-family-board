@@ -58,7 +58,7 @@ export class FbManageSources extends LitElement {
             align-items: center;
         }
         .row.people {
-            grid-template-columns: 1fr 1fr 1fr 120px 110px auto;
+            grid-template-columns: 18px 1fr 1fr 1fr 110px 96px auto;
         }
         .row.calendars {
             grid-template-columns: 1fr 1fr 1fr auto auto;
@@ -66,24 +66,31 @@ export class FbManageSources extends LitElement {
         .row.small {
             grid-template-columns: 1fr auto;
         }
+        .rowDot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: var(--row-dot, var(--fb-muted));
+            border: 1px solid var(--fb-border);
+        }
         label {
-            font-size: 14px;
+            font-size: 13px;
             color: var(--fb-muted);
         }
         input,
         select,
         textarea {
-            padding: 8px 10px;
+            padding: 6px 8px;
             border-radius: 8px;
             border: 1px solid var(--fb-grid);
-            font-size: 14px;
+            font-size: 13px;
             background: var(--fb-surface);
             color: var(--fb-text);
         }
         textarea {
-            min-height: 120px;
+            min-height: 96px;
             font-family: monospace;
-            font-size: 14px;
+            font-size: 12px;
             width: 100%;
             box-sizing: border-box;
         }
@@ -91,17 +98,17 @@ export class FbManageSources extends LitElement {
             border: 1px solid var(--fb-grid);
             border-radius: 8px;
             background: var(--fb-surface-2);
-            padding: 6px 10px;
+            padding: 4px 8px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
             color: var(--fb-text);
-            min-height: var(--fb-touch);
-            min-width: var(--fb-touch);
+            min-height: 34px;
+            min-width: 34px;
         }
         .btn.icon {
             padding: 0;
-            width: var(--fb-touch);
-            height: var(--fb-touch);
+            width: 30px;
+            height: 30px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -136,6 +143,9 @@ export class FbManageSources extends LitElement {
             .row.people,
             .row.calendars {
                 align-items: stretch;
+            }
+            .rowDot {
+                display: none;
             }
             .btn {
                 width: 100%;
@@ -182,11 +192,6 @@ export class FbManageSources extends LitElement {
             options.unshift({ name: `Custom ${value}`, color: value, text: '' });
         }
         return options;
-    }
-
-    _optionTextColour(option) {
-        const text = String(option?.text || '').trim();
-        return text || '#111111';
     }
 
     close() {
@@ -358,6 +363,10 @@ export class FbManageSources extends LitElement {
                             const selected = colourOptions.find((c) => c.color === p.color);
                             return html`
                                 <div class="row people">
+                                    <span
+                                        class="rowDot"
+                                        style="--row-dot:${p.color || 'var(--fb-muted)'}"
+                                    ></span>
                                     <input
                                         placeholder="id"
                                         .value=${p.id || ''}
@@ -385,9 +394,6 @@ export class FbManageSources extends LitElement {
                                                 html`<option
                                                     value=${c.color}
                                                     ?selected=${c.color === p.color}
-                                                    style="background:${c.color};color:${this._optionTextColour(
-                                                        c
-                                                    )}"
                                                 >
                                                     ${c.name}
                                                 </option>`
