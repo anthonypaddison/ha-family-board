@@ -308,6 +308,7 @@ export class FbScheduleView extends LitElement {
             text-align: left;
             overflow: hidden;
             box-shadow: var(--shadow-sm);
+            z-index: 2;
         }
         .eventHeader {
             position: sticky;
@@ -344,8 +345,12 @@ export class FbScheduleView extends LitElement {
             left: 0;
             right: 0;
             height: 2px;
-            background: color-mix(in srgb, var(--urgent) 70%, transparent);
-            z-index: 2;
+            background: color-mix(in srgb, var(--fb-muted) 75%, transparent);
+            z-index: 6;
+        }
+        .nowLine.today {
+            height: 3px;
+            background: color-mix(in srgb, var(--urgent) 85%, transparent);
         }
         .nowBadge {
             position: absolute;
@@ -360,10 +365,26 @@ export class FbScheduleView extends LitElement {
             overflow: hidden;
             text-overflow: ellipsis;
             pointer-events: none;
-            z-index: 3;
+            z-index: 7;
             border: 1px solid color-mix(in srgb, var(--now-badge) 70%, var(--fb-border));
             background: var(--now-badge);
             color: var(--now-badge-text);
+        }
+        .event.current .eventHeader {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            transform: translateY(-50%);
+            text-align: center;
+            z-index: 8;
+        }
+        .event.current .eventTime {
+            font-size: 12px;
+            margin-bottom: 2px;
+        }
+        .event.current {
+            z-index: 5;
         }
     `;
 
@@ -621,6 +642,7 @@ export class FbScheduleView extends LitElement {
 
                             ${dayData.map((row) => {
                                 const isToday = card._isSameDay(row.day, now);
+                                const hasNow = showNow;
                                 return html`
                                     <div class="dayCol ${isToday ? 'todayCol' : ''}">
                                         <div
@@ -633,8 +655,11 @@ export class FbScheduleView extends LitElement {
                                         </div>
 
                                         <div class="eventsLayer">
-                                            ${showNow && card._isSameDay(row.day, now)
-                                                ? html`<div class="nowLine" style="top:${nowTop}px"></div>`
+                                            ${hasNow
+                                                ? html`<div
+                                                      class="nowLine ${isToday ? 'today' : ''}"
+                                                      style="top:${nowTop}px"
+                                                  ></div>`
                                                 : html``}
                                             ${showNow && card._isSameDay(row.day, now) && row.nowBadge
                                                 ? html`<div
@@ -658,6 +683,10 @@ export class FbScheduleView extends LitElement {
                                                     36,
                                                     (endSlots - startSlots) * slotPx
                                                 );
+                                                const isCurrent =
+                                                    nowMin !== null &&
+                                                    ev.startMin <= nowMin &&
+                                                    ev.endMin > nowMin;
 
                                                 const widthPct = 100 / ev.lanesTotal;
                                                 const leftPct = ev.lane * widthPct;
@@ -669,7 +698,7 @@ export class FbScheduleView extends LitElement {
 
                                                 return html`
                                                     <button
-                                                        class="event"
+                                                        class="event ${isCurrent ? 'current' : ''}"
                                                         data-key=${ev._fbKey || ''}
                                                         style="
                                                             --event-color:${ev._fbColour};

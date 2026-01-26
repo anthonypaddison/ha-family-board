@@ -135,6 +135,7 @@ Home Assistant Custom Dashboard (SPA Card)
             Now line:
                 Shows current event title if exactly one is active
                 If multiple are active, shows “N events now”
+                Visible across all day columns (grey), current day is thicker red
             Persistence:
                 Selected date range persists across reloads
                 Month View

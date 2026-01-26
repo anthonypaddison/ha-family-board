@@ -12,7 +12,7 @@ Family Board is a custom Lovelace card for Home Assistant that combines a multi-
 
 ### HACS (recommended)
 1) Add this repository as a custom repository in HACS (type: Lovelace).
-2) Install the “Family Board” card.
+2) Install the "Family Board" card.
 3) Reload Home Assistant.
 
 ### Manual
