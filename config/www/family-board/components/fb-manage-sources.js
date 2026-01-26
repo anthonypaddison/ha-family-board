@@ -162,7 +162,9 @@ export class FbManageSources extends LitElement {
     willUpdate(changedProps) {
         const opened = changedProps.has('open') && this.open;
         const configChangedWhileOpen = this.open && changedProps.has('config') && !this._draftDirty;
-        if (opened || configChangedWhileOpen) {
+        const shouldReseedEmptyDraft =
+            this.open && this._configHasData(this.config) && !this._configHasData(this._draft);
+        if (opened || configChangedWhileOpen || shouldReseedEmptyDraft) {
             this._draft = JSON.parse(JSON.stringify(this.config || {}));
             this._draftDirty = false;
         }
@@ -170,6 +172,15 @@ export class FbManageSources extends LitElement {
 
     _markDirty() {
         if (!this._draftDirty) this._draftDirty = true;
+    }
+
+    _configHasData(config) {
+        if (!config || typeof config !== 'object') return false;
+        if (Array.isArray(config.people) && config.people.length) return true;
+        if (Array.isArray(config.calendars) && config.calendars.length) return true;
+        if (Array.isArray(config.todos) && config.todos.length) return true;
+        if (config.shopping?.entity) return true;
+        return Object.keys(config).length > 0;
     }
 
     _peopleColourOptions(current) {
@@ -581,7 +592,8 @@ export class FbManageSources extends LitElement {
                             <button class="btn primary" @click=${this._emitSave}>Save</button>
                         </div>
                         <div class="note">
-                            Changes apply in-memory for this session. Use Copy config to persist.
+                            Saved configs are stored in Home Assistant when available. Use Copy config
+                            if you want a YAML backup.
                         </div>
                     </div>
                 </div>

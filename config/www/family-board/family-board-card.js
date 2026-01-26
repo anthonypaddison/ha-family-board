@@ -552,7 +552,7 @@ class FamilyBoardCard extends LitElement {
 
                         <fb-manage-sources
                             .open=${this._sourcesOpen}
-                            .config=${this._config}
+                            .config=${this._sharedConfig || this._config}
                             .hass=${this._hass}
                             @fb-sources-save=${this._onSourcesSave}
                             @fb-sources-close=${this._onSourcesClose}
@@ -1769,9 +1769,10 @@ class FamilyBoardCard extends LitElement {
         await this._updateShoppingItemText(item, normalised);
     };
 
-    _openManageSources() {
+    async _openManageSources() {
         if (!this._hasAdminAccess()) return;
         this._closeAllDialogs();
+        await this._loadStoredConfig();
         this._sourcesOpen = true;
     }
 
@@ -2916,14 +2917,18 @@ class FamilyBoardCard extends LitElement {
 
     async _getStoredConfig() {
         const ws = await this._callWsGet();
-        if (ws) {
+        const local = this._loadLocalConfig();
+        if (this._configHasData(ws)) {
             this._persistMode = 'ws';
             return ws;
         }
-        const local = this._loadLocalConfig();
-        if (local) {
+        if (this._configHasData(local)) {
             this._persistMode = 'local';
             return local;
+        }
+        if (ws) {
+            this._persistMode = 'ws';
+            return ws;
         }
         this._persistMode = 'none';
         return null;
@@ -2956,6 +2961,12 @@ class FamilyBoardCard extends LitElement {
         return `family-board:config:${userId}:${device}`;
     }
 
+    _configHasData(config) {
+        if (!config || typeof config !== 'object') return false;
+        if (Object.keys(config).length === 0) return false;
+        return true;
+    }
+
     _loadLocalConfig() {
         try {
             const raw = localStorage.getItem(this._localConfigKey());
@@ -2969,6 +2980,7 @@ class FamilyBoardCard extends LitElement {
         const ok = await this._callWsSet(config);
         if (ok) {
             this._persistMode = 'ws';
+            this._saveLocalConfig(config);
             this._storedConfig = config;
             this._sharedConfig = config;
             this._storageLoaded = true;
