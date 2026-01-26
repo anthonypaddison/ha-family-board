@@ -99,6 +99,21 @@ export class FbManageSources extends LitElement {
             min-height: var(--fb-touch);
             min-width: var(--fb-touch);
         }
+        .btn.icon {
+            padding: 0;
+            width: var(--fb-touch);
+            height: var(--fb-touch);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .btn.danger {
+            color: var(--urgent);
+            border-color: var(--urgent);
+            background: transparent;
+        }
         .btn.primary {
             background: var(--fb-accent);
             border-color: transparent;
@@ -155,6 +170,15 @@ export class FbManageSources extends LitElement {
 
     _markDirty() {
         if (!this._draftDirty) this._draftDirty = true;
+    }
+
+    _peopleColourOptions(current) {
+        const options = [...FbManageSources.PEOPLE_COLOURS];
+        const value = String(current || '').trim();
+        if (value && !options.some((c) => c.color === value)) {
+            options.unshift({ name: `Custom ${value}`, color: value, text: '' });
+        }
+        return options;
     }
 
     close() {
@@ -318,12 +342,12 @@ export class FbManageSources extends LitElement {
                     <div class="section">
                         <div style="font-weight:700">People</div>
                         <div class="note">
-                            Add a person id, display name, colour, and which header row they appear in.
+                            Roles show a badge: Kid = child, Grownup = adult, Group = shared household.
+                            Rows show up to 4 people each (8 total).
                         </div>
                         ${people.map((p, idx) => {
-                            const selected = FbManageSources.PEOPLE_COLOURS.find(
-                                (c) => c.color === p.color
-                            );
+                            const colourOptions = this._peopleColourOptions(p.color);
+                            const selected = colourOptions.find((c) => c.color === p.color);
                             return html`
                                 <div class="row people">
                                     <input
@@ -339,7 +363,7 @@ export class FbManageSources extends LitElement {
                                     <select
                                         .value=${p.color || ''}
                                         @change=${(e) => {
-                                            const choice = FbManageSources.PEOPLE_COLOURS.find(
+                                            const choice = colourOptions.find(
                                                 (c) => c.color === e.target.value
                                             );
                                             p.color = choice?.color || '';
@@ -348,7 +372,7 @@ export class FbManageSources extends LitElement {
                                         }}
                                     >
                                         <option value="">Select colour</option>
-                                        ${FbManageSources.PEOPLE_COLOURS.map(
+                                        ${colourOptions.map(
                                             (c) =>
                                                 html`<option value=${c.color}>
                                                     ${c.name}
@@ -362,6 +386,7 @@ export class FbManageSources extends LitElement {
                                         <option value="">Role</option>
                                         <option value="kid">Kid</option>
                                         <option value="grownup">Grownup</option>
+                                        <option value="group">Group</option>
                                     </select>
                                     <select
                                         .value=${p.header_row || 1}
@@ -371,13 +396,14 @@ export class FbManageSources extends LitElement {
                                         <option value="2">Row 2</option>
                                     </select>
                                     <button
-                                        class="btn"
+                                        class="btn icon danger"
+                                        aria-label="Remove person"
                                         @click=${() => {
                                             people.splice(idx, 1);
                                             this.requestUpdate();
                                         }}
                                     >
-                                        Remove
+                                        x
                                     </button>
                                 </div>
                             `;
@@ -399,7 +425,7 @@ export class FbManageSources extends LitElement {
                     <div class="section">
                         <div style="font-weight:700">Calendars</div>
                         <div class="note">
-                            Select existing calendar entities and map them to people.
+                            Roles: Family = shared household calendar, Routine = background schedule.
                         </div>
                         ${calendars.map(
                             (c, idx) => html`
@@ -436,13 +462,14 @@ export class FbManageSources extends LitElement {
                                         <option value="routine">Routine</option>
                                     </select>
                                     <button
-                                        class="btn"
+                                        class="btn icon danger"
+                                        aria-label="Remove calendar"
                                         @click=${() => {
                                             calendars.splice(idx, 1);
                                             this.requestUpdate();
                                         }}
                                     >
-                                        Remove
+                                        x
                                     </button>
                                 </div>
                             `
@@ -498,13 +525,14 @@ export class FbManageSources extends LitElement {
                                         )}
                                     </select>
                                     <button
-                                        class="btn"
+                                        class="btn icon danger"
+                                        aria-label="Remove todo list"
                                         @click=${() => {
                                             todos.splice(idx, 1);
                                             this.requestUpdate();
                                         }}
                                     >
-                                        Remove
+                                        x
                                     </button>
                                 </div>
                             `
