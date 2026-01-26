@@ -33,6 +33,7 @@ export function renderMainView(card) {
               })()
             : '';
 
+    const nowKey = Math.floor(Date.now() / 60000);
     const renderKey = [
         mode,
         dayKey,
@@ -43,6 +44,7 @@ export function renderMainView(card) {
         personFilterSig,
         calendarFilterSig,
         String(card._eventsVersion ?? 0), // <-- critical
+        String(nowKey),
     ].join('|');
 
     if (card._useMobileView && getDeviceKind() === 'mobile')

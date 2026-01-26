@@ -270,6 +270,7 @@ class FamilyBoardCard extends LitElement {
         this._defaultView = 'schedule';
         this._initialViewSet = false;
         this._baselineTopbarHeight = null;
+        this._clockTimer = null;
     }
 
     setConfig(config) {
@@ -295,6 +296,11 @@ class FamilyBoardCard extends LitElement {
     connectedCallback() {
         super.connectedCallback();
         this._resetRefreshTimer();
+        if (!this._clockTimer) {
+            this._clockTimer = setInterval(() => {
+                this.requestUpdate();
+            }, 60_000);
+        }
         this._queueRefresh();
         this._updateViewportHeight();
         setTimeout(() => this._updateViewportHeight(), 0);
@@ -309,6 +315,10 @@ class FamilyBoardCard extends LitElement {
         if (this._refreshTimer) {
             clearInterval(this._refreshTimer);
             this._refreshTimer = null;
+        }
+        if (this._clockTimer) {
+            clearInterval(this._clockTimer);
+            this._clockTimer = null;
         }
         if (this._resizeHandler) {
             window.removeEventListener('resize', this._resizeHandler);

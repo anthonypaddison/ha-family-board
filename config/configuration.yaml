@@ -7,7 +7,7 @@ lovelace:
     mode: yaml
 
     resources:
-        - url: /local/family-board/family-board.js?v=233
+        - url: /local/family-board/family-board.js?v=235
           type: module
 
     dashboards:
