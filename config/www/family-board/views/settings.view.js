@@ -277,6 +277,11 @@ export class FbSettingsView extends LitElement {
         const peopleDisplay = hasPeopleDisplay
             ? cfg.people_display.filter((id) => people.some((p) => p.id === id))
             : people.map((p) => p.id).filter(Boolean);
+        const allPeopleIds = people.map((p) => p.id).filter(Boolean);
+        const peopleDisplayFull = [
+            ...peopleDisplay,
+            ...allPeopleIds.filter((id) => !peopleDisplay.includes(id)),
+        ];
         const updatePeopleDisplay = (next) => {
             card._updateConfigPartial({ people_display: next });
         };
@@ -286,7 +291,7 @@ export class FbSettingsView extends LitElement {
         const startHour = Number.isFinite(cfg.day_start_hour) ? cfg.day_start_hour : 6;
         const endHour = Number.isFinite(cfg.day_end_hour) ? cfg.day_end_hour : 24;
         const minGapHours = Number(card._slotMinutes || 30) / 60;
-        const orderedPeople = peopleDisplay
+        const orderedPeople = peopleDisplayFull
             .map((id) => people.find((p) => p.id === id))
             .filter(Boolean);
         const theme = cfg.theme || 'bright-light';

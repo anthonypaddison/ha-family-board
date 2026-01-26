@@ -174,14 +174,12 @@ export class FbChoresView extends LitElement {
                         const items = card._todoItems?.[t.entity] || [];
                         const label = person?.name || t.name || t.entity;
                         const colour = person?.color || t.color || card._neutralColor();
-                        const role = person?.role || '';
                         const canClear = card._supportsService?.('todo', 'remove_completed_items');
                         return html`
                             <div class="card">
                                 <div class="h">
                                     <span class="dot" style="background:${colour}"></span>
                                     <span>${label}</span>
-                                    ${role ? html`<span class="roleBadge">${role}</span>` : html``}
                                     <span style="margin-left:auto" class="muted"
                                         >${items.length}</span
                                     >
