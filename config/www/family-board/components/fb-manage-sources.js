@@ -184,6 +184,11 @@ export class FbManageSources extends LitElement {
         return options;
     }
 
+    _optionTextColour(option) {
+        const text = String(option?.text || '').trim();
+        return text || '#111111';
+    }
+
     close() {
         this.open = false;
         this._saveError = '';
@@ -380,6 +385,9 @@ export class FbManageSources extends LitElement {
                                                 html`<option
                                                     value=${c.color}
                                                     ?selected=${c.color === p.color}
+                                                    style="background:${c.color};color:${this._optionTextColour(
+                                                        c
+                                                    )}"
                                                 >
                                                     ${c.name}
                                                 </option>`
