@@ -11,6 +11,7 @@ export class FbManageSources extends LitElement {
         hass: { type: Object },
         _draft: { state: true },
         _saveError: { state: true },
+        _draftDirty: { state: true },
     };
 
     static styles = css`
@@ -107,6 +108,25 @@ export class FbManageSources extends LitElement {
             font-size: 14px;
             margin-top: 8px;
         }
+        @media (max-width: 720px) {
+            .dlg {
+                max-height: 95vh;
+                padding: 12px;
+            }
+            .row,
+            .row.people,
+            .row.calendars,
+            .row.small {
+                grid-template-columns: 1fr;
+            }
+            .row.people,
+            .row.calendars {
+                align-items: stretch;
+            }
+            .btn {
+                width: 100%;
+            }
+        }
     `;
 
     static PEOPLE_COLOURS = [
@@ -125,9 +145,16 @@ export class FbManageSources extends LitElement {
     ];
 
     willUpdate(changedProps) {
-        if (changedProps.has('open') && this.open) {
+        const opened = changedProps.has('open') && this.open;
+        const configChangedWhileOpen = this.open && changedProps.has('config') && !this._draftDirty;
+        if (opened || configChangedWhileOpen) {
             this._draft = JSON.parse(JSON.stringify(this.config || {}));
+            this._draftDirty = false;
         }
+    }
+
+    _markDirty() {
+        if (!this._draftDirty) this._draftDirty = true;
     }
 
     close() {
@@ -277,7 +304,7 @@ export class FbManageSources extends LitElement {
 
         return html`
             <div class="backdrop" @click=${(e) => e.target === e.currentTarget && this.close()}>
-                <div class="dlg">
+                <div class="dlg" @input=${this._markDirty} @change=${this._markDirty}>
                     <div class="h">
                         <div>Manage sources</div>
                         <button class="btn" @click=${this.close}>Close</button>
