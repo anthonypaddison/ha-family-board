@@ -552,7 +552,7 @@ class FamilyBoardCard extends LitElement {
 
                         <fb-manage-sources
                             .open=${this._sourcesOpen}
-                            .config=${this._sharedConfig || this._config}
+                            .config=${this._storedConfig || this._sharedConfig || this._config}
                             .hass=${this._hass}
                             @fb-sources-save=${this._onSourcesSave}
                             @fb-sources-close=${this._onSourcesClose}
@@ -1772,7 +1772,7 @@ class FamilyBoardCard extends LitElement {
     async _openManageSources() {
         if (!this._hasAdminAccess()) return;
         this._closeAllDialogs();
-        await this._loadStoredConfig();
+        await this._refreshStoredConfig();
         this._sourcesOpen = true;
     }
 
@@ -2913,6 +2913,25 @@ class FamilyBoardCard extends LitElement {
             return stored;
         })();
         return this._storageLoadPromise;
+    }
+
+    async _refreshStoredConfig() {
+        if (!this._hass) return;
+        const ws = await this._callWsGet();
+        if (this._configHasData(ws)) {
+            this._persistMode = 'ws';
+            this._storedConfig = ws;
+            this._storageLoaded = true;
+            this._resolveConfig({ refresh: true });
+            return;
+        }
+        const local = this._loadLocalConfig();
+        if (this._configHasData(local)) {
+            this._persistMode = 'local';
+            this._storedConfig = local;
+            this._storageLoaded = true;
+            this._resolveConfig({ refresh: true });
+        }
     }
 
     async _getStoredConfig() {

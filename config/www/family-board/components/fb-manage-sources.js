@@ -377,7 +377,10 @@ export class FbManageSources extends LitElement {
                                         <option value="">Select colour</option>
                                         ${colourOptions.map(
                                             (c) =>
-                                                html`<option value=${c.color}>
+                                                html`<option
+                                                    value=${c.color}
+                                                    ?selected=${c.color === p.color}
+                                                >
                                                     ${c.name}
                                                 </option>`
                                         )}
@@ -387,16 +390,24 @@ export class FbManageSources extends LitElement {
                                         @change=${(e) => (p.role = e.target.value)}
                                     >
                                         <option value="">Role</option>
-                                        <option value="kid">Kid</option>
-                                        <option value="grownup">Grownup</option>
-                                        <option value="group">Group</option>
+                                        <option value="kid" ?selected=${p.role === 'kid'}>Kid</option>
+                                        <option value="grownup" ?selected=${p.role === 'grownup'}>
+                                            Grownup
+                                        </option>
+                                        <option value="group" ?selected=${p.role === 'group'}>
+                                            Group
+                                        </option>
                                     </select>
                                     <select
                                         .value=${p.header_row || 1}
                                         @change=${(e) => (p.header_row = Number(e.target.value))}
                                     >
-                                        <option value="1">Row 1</option>
-                                        <option value="2">Row 2</option>
+                                        <option value="1" ?selected=${p.header_row === 1}>
+                                            Row 1
+                                        </option>
+                                        <option value="2" ?selected=${p.header_row === 2}>
+                                            Row 2
+                                        </option>
                                     </select>
                                     <button
                                         class="btn icon danger"
@@ -440,7 +451,10 @@ export class FbManageSources extends LitElement {
                                         <option value="">Select calendar</option>
                                         ${this._entityOptions(calendarEntities, c.entity).map(
                                             (id) =>
-                                                html`<option value=${id}>
+                                                html`<option
+                                                    value=${id}
+                                                    ?selected=${id === c.entity}
+                                                >
                                                     ${id}
                                                 </option>`
                                         )}
@@ -452,8 +466,12 @@ export class FbManageSources extends LitElement {
                                         <option value="">Select person</option>
                                         ${people.map(
                                             (p) =>
-                                                html`<option value=${p.id}>${p.name ||
-                                                    p.id}</option>`
+                                                html`<option
+                                                    value=${p.id}
+                                                    ?selected=${p.id === c.person_id}
+                                                >
+                                                    ${p.name || p.id}
+                                                </option>`
                                         )}
                                     </select>
                                     <select
@@ -461,8 +479,12 @@ export class FbManageSources extends LitElement {
                                         @change=${(e) => (c.role = e.target.value)}
                                     >
                                         <option value="">Role</option>
-                                        <option value="family">Family</option>
-                                        <option value="routine">Routine</option>
+                                        <option value="family" ?selected=${c.role === 'family'}>
+                                            Family
+                                        </option>
+                                        <option value="routine" ?selected=${c.role === 'routine'}>
+                                            Routine
+                                        </option>
                                     </select>
                                     <button
                                         class="btn icon danger"
@@ -506,7 +528,10 @@ export class FbManageSources extends LitElement {
                                         <option value="">Select todo list</option>
                                         ${this._entityOptions(todoEntities, t.entity).map(
                                             (id) =>
-                                                html`<option value=${id}>
+                                                html`<option
+                                                    value=${id}
+                                                    ?selected=${id === t.entity}
+                                                >
                                                     ${id}
                                                 </option>`
                                         )}
@@ -523,8 +548,12 @@ export class FbManageSources extends LitElement {
                                         <option value="">Select person</option>
                                         ${people.map(
                                             (p) =>
-                                                html`<option value=${p.id}>${p.name ||
-                                                    p.id}</option>`
+                                                html`<option
+                                                    value=${p.id}
+                                                    ?selected=${p.id === t.person_id}
+                                                >
+                                                    ${p.name || p.id}
+                                                </option>`
                                         )}
                                     </select>
                                     <button
@@ -568,7 +597,10 @@ export class FbManageSources extends LitElement {
                                 <option value="">Select shopping list</option>
                                 ${this._entityOptions(todoEntities, cfg.shopping?.entity).map(
                                     (id) =>
-                                        html`<option value=${id}>
+                                        html`<option
+                                            value=${id}
+                                            ?selected=${id === cfg.shopping?.entity}
+                                        >
                                             ${id}
                                         </option>`
                                 )}
