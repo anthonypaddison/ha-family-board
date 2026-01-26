@@ -713,7 +713,10 @@ class FamilyBoardCard extends LitElement {
 
     _visibleCalendarEntities() {
         const calendars = Array.isArray(this._config?.calendars) ? this._config.calendars : [];
-        const visibleSet = this._calendarVisibleSet || new Set(calendars.map((c) => c.entity));
+        const calendarIds = calendars.map((c) => c.entity).filter(Boolean);
+        const visibilityEnabled = Boolean(this._calendarVisibilityEnabled);
+        const hasSet = this._calendarVisibleSet && this._calendarVisibleSet.size > 0;
+        const visibleSet = visibilityEnabled && hasSet ? this._calendarVisibleSet : new Set(calendarIds);
         return calendars
             .filter(
                 (c) =>
