@@ -119,10 +119,14 @@ class FamilyBoardCard extends LitElement {
             :host {
                 display: block;
                 height: var(--fb-viewport-height, 100vh);
-                width: 100%;
+                width: 100vw;
+                min-width: 100vw;
+                max-width: 100vw;
                 max-height: var(--fb-viewport-height, 100vh);
                 min-height: 0;
                 overflow: hidden;
+                align-self: stretch;
+                justify-self: stretch;
             }
             :host,
             :host * {
@@ -131,8 +135,9 @@ class FamilyBoardCard extends LitElement {
             .app {
                 height: 100%;
                 width: 100%;
+                min-width: 100%;
                 display: grid;
-                grid-template-columns: 260px 1fr;
+                grid-template-columns: var(--fb-sidebar-width, 260px) 1fr;
                 column-gap: var(--fb-gutter);
                 background: var(--fb-bg);
                 color: var(--fb-text);
@@ -465,7 +470,7 @@ class FamilyBoardCard extends LitElement {
         const sidebarWidth = '76px';
 
         return html`
-            <div class="app" style="grid-template-columns:${sidebarWidth} 1fr;">
+            <div class="app" style="--fb-sidebar-width:${sidebarWidth}">
                 <div class="sidebar">
                     <fb-sidebar
                         .active=${screen}

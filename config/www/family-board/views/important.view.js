@@ -91,6 +91,11 @@ export class FbImportantView extends LitElement {
             color: var(--fb-muted);
             font-size: 12px;
         }
+        .personMeta {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--fb-text);
+        }
         .empty {
             color: var(--fb-muted);
             font-size: 14px;
@@ -102,10 +107,13 @@ export class FbImportantView extends LitElement {
         }
     `;
 
-    _timeLabel(date, allDay) {
+    _timeLabel(start, end, allDay) {
         if (allDay) return 'All day';
-        if (!date) return '—';
-        return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+        if (!start) return '—';
+        const startLabel = `${pad2(start.getHours())}:${pad2(start.getMinutes())}`;
+        if (!end) return startLabel;
+        const endLabel = `${pad2(end.getHours())}:${pad2(end.getMinutes())}`;
+        return `${startLabel}–${endLabel}`;
     }
 
     _rangeItems(card, start, end) {
@@ -197,12 +205,12 @@ export class FbImportantView extends LitElement {
                                       >
                                           <div class="itemRow">
                                               <div class="itemTime">
-                                                  ${this._timeLabel(e.start, e.allDay)}
+                                                  ${this._timeLabel(e.start, e.event?._end, e.allDay)}
                                               </div>
                                               <div class="itemTitle">${e.title}</div>
                                           </div>
                                           ${e.person
-                                              ? html`<div class="itemMeta">${e.person}</div>`
+                                              ? html`<div class="itemMeta personMeta">${e.person}</div>`
                                               : html``}
                                       </div>
                                   `
@@ -219,12 +227,12 @@ export class FbImportantView extends LitElement {
                                       <div class="item" style="--item-color:${t.color}">
                                           <div class="itemRow">
                                               <div class="itemTime">
-                                                  ${this._timeLabel(t.start, t.allDay)}
+                                                  ${this._timeLabel(t.start, t.start, t.allDay)}
                                               </div>
                                               <div class="itemTitle">${t.title}</div>
                                           </div>
                                           ${t.person
-                                              ? html`<div class="itemMeta">${t.person}</div>`
+                                              ? html`<div class="itemMeta personMeta">${t.person}</div>`
                                               : html``}
                                       </div>
                                   `
