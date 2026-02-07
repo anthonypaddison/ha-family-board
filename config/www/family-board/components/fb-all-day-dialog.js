@@ -4,11 +4,14 @@
 import { getHaLit } from '../ha-lit.js';
 const { LitElement, html, css } = getHaLit();
 
+import { pad2 } from '../family-board.util.js';
+
 export class FbAllDayDialog extends LitElement {
     static properties = {
         open: { type: Boolean },
         day: { type: Object },
         events: { type: Array },
+        title: { type: String },
         card: { type: Object },
     };
 
@@ -93,6 +96,17 @@ export class FbAllDayDialog extends LitElement {
         this._close();
     }
 
+    _timeRange(e) {
+        if (!e) return '';
+        if (e.all_day || e.allDay) return 'All day';
+        const start = e._start || e.start;
+        const end = e._end || e.end;
+        if (!(start instanceof Date) || !(end instanceof Date)) return 'Timed';
+        const startLabel = `${pad2(start.getHours())}:${pad2(start.getMinutes())}`;
+        const endLabel = `${pad2(end.getHours())}:${pad2(end.getMinutes())}`;
+        return `${startLabel}–${endLabel}`;
+    }
+
     render() {
         if (!this.open) return html``;
         const events = Array.isArray(this.events) ? this.events : [];
@@ -103,22 +117,27 @@ export class FbAllDayDialog extends LitElement {
                   month: 'short',
               })
             : 'All day';
+        const title = this.title || 'All-day events';
 
         return html`
             <div class="backdrop" @click=${(e) => e.target === e.currentTarget && this._close()}>
                 <div class="dlg">
                     <div class="h">
-                        <div>All-day events - ${dayLabel}</div>
+                        <div>${title} - ${dayLabel}</div>
                         <button class="btn secondary" @click=${this._close}>Close</button>
                     </div>
                     <div class="list">
                         ${events.length
                             ? events.map(
                                   (e) => html`
-                                      <div class="row" @click=${() => this._openEvent(e)}>
+                                      <div
+                                          class="row"
+                                          style="border-color:${e._fbColour || 'var(--fb-border)'};border-left-width:6px"
+                                          @click=${() => this._openEvent(e)}
+                                      >
                                           <div class="title">${e.summary || '(Untitled)'}</div>
                                           <div class="meta">
-                                              ${e.all_day ? 'All day' : 'Timed'}
+                                              ${this._timeRange(e)}
                                               ${e.location ? html` - ${e.location}` : ''}
                                           </div>
                                       </div>

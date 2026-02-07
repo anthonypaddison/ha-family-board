@@ -2,12 +2,15 @@
  * SPDX-License-Identifier: MIT
  */
 import { getHaLit } from '../ha-lit.js';
+import { loadingStyles } from './loading.styles.js';
 const { LitElement, html, css } = getHaLit();
 
 export class FbChoresView extends LitElement {
     static properties = { card: { type: Object }, renderKey: { type: String } };
 
-    static styles = css`
+    static styles = [
+        loadingStyles,
+        css`
         :host {
             display: block;
             height: 100%;
@@ -135,7 +138,8 @@ export class FbChoresView extends LitElement {
             color: var(--fb-muted);
             font-size: 14px;
         }
-    `;
+    `,
+    ];
 
     _itemKey(item, idx) {
         return item?.uid || item?.id || item?.summary || item?.name || String(idx);
@@ -160,6 +164,8 @@ export class FbChoresView extends LitElement {
                 </div>
             </div>`;
         }
+
+        const isTodoLoading = !card._todoLoaded;
 
         return html`
             <div class="wrap">
@@ -204,7 +210,12 @@ export class FbChoresView extends LitElement {
                                         : html``}
                                 </div>
                                 <div class="items">
-                                    ${items.length
+                                    ${isTodoLoading
+                                        ? html`<div class="loadingState">
+                                              <span class="spinner" aria-hidden="true"></span>
+                                              <span>Loading chores...</span>
+                                          </div>`
+                                        : items.length
                                         ? items.map((it, idx) => {
                                               const isDone =
                                                   ['completed', 'done'].includes(
@@ -219,6 +230,15 @@ export class FbChoresView extends LitElement {
                                                           <div class="itemTitle">
                                                               ${it.summary ?? it.name ?? it.item ?? '(Todo)'}
                                                           </div>
+                                                          ${(() => {
+                                                              const desc =
+                                                                  it.description ||
+                                                                  it.notes ||
+                                                                  it.note ||
+                                                                  it.body;
+                                                              if (!desc) return html``;
+                                                              return html`<div class="itemMeta">${desc}</div>`;
+                                                          })()}
                                                           ${it.due || it.due_date || it.due_datetime
                                                               ? html`<div class="itemMeta">
                                                                     Due:

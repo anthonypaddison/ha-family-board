@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 import { getHaLit } from '../ha-lit.js';
+import { loadingStyles } from './loading.styles.js';
 const { LitElement, html, css } = getHaLit();
 
 import { addDays, startOfDay, pad2 } from '../family-board.util.js';
@@ -13,7 +14,9 @@ export class FbMobileView extends LitElement {
         renderKey: { type: String },
     };
 
-    static styles = css`
+    static styles = [
+        loadingStyles,
+        css`
         :host {
             display: block;
             height: 100%;
@@ -71,7 +74,8 @@ export class FbMobileView extends LitElement {
             font-weight: 700;
             color: var(--fb-text);
         }
-    `;
+    `,
+    ];
 
     render() {
         const card = this.card;
@@ -84,6 +88,7 @@ export class FbMobileView extends LitElement {
         const visibleSet = card._calendarVisibilityEnabled
             ? card._calendarVisibleSet || new Set(calendars.map((c) => c.entity))
             : new Set(calendars.map((c) => c.entity));
+        const isCalendarLoading = calendars.length && !card._calendarLastSuccessTs;
         const activeCalendars = calendars.filter(
             (c) =>
                 visibleSet.has(c.entity) &&
@@ -102,18 +107,20 @@ export class FbMobileView extends LitElement {
 
         return html`
             <div class="wrap">
-                ${totalEvents === 0
+                ${isCalendarLoading
+                    ? html`<div class="loadingState">
+                          <span class="spinner" aria-hidden="true"></span>
+                          <span>Loading schedule...</span>
+                      </div>`
+                    : totalEvents === 0
                     ? html`<div style="margin-bottom:10px;color:var(--fb-muted);font-size:13px">
                           No events found.
-                          <button
-                              class="linkBtn"
-                              @click=${() => card._openHelp()}
-                          >
-                              ⓘ
-                          </button>
+                          <button class="linkBtn" @click=${() => card._openHelp()}>ⓘ</button>
                       </div>`
                     : html``}
-                ${days.map((d) => {
+                ${isCalendarLoading
+                    ? html``
+                    : days.map((d) => {
                     const allDay = [];
                     const timed = [];
 

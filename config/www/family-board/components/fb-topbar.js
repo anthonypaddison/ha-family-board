@@ -311,6 +311,7 @@ export class FbTopbar extends LitElement {
             cursor: pointer;
             min-height: 44px;
             color: var(--fb-text);
+            line-height: 1;
         }
 
         .summaryBadge:not(.active) {
@@ -327,6 +328,18 @@ export class FbTopbar extends LitElement {
         }
         .summaryName {
             font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            line-height: 1;
+        }
+
+        .roleIcon {
+            width: 16px;
+            height: 16px;
+            color: var(--fb-muted);
+            display: grid;
+            place-items: center;
+            transform: translateY(-2px);
         }
 
         .summaryCounts {
@@ -351,7 +364,7 @@ export class FbTopbar extends LitElement {
         .summaryMetric {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 10px;
             font-weight: 700;
             line-height: 1;
             min-width: 26px;
@@ -363,6 +376,15 @@ export class FbTopbar extends LitElement {
             color: var(--fb-muted);
             display: grid;
             place-items: center;
+            transform: translateY(-2px);
+        }
+
+        .summaryMetric span {
+            display: inline-flex;
+            align-items: center;
+            line-height: 1;
+            padding-left: 2px;
+            transform: translateY(-1px);
         }
 
         @media (max-width: 900px) {
@@ -694,6 +716,18 @@ export class FbTopbar extends LitElement {
                                           @click=${() => this._togglePerson(p.id)}
                                       >
                                           <span class="dot" style="background:${p.color}"></span>
+                                          ${(() => {
+                                              const role = String(p.role || '').toLowerCase();
+                                              const icon =
+                                                  role === 'kid'
+                                                      ? 'mdi:human-child'
+                                                      : role
+                                                      ? 'mdi:human-male-female-child'
+                                                      : '';
+                                              return icon
+                                                  ? html`<ha-icon class="roleIcon" icon=${icon}></ha-icon>`
+                                                  : html``;
+                                          })()}
                                           <span class="summaryName" style="flex:1">${p.name}</span>
                                           <span class="summaryCounts">
                                               <span class="summaryMetric">

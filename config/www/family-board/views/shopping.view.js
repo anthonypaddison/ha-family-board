@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 import { getHaLit } from '../ha-lit.js';
+import { loadingStyles } from './loading.styles.js';
 const { LitElement, html, css } = getHaLit();
 
 export class FbShoppingView extends LitElement {
@@ -15,7 +16,9 @@ export class FbShoppingView extends LitElement {
         this.card?._addShoppingItem(item);
     }
 
-    static styles = css`
+    static styles = [
+        loadingStyles,
+        css`
         :host {
             display: block;
             height: 100%;
@@ -70,6 +73,29 @@ export class FbShoppingView extends LitElement {
             color: var(--fb-text);
             min-height: 0;
         }
+        .headerIconBtn {
+            border: none;
+            background: transparent;
+            border-radius: 10px;
+            width: 32px;
+            height: 32px;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            padding: 0;
+            color: var(--fb-muted);
+        }
+        .headerIconBtn ha-icon {
+            width: 22px;
+            height: 22px;
+            font-size: 22px;
+        }
+        .headerIconBtn.addAll {
+            color: var(--success);
+        }
+        .headerIconBtn.clearAll {
+            color: var(--urgent);
+        }
         .headerBtn:disabled {
             opacity: 0.5;
             cursor: default;
@@ -83,24 +109,33 @@ export class FbShoppingView extends LitElement {
             padding: 10px 12px;
             border-bottom: 1px solid var(--fb-grid);
             background: var(--fb-surface);
+            align-items: center;
         }
         .inputRow input {
             flex: 1 1 auto;
             border: 1px solid var(--fb-grid);
             border-radius: 10px;
-            padding: 8px 10px;
+            padding: 6px 10px;
             font-size: 14px;
             background: var(--fb-surface);
             color: var(--fb-text);
         }
-        .inputRow button {
-            border: 1px solid var(--fb-grid);
-            background: var(--fb-accent);
+        .inputAddBtn {
+            border: none;
+            background: transparent;
             border-radius: 10px;
-            padding: 8px 12px;
+            padding: 0;
             cursor: pointer;
-            min-height: var(--fb-touch);
-            min-width: var(--fb-touch);
+            width: 32px;
+            height: 32px;
+            color: var(--success);
+            display: grid;
+            place-items: center;
+        }
+        .inputAddBtn ha-icon {
+            width: 22px;
+            height: 22px;
+            font-size: 22px;
         }
         .items {
             padding: 10px 12px;
@@ -118,7 +153,7 @@ export class FbShoppingView extends LitElement {
             gap: 4px;
             border: 1px solid var(--fb-grid);
             border-radius: 12px;
-            padding: 2px 6px;
+            padding: 1px 6px;
             transition: opacity 0.3s ease;
         }
         .item.pendingRemove {
@@ -141,6 +176,7 @@ export class FbShoppingView extends LitElement {
         }
         .actions {
             display: inline-flex;
+            align-items: center;
             gap: 10px;
             padding-left: 8px;
         }
@@ -193,8 +229,8 @@ export class FbShoppingView extends LitElement {
             font-variant-numeric: tabular-nums;
         }
         .btn {
-            border: 1px solid var(--fb-grid);
-            background: var(--fb-surface);
+            border: 0;
+            background: transparent;
             border-radius: 10px;
             padding: 4px 8px;
             font-size: 14px;
@@ -204,8 +240,8 @@ export class FbShoppingView extends LitElement {
             min-width: var(--fb-touch);
         }
         .iconBtn {
-            border: 1px solid var(--fb-grid);
-            background: var(--fb-surface);
+            border: 0;
+            background: transparent;
             border-radius: 10px;
             padding: 4px;
             width: var(--fb-touch);
@@ -217,32 +253,37 @@ export class FbShoppingView extends LitElement {
         }
         .iconBtn ha-icon,
         .starBtn ha-icon {
-            width: 16px;
-            height: 16px;
+            width: 20px;
+            height: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0;
-            font-size: 16px;
+            font-size: 20px;
         }
         .itemStar ha-icon {
-            width: 24px;
-            height: 24px;
-            font-size: 24px;
+            width: 28px;
+            height: 28px;
+            font-size: 28px;
         }
         .starBtn ha-svg-icon,
         .starBtn ha-svg-icon svg {
-            width: 16px;
-            height: 16px;
+            width: 24px;
+            height: 24px;
             display: block;
             margin: 0 auto;
         }
         .iconBtn.active {
             color: var(--fb-accent);
-            border-color: var(--fb-accent);
         }
         .completeBtn {
-            color: var(--fb-text);
+            color: var(--success);
+        }
+        .deleteBtn {
+            color: var(--urgent);
+        }
+        .editBtn {
+            color: var(--info);
         }
         .commonList {
             padding: 10px 12px;
@@ -262,7 +303,7 @@ export class FbShoppingView extends LitElement {
             border: 1px solid var(--fb-grid);
             background: var(--fb-surface-2);
             border-radius: 10px;
-            padding: 8px 10px;
+            padding: 4px 10px;
             cursor: pointer;
             text-align: left;
             font-size: 14px;
@@ -281,13 +322,13 @@ export class FbShoppingView extends LitElement {
             white-space: nowrap;
         }
         .commonPlus {
-            border: 1px solid var(--fb-grid);
-            border-radius: 8px;
-            padding: 2px 6px;
-            font-size: 14px;
-            line-height: 1.1;
-            background: var(--fb-surface);
-            color: var(--fb-text);
+            border: none;
+            padding: 0;
+            font-size: 24px;
+            line-height: 1;
+            background: transparent;
+            color: var(--success);
+            font-weight: 700;
             flex: 0 0 auto;
         }
         .commonActions {
@@ -296,11 +337,11 @@ export class FbShoppingView extends LitElement {
             align-items: center;
         }
         .starBtn {
-            border: 1px solid var(--fb-grid);
-            background: var(--fb-surface);
+            border: none;
+            background: transparent;
             border-radius: 10px;
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             display: grid;
             place-items: center;
             cursor: pointer;
@@ -313,21 +354,23 @@ export class FbShoppingView extends LitElement {
         }
         .starBtn.active {
             color: var(--warning);
-            border-color: var(--warning);
+            border-color: transparent;
         }
         @media (max-width: 900px) {
             .layout {
                 grid-template-columns: 1fr;
             }
         }
-    `;
+    `,
+    ];
 
     render() {
         const card = this.card;
         if (!card) return html``;
 
         const items = card._shoppingItems || [];
-        const name = card._config?.shopping?.name || 'Shopping';
+        const isLoading = !card._shoppingLoaded;
+        const name = card._config?.shopping?.name || 'Shopping list';
         const favourites = Array.isArray(card._shoppingFavourites)
             ? card._shoppingFavourites
             : [];
@@ -352,13 +395,23 @@ export class FbShoppingView extends LitElement {
                         <div class="h">
                             <span>${name}</span>
                             <span class="headerMeta">
-                                <span class="muted">${items.length}</span>
+                                <span class="muted">
+                                    ${card._shoppingQuantityCount
+                                        ? card._shoppingQuantityCount(items)
+                                        : items.length}
+                                </span>
                                 ${items.length
                                     ? html`<button
-                                          class="headerBtn"
-                                          @click=${() => card._clearShoppingList?.()}
+                                          class="headerIconBtn clearAll"
+                                          title="Clear shopping list"
+                                          @click=${() => {
+                                              const ok = window.confirm(
+                                                  'Are you sure you want to clear the current shopping list?'
+                                              );
+                                              if (ok) card._clearShoppingList?.();
+                                          }}
                                       >
-                                          Clear list
+                                          <ha-icon icon="mdi:close-box-multiple"></ha-icon>
                                       </button>`
                                     : html``}
                             </span>
@@ -376,6 +429,7 @@ export class FbShoppingView extends LitElement {
                                 }}
                             />
                             <button
+                                class="inputAddBtn"
                                 @click=${() => {
                                     const input = this.renderRoot.querySelector('#shopInput');
                                     const text = input?.value?.trim();
@@ -384,11 +438,16 @@ export class FbShoppingView extends LitElement {
                                     input.value = '';
                                 }}
                             >
-                                Add
+                                <ha-icon icon="mdi:plus"></ha-icon>
                             </button>
                         </div>
                         <div class="items">
-                            ${items.length
+                            ${isLoading
+                                ? html`<div class="loadingState">
+                                      <span class="spinner" aria-hidden="true"></span>
+                                      <span>Loading shopping list...</span>
+                                  </div>`
+                                : items.length
                                 ? items.map((it) => {
                                       const rawName =
                                           it.name ?? it.summary ?? it.item ?? '(Item)';
@@ -449,19 +508,21 @@ export class FbShoppingView extends LitElement {
                                                       ></ha-icon>
                                                   </button>
                                                   <button
-                                                      class="btn"
+                                                      class="iconBtn deleteBtn"
+                                                      title="Delete"
                                                       @click=${() => card._deleteShoppingItem(it)}
                                                   >
-                                                      Delete
+                                                      <ha-icon icon="mdi:close-thick"></ha-icon>
                                                   </button>
                                                   <button
-                                                      class="btn"
+                                                      class="iconBtn editBtn"
+                                                      title="Edit"
                                                       @click=${() => card._editShoppingItem(it)}
                                                   >
-                                                      Edit
+                                                      <ha-icon icon="mdi:pencil"></ha-icon>
                                                   </button>
                                                   <button
-                                                      class="btn icon completeBtn"
+                                                      class="iconBtn completeBtn"
                                                       title=${isDone
                                                           ? 'Mark as incomplete'
                                                           : 'Mark as complete'}
@@ -469,7 +530,7 @@ export class FbShoppingView extends LitElement {
                                                           card._toggleShoppingItem(it, !isDone)}
                                                   >
                                                       <ha-icon
-                                                          icon=${isDone ? 'mdi:close' : 'mdi:check'}
+                                                          icon="mdi:check-bold"
                                                       ></ha-icon>
                                                   </button>
                                               </div>
@@ -496,16 +557,28 @@ export class FbShoppingView extends LitElement {
                                 <span class="muted">${commonList.length}</span>
                                 ${commonList.length
                                     ? html`<button
-                                              class="headerBtn"
-                                              @click=${() => card._addShoppingFavourites?.()}
+                                              class="headerIconBtn addAll"
+                                              title="Add all favourites"
+                                              @click=${() => {
+                                                  const ok = window.confirm(
+                                                      'Are you sure you want to add all favourites to the current shopping list?'
+                                                  );
+                                                  if (ok) card._addShoppingFavourites?.();
+                                              }}
                                           >
-                                              Add all
+                                              <ha-icon icon="mdi:plus-box-multiple"></ha-icon>
                                           </button>
                                           <button
-                                              class="headerBtn"
-                                              @click=${() => card._clearShoppingFavourites?.()}
+                                              class="headerIconBtn clearAll"
+                                              title="Clear all favourites"
+                                              @click=${() => {
+                                                  const ok = window.confirm(
+                                                      'Are you sure you want to clear all favourites?'
+                                                  );
+                                                  if (ok) card._clearShoppingFavourites?.();
+                                              }}
                                           >
-                                              Clear all
+                                              <ha-icon icon="mdi:close-box-multiple"></ha-icon>
                                           </button>`
                                     : html``}
                             </span>
@@ -517,21 +590,31 @@ export class FbShoppingView extends LitElement {
                                       const fav = favKeys.has(key);
                                           return html`
                                           <div class="commonRow">
-                                              <button
+                                              <div
                                                   class="commonItem"
+                                                  role="button"
+                                                  tabindex="0"
                                                   @click=${() => this._addCommonItem(item)}
+                                                  @keydown=${(e) => {
+                                                      if (e.key === 'Enter' || e.key === ' ') {
+                                                          e.preventDefault();
+                                                          this._addCommonItem(item);
+                                                      }
+                                                  }}
                                               >
                                                   <span class="commonText">${item}</span>
                                                   <span class="commonPlus" aria-hidden="true">+</span>
-                                              </button>
                                                   <button
                                                       class="starBtn active"
                                                       title="Unfavourite"
-                                                      @click=${() =>
-                                                          card._toggleShoppingFavourite(item)}
+                                                      @click=${(e) => {
+                                                          e.stopPropagation();
+                                                          card._toggleShoppingFavourite(item);
+                                                      }}
                                                   >
                                                       <ha-icon icon="mdi:star"></ha-icon>
                                                   </button>
+                                              </div>
                                           </div>
                                       `;
                                   })

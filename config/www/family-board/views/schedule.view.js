@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 import { getHaLit } from '../ha-lit.js';
+import { loadingStyles } from './loading.styles.js';
 const { LitElement, html, css } = getHaLit();
 
 import {
@@ -22,9 +23,6 @@ export class FbScheduleView extends LitElement {
     };
 
     updated(changedProps) {
-        if (changedProps.has('renderKey')) {
-            this._didInitialScroll = false;
-        }
         this._scrollToNow();
         this._updateScrollbarWidth();
     }
@@ -72,7 +70,9 @@ export class FbScheduleView extends LitElement {
         card._openAddEventAt?.(date);
     }
 
-    static styles = css`
+    static styles = [
+        loadingStyles,
+        css`
         :host {
             display: block;
             height: 100%;
@@ -121,6 +121,7 @@ export class FbScheduleView extends LitElement {
             overflow-y: auto;
             overflow-x: hidden;
             min-height: 0;
+            padding-top: 10px;
             padding-bottom: 6px;
             flex: 1;
         }
@@ -193,6 +194,9 @@ export class FbScheduleView extends LitElement {
             align-items: center;
             justify-content: space-between;
             gap: 8px;
+            color: var(--fb-text);
+            text-align: left;
+            cursor: pointer;
         }
         .dayPips {
             display: flex;
@@ -339,6 +343,8 @@ export class FbScheduleView extends LitElement {
             background: var(--fb-surface-2);
             font-size: 14px;
             color: var(--fb-muted);
+            pointer-events: auto;
+            cursor: pointer;
         }
         .nowLine {
             position: absolute;
@@ -386,7 +392,8 @@ export class FbScheduleView extends LitElement {
         .event.current {
             z-index: 5;
         }
-    `;
+    `,
+    ];
 
     render() {
         const card = this.card;
@@ -432,6 +439,7 @@ export class FbScheduleView extends LitElement {
         this._autoScrollEnabled = showNow;
 
         const calendarList = Array.isArray(cfg.calendars) ? cfg.calendars : [];
+        const isCalendarLoading = calendarList.length && !card._calendarLastSuccessTs;
         const visibleSet = card._calendarVisibilityEnabled
             ? card._calendarVisibleSet || new Set(calendarList.map((c) => c.entity))
             : new Set(calendarList.map((c) => c.entity));
@@ -531,6 +539,15 @@ export class FbScheduleView extends LitElement {
             }
 
             const layout = layoutDayEvents(timedRaw, { maxColumns: 2 });
+            const dayEvents = mergedEvents
+                .map((e) => {
+                    const entityId = e._fbEntityId;
+                    const person = entityId ? card._personForEntity(entityId) : null;
+                    const colour = person?.color || card._neutralColor();
+                    const textColor = person?.text_color || getReadableTextColour(colour);
+                    return { ...e, _fbColour: colour, _fbText: textColor };
+                })
+                .sort((a, b) => (a._start?.getTime?.() || 0) - (b._start?.getTime?.() || 0));
             const visibleAllDay = allDay.slice(0, maxAllDayVisible);
             const hiddenAllDay = Math.max(allDay.length - visibleAllDay.length, 0);
             const pips = Array.from(perPerson.values());
@@ -541,6 +558,7 @@ export class FbScheduleView extends LitElement {
                 allDayHidden: hiddenAllDay,
                 timed: layout.items,
                 overflows: layout.overflows,
+                dayEvents,
                 pips,
                 nowBadge,
             };
@@ -550,6 +568,19 @@ export class FbScheduleView extends LitElement {
             (sum, row) => sum + row.allDay.length + row.timed.length,
             0
         );
+
+        if (isCalendarLoading) {
+            return html`
+                <div class="wrap">
+                    <div class="card">
+                        <div class="loadingState">
+                            <span class="spinner" aria-hidden="true"></span>
+                            <span>Loading schedule...</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
         return html`
             <div class="wrap">
@@ -568,7 +599,15 @@ export class FbScheduleView extends LitElement {
                             const pips = dayData[idx]?.pips || [];
                             const dayPips = pips.slice(0, 4);
                             return html`
-                                <div class="dayHead ${isToday ? 'highlight' : ''}">
+                                <button
+                                    class="dayHead ${isToday ? 'highlight' : ''}"
+                                    @click=${() =>
+                                        card._openAllDayDialog(
+                                            d,
+                                            dayData[idx]?.dayEvents || [],
+                                            'Events'
+                                        )}
+                                >
                                     <div class="dayLabel">${dayLabel}</div>
                                     ${dayPips.length
                                         ? html`<div class="dayPips">
@@ -582,7 +621,7 @@ export class FbScheduleView extends LitElement {
                                               )}
                                           </div>`
                                         : html``}
-                                </div>
+                                </button>
                             `;
                         })}
                     </div>
@@ -725,12 +764,20 @@ export class FbScheduleView extends LitElement {
                                             })}
                                             ${row.overflows.map(
                                                 (o) =>
-                                                    html`<div
+                                                    html`<button
                                                         class="overflow"
                                                         style="top:${(o.startMin - startMin) * pxPerMin}px"
+                                                        @click=${(ev) => {
+                                                            ev.stopPropagation();
+                                                            card._openAllDayDialog(
+                                                                row.day,
+                                                                row.dayEvents || [],
+                                                                'Events'
+                                                            );
+                                                        }}
                                                     >
                                                         +${o.count}
-                                                    </div>`
+                                                    </button>`
                                             )}
                                         </div>
                                     </div>

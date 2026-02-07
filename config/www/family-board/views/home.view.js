@@ -55,8 +55,8 @@ export class FbHomeView extends LitElement {
         .toggle {
             position: relative;
             display: inline-block;
-            width: var(--fb-touch);
-            height: var(--fb-touch);
+            width: 52px;
+            height: 28px;
         }
         .toggle input {
             opacity: 0;
@@ -75,10 +75,10 @@ export class FbHomeView extends LitElement {
         .slider::before {
             position: absolute;
             content: '';
-            height: 24px;
-            width: 24px;
-            left: 6px;
-            top: 6px;
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            top: 2px;
             background-color: var(--fb-surface);
             border: 1px solid var(--fb-border);
             border-radius: 50%;
@@ -89,7 +89,7 @@ export class FbHomeView extends LitElement {
             border-color: var(--fb-accent);
         }
         .toggle input:checked + .slider::before {
-            transform: translateX(20px);
+            transform: translateX(24px);
             border-color: var(--fb-accent);
         }
     `;

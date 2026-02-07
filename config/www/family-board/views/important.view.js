@@ -3,12 +3,15 @@
  */
 import { getHaLit } from '../ha-lit.js';
 import { addDays, pad2, startOfDay } from '../family-board.util.js';
+import { loadingStyles } from './loading.styles.js';
 const { LitElement, html, css } = getHaLit();
 
 export class FbImportantView extends LitElement {
     static properties = { card: { type: Object }, renderKey: { type: String } };
 
-    static styles = css`
+    static styles = [
+        loadingStyles,
+        css`
         :host {
             display: block;
             height: 100%;
@@ -105,7 +108,8 @@ export class FbImportantView extends LitElement {
                 grid-template-columns: 1fr;
             }
         }
-    `;
+    `,
+    ];
 
     _timeLabel(start, end, allDay) {
         if (allDay) return 'All day';
@@ -182,6 +186,11 @@ export class FbImportantView extends LitElement {
         const card = this.card;
         if (!card) return html``;
 
+        const calendars = Array.isArray(card._config?.calendars) ? card._config.calendars : [];
+        const todos = Array.isArray(card._config?.todos) ? card._config.todos : [];
+        const isCalendarLoading = calendars.length && !card._calendarLastSuccessTs;
+        const isTodoLoading = todos.length && !card._todoLoaded;
+
         const today = startOfDay(new Date());
         const tomorrow = addDays(today, 1);
         const todayItems = this._rangeItems(card, today, tomorrow);
@@ -193,7 +202,12 @@ export class FbImportantView extends LitElement {
                 <div class="section">
                     <div class="sectionTitle">Events</div>
                     <div class="list">
-                        ${items.eventItems.length
+                        ${isCalendarLoading
+                            ? html`<div class="loadingState">
+                                  <span class="spinner" aria-hidden="true"></span>
+                                  <span>Loading events...</span>
+                              </div>`
+                            : items.eventItems.length
                             ? items.eventItems.map(
                                   (e) => html`
                                       <div
@@ -221,7 +235,12 @@ export class FbImportantView extends LitElement {
                 <div class="section">
                     <div class="sectionTitle">Todos due</div>
                     <div class="list">
-                        ${items.todoItems.length
+                        ${isTodoLoading
+                            ? html`<div class="loadingState">
+                                  <span class="spinner" aria-hidden="true"></span>
+                                  <span>Loading todos...</span>
+                              </div>`
+                            : items.todoItems.length
                             ? items.todoItems.map(
                                   (t) => html`
                                       <div class="item" style="--item-color:${t.color}">

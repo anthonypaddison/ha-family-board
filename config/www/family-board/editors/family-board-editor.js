@@ -122,22 +122,6 @@ export class FamilyBoardEditor extends LitElement {
                         Debug
                     </label>
                 </div>
-                <div class="row small">
-                    <input
-                        placeholder="Accent teal (hex)"
-                        .value=${cfg.accent_teal || ''}
-                        @input=${(e) => this._updateConfig({ accent_teal: e.target.value })}
-                    />
-                    <div class="note">Sets the teal accent used in the sidebar selection.</div>
-                </div>
-                <div class="row small">
-                    <input
-                        placeholder="Accent lilac (hex)"
-                        .value=${cfg.accent_lilac || ''}
-                        @input=${(e) => this._updateConfig({ accent_lilac: e.target.value })}
-                    />
-                    <div class="note">Sets the primary accent used in buttons and highlights.</div>
-                </div>
                 <div class="row">
                     <input
                         type="number"

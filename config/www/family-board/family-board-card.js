@@ -83,6 +83,7 @@ class FamilyBoardCard extends LitElement {
         _allDayDialogOpen: { state: true },
         _allDayDialogDay: { state: true },
         _allDayDialogEvents: { state: true },
+        _allDayDialogTitle: { state: true },
         _helpOpen: { state: true },
         _editorGuideOpen: { state: true },
         _sidebarCollapsed: { state: true },
@@ -109,7 +110,7 @@ class FamilyBoardCard extends LitElement {
             slot_minutes: 30,
             px_per_hour: 120,
             refresh_interval_ms: 300000,
-            shopping: { entity: 'todo.shopping_list_2', name: 'Shopping' },
+            shopping: { entity: 'todo.shopping_list_2', name: 'Shopping list' },
         };
     }
 
@@ -214,6 +215,7 @@ class FamilyBoardCard extends LitElement {
         this._todoItems = {};
         this._todoRenderTick = 0;
         this._todoStatusRetryTimers = new Map();
+        this._todoLoaded = false;
         this._shoppingItems = [];
         this._dialogOpen = false;
         this._dialogMode = '';
@@ -229,6 +231,7 @@ class FamilyBoardCard extends LitElement {
         this._allDayDialogOpen = false;
         this._allDayDialogDay = null;
         this._allDayDialogEvents = [];
+        this._allDayDialogTitle = '';
         this._helpOpen = false;
         this._editorGuideOpen = false;
         this._refreshIntervalMs = 300_000;
@@ -238,6 +241,8 @@ class FamilyBoardCard extends LitElement {
         this._shoppingCommon = [];
         this._shoppingFavourites = [];
         this._shoppingRemoveTimers = new Map();
+        this._shoppingLoaded = false;
+        this._shoppingFirstAttemptTs = 0;
         this._defaultEventMinutes = 30;
         this._storageLoaded = false;
         this._storageLoadPromise = null;
@@ -266,8 +271,6 @@ class FamilyBoardCard extends LitElement {
         this._deviceDayEndHour = null;
         this._devicePxPerHour = null;
         this._deviceRefreshMs = null;
-        this._deviceAccentTeal = null;
-        this._deviceAccentLilac = null;
         this._deviceBackgroundTheme = null;
         this._deviceDebug = null;
         this._devicePeopleDisplay = null;
@@ -395,8 +398,6 @@ class FamilyBoardCard extends LitElement {
         if (Number.isFinite(prefs.pxPerHour)) this._devicePxPerHour = prefs.pxPerHour;
         if (Number.isFinite(prefs.refreshIntervalMs))
             this._deviceRefreshMs = prefs.refreshIntervalMs;
-        if (typeof prefs.accentTeal === 'string') this._deviceAccentTeal = prefs.accentTeal;
-        if (typeof prefs.accentLilac === 'string') this._deviceAccentLilac = prefs.accentLilac;
         if (typeof prefs.backgroundTheme === 'string')
             this._deviceBackgroundTheme = prefs.backgroundTheme;
         if (typeof prefs.debug === 'boolean') this._deviceDebug = prefs.debug;
@@ -599,6 +600,7 @@ class FamilyBoardCard extends LitElement {
                             .open=${this._allDayDialogOpen}
                             .day=${this._allDayDialogDay}
                             .events=${this._allDayDialogEvents}
+                            .title=${this._allDayDialogTitle}
                             .card=${this}
                             @fb-all-day-close=${this._onAllDayDialogClose}
                         ></fb-all-day-dialog>
@@ -1009,6 +1011,7 @@ class FamilyBoardCard extends LitElement {
             }
         }
         this._todoItems = next;
+        this._todoLoaded = true;
     }
 
     async _refreshTodoEntity(entityId) {
@@ -1017,6 +1020,7 @@ class FamilyBoardCard extends LitElement {
         try {
             const items = await this._todoService.fetchItems(this._hass, entityId);
             this._todoItems = { ...(this._todoItems || {}), [entityId]: items };
+            this._todoLoaded = true;
             if (this._todoErrorEntities.has(entityId)) {
                 this._todoErrorEntities.delete(entityId);
             }
@@ -1028,12 +1032,31 @@ class FamilyBoardCard extends LitElement {
         }
     }
 
-    async _refreshShopping() {
+    async _refreshShopping({ force = false } = {}) {
         const shopping = this._config?.shopping;
         if (!shopping) return;
+        if (!this._shoppingFirstAttemptTs) this._shoppingFirstAttemptTs = Date.now();
+        if (!force) {
+            const holdUntil = this._shoppingRefreshHoldUntil || 0;
+            const now = Date.now();
+            if (now < holdUntil) {
+                if (!this._shoppingRefreshTimer) {
+                    const delay = Math.max(0, holdUntil - now);
+                    this._shoppingRefreshTimer = setTimeout(() => {
+                        this._shoppingRefreshTimer = null;
+                        this._refreshShopping();
+                    }, delay);
+                }
+                return;
+            }
+        }
         try {
             this._shoppingItems = await this._shoppingService.fetchItems(this._hass, shopping);
+            this._shoppingLoaded = true;
         } catch {
+            const now = Date.now();
+            const quietUntil = this._shoppingFirstAttemptTs + 10_000;
+            if (!this._shoppingLoaded && now < quietUntil) return;
             if (this._shouldNotifyError('shopping-refresh')) {
                 this._showErrorToast('Refresh shopping');
             }
@@ -1823,8 +1846,6 @@ class FamilyBoardCard extends LitElement {
             'day_end_hour',
             'px_per_hour',
             'refresh_interval_ms',
-            'accent_teal',
-            'accent_lilac',
             'background_theme',
             'debug',
             'people_display',
@@ -1845,10 +1866,6 @@ class FamilyBoardCard extends LitElement {
                 this._devicePxPerHour = Number(devicePatch.px_per_hour);
             if (devicePatch.refresh_interval_ms !== undefined)
                 this._deviceRefreshMs = Number(devicePatch.refresh_interval_ms);
-            if (devicePatch.accent_teal !== undefined)
-                this._deviceAccentTeal = devicePatch.accent_teal || '';
-            if (devicePatch.accent_lilac !== undefined)
-                this._deviceAccentLilac = devicePatch.accent_lilac || '';
             if (devicePatch.background_theme !== undefined)
                 this._deviceBackgroundTheme = devicePatch.background_theme || '';
             if (devicePatch.debug !== undefined)
@@ -2248,8 +2265,6 @@ class FamilyBoardCard extends LitElement {
             dayEndHour: this._deviceDayEndHour ?? null,
             pxPerHour: this._devicePxPerHour ?? null,
             refreshIntervalMs: this._deviceRefreshMs ?? null,
-            accentTeal: this._deviceAccentTeal ?? null,
-            accentLilac: this._deviceAccentLilac ?? null,
             backgroundTheme: this._deviceBackgroundTheme ?? null,
             debug: this._deviceDebug ?? null,
             peopleDisplay: Array.isArray(this._devicePeopleDisplay)
@@ -2272,8 +2287,6 @@ class FamilyBoardCard extends LitElement {
         this._deviceDayEndHour = null;
         this._devicePxPerHour = null;
         this._deviceRefreshMs = null;
-        this._deviceAccentTeal = null;
-        this._deviceAccentLilac = null;
         this._deviceBackgroundTheme = null;
         this._deviceDebug = null;
         this._devicePeopleDisplay = null;
@@ -2427,7 +2440,7 @@ class FamilyBoardCard extends LitElement {
     }
 
     _shoppingItemText(item) {
-        return item?.summary ?? item?.name ?? item?.item ?? '';
+        return item?.summary || item?.name || item?.item || '';
     }
 
     _parseShoppingText(text) {
@@ -2509,13 +2522,14 @@ class FamilyBoardCard extends LitElement {
         if (!item || !text) return;
         const previousText = this._shoppingItemText(item);
         this._optimisticShoppingUpdate(item, text);
+        this._shoppingRefreshHoldUntil = Date.now() + 1500;
         const supportsUpdate = this._supportsService('todo', 'update_item');
         try {
             if (supportsUpdate) {
                 await this._shoppingService.updateItem(
                     this._hass,
                     this._config?.shopping,
-                    previousText,
+                    item ?? previousText,
                     {
                         rename: text,
                     }
@@ -2524,19 +2538,21 @@ class FamilyBoardCard extends LitElement {
                 await this._shoppingService.removeItem(
                     this._hass,
                     this._config?.shopping,
-                    previousText
+                    item ?? previousText
                 );
                 await this._shoppingService.addItem(this._hass, this._config?.shopping, text);
             }
         } catch (error) {
             if (this._isMissingTodoItemError(error)) {
-                await this._refreshShopping();
+                await this._refreshShopping({ force: true });
                 return;
             }
             if (previousText) this._optimisticShoppingUpdate(item, previousText);
             this._showErrorToast('Edit shopping item');
         } finally {
-            await this._refreshShopping();
+            if (!supportsUpdate) {
+                await this._refreshShopping();
+            }
         }
     }
 
@@ -2687,11 +2703,12 @@ class FamilyBoardCard extends LitElement {
         this._eventDialogEvent = null;
     };
 
-    _openAllDayDialog(day, events) {
+    _openAllDayDialog(day, events, title = '') {
         if (!day || !Array.isArray(events)) return;
         this._closeAllDialogs();
         this._allDayDialogDay = day;
         this._allDayDialogEvents = events;
+        this._allDayDialogTitle = title || '';
         this._allDayDialogOpen = true;
     }
 
@@ -2699,6 +2716,7 @@ class FamilyBoardCard extends LitElement {
         this._allDayDialogOpen = false;
         this._allDayDialogDay = null;
         this._allDayDialogEvents = [];
+        this._allDayDialogTitle = '';
     };
 
     _onEventUpdate = async (ev) => {
@@ -2832,8 +2850,6 @@ class FamilyBoardCard extends LitElement {
         if (draft.px_per_hour !== undefined) push(`px_per_hour: ${draft.px_per_hour}`);
         if (draft.refresh_interval_ms !== undefined)
             push(`refresh_interval_ms: ${draft.refresh_interval_ms}`);
-        if (draft.accent_teal) push(`accent_teal: '${draft.accent_teal}'`);
-        if (draft.accent_lilac) push(`accent_lilac: '${draft.accent_lilac}'`);
         if (draft.background_theme) push(`background_theme: '${draft.background_theme}'`);
 
         const people = Array.isArray(draft.people) ? draft.people : [];
@@ -3127,8 +3143,6 @@ class FamilyBoardCard extends LitElement {
         if (this._deviceDayEndHour !== null) merged.day_end_hour = this._deviceDayEndHour;
         if (this._devicePxPerHour !== null) merged.px_per_hour = this._devicePxPerHour;
         if (this._deviceRefreshMs !== null) merged.refresh_interval_ms = this._deviceRefreshMs;
-        if (this._deviceAccentTeal !== null) merged.accent_teal = this._deviceAccentTeal;
-        if (this._deviceAccentLilac !== null) merged.accent_lilac = this._deviceAccentLilac;
         if (this._deviceBackgroundTheme !== null)
             merged.background_theme = this._deviceBackgroundTheme;
         if (this._deviceDebug !== null) merged.debug = this._deviceDebug;
@@ -3153,20 +3167,6 @@ class FamilyBoardCard extends LitElement {
         this._scheduleDays = daysToShow;
         this._refreshIntervalMs = merged.refresh_interval_ms ?? refreshMs;
 
-        const accentTeal =
-            typeof merged.accent_teal === 'string' ? merged.accent_teal.trim() : '';
-        if (accentTeal) {
-            this.style.setProperty('--fb-accent-teal', accentTeal);
-        } else {
-            this.style.removeProperty('--fb-accent-teal');
-        }
-        const accentLilac =
-            typeof merged.accent_lilac === 'string' ? merged.accent_lilac.trim() : '';
-        if (accentLilac) {
-            this.style.setProperty('--fb-accent', accentLilac);
-        } else {
-            this.style.removeProperty('--fb-accent');
-        }
         const backgroundTheme =
             typeof merged.background_theme === 'string' ? merged.background_theme.trim() : '';
         const themeMap = {

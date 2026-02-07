@@ -7,6 +7,7 @@ Family Board is a custom Lovelace card for Home Assistant that combines a multi-
 - Chores and shopping built from `todo.*` entities.
 - Admin-first setup helpers and an in-card editor guide.
 - Per-user/device preferences (filters, time slots, landing view).
+- Restores the last view per device after refresh.
 
 ## Installation
 
@@ -39,6 +40,7 @@ type: custom:family-board
 title: Family Board
 debug: false
 
+days_to_show: 5
 day_start_hour: 6
 day_end_hour: 24
 slot_minutes: 30
@@ -94,10 +96,9 @@ people_display:
   - person_two
   - person_three
 
-accent_teal: '#00CED1'
-accent_lilac: '#CFBAF0'
 background_theme: 'mint'
 admin_pin: '1234'
+theme: 'bright-light'
 ```
 
 ## Configuration reference
@@ -121,9 +122,7 @@ admin_pin: '1234'
 - `shopping`:
   - `entity` (string): Shopping list `todo.*` entity id (default `todo.shopping_list_2`).
   - `name` (string, optional): Display label.
-- `accent_teal` (string, optional): Hex color for the teal accent used in the sidebar selection and
-  background tint.
-- `accent_lilac` (string, optional): Hex color for the primary accent used in buttons/highlights.
+- `days_to_show` (number, optional): Schedule view day count (currently fixed to 5 in the editor).
 - `background_theme` (string, optional): `mint` | `sand` | `slate` to tint the board background.
 - `home_controls` (list, optional): Entity ids to show on the Home controls view.
 - `slot_minutes`: 30 or 60 (per-device preference available in Settings).
@@ -132,6 +131,9 @@ admin_pin: '1234'
 - `px_per_hour`: Height scaling for the schedule grid.
 - `refresh_interval_ms`: Polling interval for refreshes.
 - `admin_pin` (string, optional): Admin PIN for unlocking Settings on non-admin devices.
+- `theme` (string, optional): UI theme preset (currently `bright-light`, controls accents).
+- `todo_repeats` (object, optional): Internal repeat metadata for chores created in-card.
+- `debug` (bool, optional): Enables extra logging and UI debugging hints.
 
 Header row behavior:
 - Row 1 renders first, then row 2.
@@ -155,6 +157,7 @@ These settings are stored per user/device:
 - Default event duration.
 - Theme selection (currently "Bright light").
 - Reset all defaults (double-confirmation).
+- Shopping favourites and common items lists.
 
 Sources and admin controls live in the left column. Preferences (including reset defaults) live
 in the right column.
@@ -184,6 +187,15 @@ Configure `bins` (up to 10) and `bin_schedule` in Settings to show upcoming coll
 When a bin is due today or tomorrow, its icon appears next to the time in the header.
 
 Chore repeat cadence options: daily, weekly, biweekly, monthly (requires due date).
+
+## Setup wizard
+
+When the card has no usable config, admins see a first-run setup screen that:
+- Suggests people, calendars, and todo lists based on discovered entities.
+- Lets you add/edit people, calendars, todos, and shopping entity.
+- Generates ready-to-paste YAML via the copy button.
+
+Non-admin users see a read-only message until an admin finishes setup.
 
 ## Persistence modes
 
@@ -217,5 +229,62 @@ Add screenshots here (no personal data).
 
 - Edit ES modules under `config/www/family-board/`.
 - After JS edits, update the resource version in `configuration.yaml` (or via the UI).
-Last view:
-- The dashboard restores the last view you were on after refresh (per device).
+
+## Future ideas (not implemented yet)
+
+- Timed reminder banners with optional countdown and sound.
+  - Settings action to test reminder sounds.
+- Food view with:
+  - Menu tab for the week.
+  - In-the-house tab for pantry/fridge inventory.
+- Step-by-step person wizard in Settings (edit and add flows):
+  - Name, colour, calendar/todo association, ordering, confirm.
+  - Back/next navigation without data loss; cancel discards changes.
+- Event details beyond title/time (e.g., location and description).
+- Mobile-first intent view with large action buttons and minimal data.
+- Actions adapt based on house mode, time, and recent activity.
+- Tablet ambient view with glanceable information.
+- Layout and content change automatically based on time of day, occupancy, and events.
+- Dynamic themes to reinforce system state visually.
+- Theme switches based on day/night, alerts, house mode, or critical issues.
+- Family dashboard focused on clarity and daily use.
+- Today summary, house status, and common actions only.
+- Admin dashboard focused on operations and control.
+- System health, device status, automations, logs, energy, and recovery tools.
+- Explicit house modes beyond Home/Away.
+- Away/Off mode for staying elsewhere (e.g. weekends away).
+- Guest mode to adjust behaviour without changing core routines.
+- Quiet/Calm mode to reduce notifications and automation noise.
+- State-aware phone notifications with severity levels.
+- Notifications include clear reasons and supporting context.
+- Suppress notifications when the issue is already visible on a dashboard.
+- Daily and weekly audit reports.
+- Summary of automations run, overrides, failures, and anomalies.
+- Component-level audit views.
+- Separate audit trails for heating, lighting, security, energy, and media.
+- Timeline-style “what the house did and why” history.
+- Explainability layer for automations.
+- Dashboard-visible reasons for blocked or skipped actions.
+- Surface conditions that prevented expected behaviour.
+- Central media status view for self-hosted services.
+- Read-only health and activity indicators for services like Sonarr/Radarr.
+- Simple actions for retry, pause, or acknowledge failures.
+- Presence and confidence-aware behaviour.
+- Differentiate between confident and uncertain states (e.g. Away but motion detected).
+- Use confidence to gate automations and notifications.
+- System reliability and recovery controls.
+- Dashboard indicator showing last successful backup time.
+- Warning when backups become stale.
+- Manual “snapshot now” action available from admin view.
+- House health and drift detection.
+- Identify lights left on, windows open, heating conflicts, unreachable devices.
+- Surface problems as a status list rather than push alerts.
+- Behaviour-aware routines without cloud or AI dependence.
+- Detect deviations from normal patterns (late nights, unusual usage).
+- Flag anomalies instead of acting blindly.
+- Local-first home stack architecture.
+- HA as the control and state engine.
+- Media, family support, and services hosted on local servers or old laptops.
+- Clear separation between control logic, presentation, and self-hosted services.
+- create custom, saved shopping list which you can easily add to the shopping list
+- create custom meals that include a shopping list to add

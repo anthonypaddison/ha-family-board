@@ -77,7 +77,7 @@ function assignLanes(events) {
     return sorted;
 }
 
-export function layoutDayEvents(events, { maxColumns = 3 } = {}) {
+export function layoutDayEvents(events, { maxColumns = 2 } = {}) {
     const groups = groupByOverlap(events);
     const items = [];
     const overflows = [];
